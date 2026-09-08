@@ -1,0 +1,21 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+
+## Logs gerados pelo Serilog (sink de arquivo)
+src/SPI.Api/logs/
+
+## Segredos locais - nunca versionar (ver prompt mestre, secao "Convencoes")
+src/SPI.Api/appsettings.Development.json
+**/appsettings.*.local.json
+
+## IDE
+.vs/
+.idea/
+*.swp
+
+## OS
+.DS_Store
+Thumbs.db

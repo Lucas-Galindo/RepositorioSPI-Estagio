@@ -1,0 +1,85 @@
+/*
+ * Design tokens do SPI (clay morphism). Compartilhados por qualquer tela
+ * futura que siga o mesmo protótipo visual, não só o login.
+ */
+:root {
+  /* Nomes registrados pelos pacotes @fontsource (ver app/layout.tsx). */
+  --font-inter: "Inter Variable";
+  --font-poppins: "Poppins";
+
+  --c-bg: #f7fff7;
+  --c-surface: #ffffff;
+  --c-surface-2: #f7fff7;
+  --c-text: #292f36;
+  --c-text-muted: #7c848c;
+  --c-sidebar: #262c33;
+  --c-sidebar-2: #2c333b;
+  --c-accent: #4ecdc4;
+  --c-accent-deep: #33a79e;
+  --c-accent-tint: rgba(78, 205, 196, 0.15);
+  --c-accent2: #bb9457;
+  --c-accent2-tint: rgba(187, 148, 87, 0.15);
+  --c-accent3: #ffe66d;
+  --c-accent3-tint: rgba(255, 230, 109, 0.35);
+  --c-danger: #c0392b;
+  --c-danger-tint: rgba(192, 57, 43, 0.12);
+  --r-xl: 28px;
+  --r-lg: 22px;
+  --r-md: 16px;
+  --r-sm: 10px;
+  --shadow-out: 9px 9px 20px rgba(41, 47, 54, 0.09), -7px -7px 16px rgba(255, 255, 255, 0.9);
+  --shadow-out-sm: 5px 5px 12px rgba(41, 47, 54, 0.08), -4px -4px 10px rgba(255, 255, 255, 0.85);
+  --shadow-press: inset 3px 3px 7px rgba(41, 47, 54, 0.1), inset -3px -3px 7px rgba(255, 255, 255, 0.6);
+}
+
+.dark-mode {
+  --c-bg: #1b1f24;
+  --c-surface: #242a31;
+  --c-surface-2: #1e242a;
+  --c-text: #eef1f2;
+  --c-text-muted: #95a0a8;
+  --c-sidebar: #14171b;
+  --c-sidebar-2: #181c21;
+  --c-accent-tint: rgba(78, 205, 196, 0.16);
+  --c-accent2-tint: rgba(187, 148, 87, 0.18);
+  --c-accent3-tint: rgba(255, 230, 109, 0.16);
+  --c-danger-tint: rgba(192, 57, 43, 0.22);
+  --shadow-out: 9px 9px 22px rgba(0, 0, 0, 0.5), -7px -7px 16px rgba(255, 255, 255, 0.035);
+  --shadow-out-sm: 5px 5px 13px rgba(0, 0, 0, 0.45), -4px -4px 10px rgba(255, 255, 255, 0.03);
+  --shadow-press: inset 3px 3px 7px rgba(0, 0, 0, 0.45), inset -3px -3px 7px rgba(255, 255, 255, 0.03);
+}
+
+/* Modos de daltonismo — paletas seguras (baseadas em Okabe-Ito), aplicáveis em claro ou escuro. */
+.cb-protanopia {
+  --c-accent: #0072b2;
+  --c-accent-deep: #00537f;
+  --c-accent-tint: rgba(0, 114, 178, 0.15);
+  --c-accent2: #e69f00;
+  --c-accent2-tint: rgba(230, 159, 0, 0.16);
+  --c-accent3: #f0e442;
+  --c-accent3-tint: rgba(240, 228, 66, 0.3);
+  --c-danger: #d55e00;
+  --c-danger-tint: rgba(213, 94, 0, 0.14);
+}
+.cb-deuteranopia {
+  --c-accent: #0072b2;
+  --c-accent-deep: #00537f;
+  --c-accent-tint: rgba(0, 114, 178, 0.15);
+  --c-accent2: #cc79a7;
+  --c-accent2-tint: rgba(204, 121, 167, 0.18);
+  --c-accent3: #f0e442;
+  --c-accent3-tint: rgba(240, 228, 66, 0.3);
+  --c-danger: #d55e00;
+  --c-danger-tint: rgba(213, 94, 0, 0.14);
+}
+.cb-tritanopia {
+  --c-accent: #cc79a7;
+  --c-accent-deep: #a85286;
+  --c-accent-tint: rgba(204, 121, 167, 0.16);
+  --c-accent2: #e69f00;
+  --c-accent2-tint: rgba(230, 159, 0, 0.16);
+  --c-accent3: #009e73;
+  --c-accent3-tint: rgba(0, 158, 115, 0.2);
+  --c-danger: #d55e00;
+  --c-danger-tint: rgba(213, 94, 0, 0.14);
+}

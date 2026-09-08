@@ -1,0 +1,380 @@
+.spi-login {
+  font-family: var(--font-inter), sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.2s ease, color 0.2s ease;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.spi-login h1,
+.spi-login h2,
+.spi-login h3 {
+  font-family: var(--font-poppins), sans-serif;
+}
+.spi-login button,
+.spi-login input {
+  font-family: inherit;
+}
+
+.spi-login .theme-toggle {
+  position: fixed;
+  top: 26px;
+  right: 28px;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: var(--c-surface);
+  box-shadow: var(--shadow-out-sm);
+  border: none;
+  color: var(--c-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+}
+.spi-login .theme-toggle:hover {
+  box-shadow: var(--shadow-press);
+}
+
+.spi-login .auth-shell {
+  width: 100%;
+  max-width: 960px;
+  min-height: 580px;
+  background: var(--c-surface);
+  border-radius: 32px;
+  box-shadow: var(--shadow-out);
+  display: flex;
+  overflow: hidden;
+}
+
+/* ===== painel esquerdo — identidade visual ===== */
+.spi-login .auth-side {
+  flex: 1;
+  background: linear-gradient(150deg, var(--c-sidebar-2) 0%, var(--c-sidebar) 100%);
+  color: #fff;
+  padding: 48px 42px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  min-width: 340px;
+}
+.spi-login .auth-side::before {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: -70px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c-accent-tint), transparent 70%);
+}
+.spi-login .auth-side::after {
+  content: "";
+  position: absolute;
+  left: -60px;
+  bottom: -90px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c-accent2-tint), transparent 70%);
+}
+.spi-login .side-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+.spi-login .brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, var(--c-accent), var(--c-accent-deep));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a2024;
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3), -2px -2px 6px rgba(255, 255, 255, 0.1);
+}
+.spi-login .brand-text .name {
+  font-weight: 700;
+  font-size: 16px;
+}
+.spi-login .brand-text .sub {
+  color: #9ba4ac;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.spi-login .side-copy {
+  position: relative;
+  z-index: 1;
+  margin-top: 36px;
+}
+.spi-login .side-copy h2 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.spi-login .side-copy p {
+  color: #b6bec5;
+  font-size: 13px;
+  margin-top: 12px;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.spi-login .side-points {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 34px;
+}
+.spi-login .side-point {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.spi-login .side-point .ic {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-accent);
+  flex-shrink: 0;
+}
+.spi-login .side-point span {
+  font-size: 12.5px;
+  color: #d3d8dc;
+}
+
+.spi-login .side-quote {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding-top: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11.5px;
+  color: #8f98a0;
+}
+
+/* ===== painel direito — formulário ===== */
+.spi-login .auth-form-panel {
+  flex: 1.05;
+  padding: 52px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 360px;
+}
+.spi-login .form-head h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+.spi-login .form-head p {
+  font-size: 12.5px;
+  color: var(--c-text-muted);
+  margin-top: 6px;
+}
+
+.spi-login form {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.spi-login .field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.spi-login .field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.spi-login .input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.spi-login .input-wrap svg {
+  position: absolute;
+  left: 14px;
+  color: var(--c-text-muted);
+  pointer-events: none;
+}
+.spi-login .input-wrap input {
+  width: 100%;
+  border: none;
+  background: var(--c-bg);
+  border-radius: var(--r-sm);
+  padding: 12px 40px 12px 40px;
+  font-size: 13px;
+  color: var(--c-text);
+  outline: none;
+  box-shadow: var(--shadow-press);
+}
+.spi-login .input-wrap input:focus {
+  box-shadow: var(--shadow-press), 0 0 0 3px var(--c-accent-tint);
+}
+.spi-login .toggle-eye {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+.spi-login .toggle-eye:hover {
+  color: var(--c-text);
+}
+
+.spi-login .field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -4px;
+}
+.spi-login .remember {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--c-text-muted);
+}
+.spi-login .remember input {
+  accent-color: var(--c-accent-deep);
+}
+.spi-login .link {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--c-accent-deep);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.spi-login .link:hover {
+  text-decoration: underline;
+}
+.spi-login .link:disabled {
+  opacity: 0.6;
+  cursor: default;
+  text-decoration: none;
+}
+
+.spi-login .btn-submit {
+  margin-top: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 13px 20px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(150deg, var(--c-accent), var(--c-accent-deep));
+  color: #1a2024;
+  box-shadow: var(--shadow-out-sm);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.spi-login .btn-submit:hover {
+  box-shadow: 6px 6px 16px var(--c-accent-tint), -4px -4px 10px rgba(255, 255, 255, 0.5);
+}
+.spi-login .btn-submit:active {
+  transform: translateY(1px);
+}
+.spi-login .btn-submit:disabled {
+  opacity: 0.75;
+  cursor: default;
+  transform: none;
+}
+
+.spi-login .divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 18px;
+  color: var(--c-text-muted);
+  font-size: 11px;
+}
+.spi-login .divider::before,
+.spi-login .divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--c-bg);
+}
+
+.spi-login .form-foot {
+  text-align: center;
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+.spi-login .form-foot .link {
+  margin-left: 4px;
+}
+
+.spi-login .proto-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--c-accent3-tint);
+  color: #8a6d00;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: 100px;
+  margin-top: 22px;
+  align-self: flex-start;
+}
+
+.spi-login .err-banner {
+  display: none;
+  align-items: center;
+  gap: 9px;
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.spi-login .err-banner.show {
+  display: flex;
+}
+
+@media (max-width: 880px) {
+  .spi-login .auth-side {
+    display: none;
+  }
+  .spi-login .auth-shell {
+    max-width: 440px;
+  }
+  .spi-login .auth-form-panel {
+    padding: 44px 34px;
+  }
+}
