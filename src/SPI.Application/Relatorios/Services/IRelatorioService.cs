@@ -16,6 +16,9 @@ namespace SPI.Application.Relatorios.Services
         Task<RelatorioFinanceiroResponse> ObterFinanceiroAsync(
             DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, int? turmaId, int? materiaId, CancellationToken cancellationToken = default);
 
+        Task<IndicadoresFinanceirosFiltradosResponse> ObterIndicadoresFinanceirosAsync(
+            DateOnly? inicio, DateOnly? fim, int? turmaId, int? materiaId, int? alunoId, CancellationToken cancellationToken = default);
+
         Task<RelatorioPeriodoAgendaResponse> ObterPeriodoAgendaAsync(
             DateOnly inicio, DateOnly fim, int? turmaId, int? materiaId, CancellationToken cancellationToken = default);
 

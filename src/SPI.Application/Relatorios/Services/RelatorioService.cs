@@ -1,3 +1,4 @@
+using SPI.Application.Dashboard.Dtos;
 using SPI.Application.Pagamentos.Services;
 using SPI.Application.Relatorios.Dtos;
 using SPI.Domain.Exceptions;
@@ -139,6 +140,83 @@ namespace SPI.Application.Relatorios.Services
                     .OrderByDescending(i => i.Total)
                     .ToList()
             };
+        }
+
+        // Sprint 3 da evolucao do Financeiro: mesmos indicadores do Dashboard
+        // (DashboardService.ObterIndicadoresFinanceirosAsync), so que aceitando
+        // turma/materia/aluno -- filtros que so se aplicam ao lado da receita
+        // (ver AplicarFiltroReceita em RelatorioRepository). Despesa (Contas a
+        // Pagar) nunca e filtrada por esses criterios: nao tem ligacao com
+        // aluno/turma/materia no dominio.
+        public async Task<IndicadoresFinanceirosFiltradosResponse> ObterIndicadoresFinanceirosAsync(
+            DateOnly? inicio, DateOnly? fim, int? turmaId, int? materiaId, int? alunoId, CancellationToken cancellationToken = default)
+        {
+            var hoje = DateOnly.FromDateTime(DateTime.Now);
+            var periodoInicio = inicio ?? new DateOnly(hoje.Year, hoje.Month, 1);
+            var periodoFim = fim ?? periodoInicio.AddMonths(1).AddDays(-1);
+
+            var valorFaturado = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(
+                periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
+
+            var (totalVencido, valorInadimplente) = await _relatorioRepository.ObterInadimplenciaNoPeriodoAsync(
+                periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
+            var taxaInadimplencia = totalVencido == 0 ? 0m : Math.Round(valorInadimplente / totalVencido * 100, 1);
+
+            var atrasos = await _relatorioRepository.ObterPagamentosComAtrasoNoPeriodoAsync(
+                periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
+            decimal? prazoMedioAtraso = atrasos.Count == 0
+                ? null
+                : Math.Round((decimal)atrasos.Average(a => a.DataPagamento.DayNumber - a.DataVencimento.DayNumber), 1);
+
+            // Despesa nunca e filtrada (ver comentario acima da assinatura).
+            var valorPago = await _relatorioRepository.ObterValorPagoNoPeriodoAsync(periodoInicio, periodoFim, cancellationToken);
+            var fluxoCaixaOperacional = valorFaturado - valorPago;
+            var margemSeguranca = valorFaturado == 0 ? 0m : Math.Round(fluxoCaixaOperacional / valorFaturado * 100, 1);
+            decimal? indiceCobertura = valorPago == 0 ? null : Math.Round(valorFaturado / valorPago, 2);
+
+            var entradas = await _relatorioRepository.ObterEntradasPorDiaDoMesAsync(
+                periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
+            var saidas = await _relatorioRepository.ObterSaidasPorDiaDoMesAsync(periodoInicio, periodoFim, cancellationToken);
+            var maiorEntrada = entradas.OrderByDescending(x => x.Valor).Cast<(int Dia, decimal Valor)?>().FirstOrDefault();
+            var maiorSaida = saidas.OrderByDescending(x => x.Valor).Cast<(int Dia, decimal Valor)?>().FirstOrDefault();
+
+            var indicadores = new IndicadoresFinanceirosResponse
+            {
+                TaxaInadimplenciaPercentual = taxaInadimplencia,
+                PrazoMedioAtrasoDias = prazoMedioAtraso,
+                MargemSegurancaPercentual = margemSeguranca,
+                FluxoCaixaOperacional = fluxoCaixaOperacional,
+                IndiceCoberturaCustosFixos = indiceCobertura,
+                GargaloCaixa = new GargaloCaixaResponse
+                {
+                    DiaMaiorEntrada = maiorEntrada?.Dia,
+                    ValorMaiorEntrada = maiorEntrada?.Valor ?? 0,
+                    DiaMaiorSaida = maiorSaida?.Dia,
+                    ValorMaiorSaida = maiorSaida?.Valor ?? 0
+                }
+            };
+
+            var fluxoCaixaMensal = new List<FluxoCaixaMensalItem>();
+            for (var i = 5; i >= 0; i--)
+            {
+                var mesInicio = new DateOnly(hoje.Year, hoje.Month, 1).AddMonths(-i);
+                var mesFim = mesInicio.AddMonths(1).AddDays(-1);
+
+                var mesEntradas = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(
+                    mesInicio, mesFim, cancellationToken, turmaId, materiaId, alunoId);
+                var mesSaidas = await _relatorioRepository.ObterValorPagoNoPeriodoAsync(mesInicio, mesFim, cancellationToken);
+
+                fluxoCaixaMensal.Add(new FluxoCaixaMensalItem
+                {
+                    Ano = mesInicio.Year,
+                    Mes = mesInicio.Month,
+                    Entradas = mesEntradas,
+                    Saidas = mesSaidas,
+                    Saldo = mesEntradas - mesSaidas
+                });
+            }
+
+            return new IndicadoresFinanceirosFiltradosResponse { Indicadores = indicadores, FluxoCaixaMensal = fluxoCaixaMensal };
         }
 
         public async Task<RelatorioPeriodoAgendaResponse> ObterPeriodoAgendaAsync(

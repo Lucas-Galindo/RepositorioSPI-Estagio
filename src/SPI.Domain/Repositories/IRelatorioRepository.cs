@@ -19,7 +19,11 @@ namespace SPI.Domain.Repositories
         Task<decimal> ObterValorPendenteAsync(CancellationToken cancellationToken = default);
 
         // Soma de pagamentos com status Pago, pela DataPagamento no periodo.
-        Task<decimal> ObterValorFaturadoNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);
+        // turmaId/materiaId/alunoId (Sprint 3 da evolucao do Financeiro) filtram
+        // pelo lado da receita -- ver AplicarFiltroReceita na implementacao.
+        Task<decimal> ObterValorFaturadoNoPeriodoAsync(
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null);
 
         // Contrapartida das duas consultas acima, para Contas a Pagar (Sprint 4
         // da evolucao do Financeiro). Usadas pela Visao Geral (Sprint 7) e pelo
@@ -78,19 +82,27 @@ namespace SPI.Domain.Repositories
         // Taxa de inadimplencia: total (em valor) das contas a receber com
         // vencimento no periodo (exclui Canceladas) vs. quanto desse total
         // ainda esta em aberto e vencido (status calculado "Atrasado") hoje.
+        // turmaId/materiaId/alunoId (Sprint 3): filtram pelo lado da receita.
         Task<(decimal TotalVencidoNoPeriodo, decimal ValorInadimplente)> ObterInadimplenciaNoPeriodoAsync(
-            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null);
 
         // Pares (DataVencimento, DataPagamento) de contas a receber pagas com
         // atraso (DataPagamento > DataVencimento) no periodo, para calcular o
         // Prazo Medio de Atraso (PMA) na Application.
+        // turmaId/materiaId/alunoId (Sprint 3): filtram pelo lado da receita.
         Task<List<(DateOnly DataVencimento, DateOnly DataPagamento)>> ObterPagamentosComAtrasoNoPeriodoAsync(
-            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null);
 
         // Soma de contas a receber/pagar por dia-do-mes de vencimento, para o
         // indicador de Gargalo de Caixa (dia de maior entrada x maior saida).
+        // turmaId/materiaId/alunoId (Sprint 3): filtram so as entradas (receita) --
+        // ObterSaidasPorDiaDoMesAsync abaixo nao tem equivalente, pois despesa
+        // (ContaPagar) nao tem ligacao com aluno/turma/materia.
         Task<List<(int Dia, decimal Valor)>> ObterEntradasPorDiaDoMesAsync(
-            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null);
 
         Task<List<(int Dia, decimal Valor)>> ObterSaidasPorDiaDoMesAsync(
             DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);

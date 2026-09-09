@@ -125,6 +125,31 @@ namespace SPI.Api.Controllers
             }
         }
 
+        [HttpGet("indicadores-financeiros")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para os indicadores financeiros da "Visão de Indicadores" (Sprint 3 da evolucao do Financeiro)
+        /// </summary>
+        /// <param name="inicio">Inicio do periodo (padrao: inicio do mes corrente)</param>
+        /// <param name="fim">Fim do periodo (padrao: fim do mes corrente)</param>
+        /// <param name="turmaId">Filtro por turma (do aluno vinculado ao pagamento)</param>
+        /// <param name="materiaId">Filtro por matéria (das aulas vinculadas ao pagamento)</param>
+        /// <param name="alunoId">Filtro por aluno</param>
+        /// <returns>Retorna os mesmos indicadores do Dashboard, filtrados por periodo/turma/materia/aluno</returns>
+        public async Task<IActionResult> IndicadoresFinanceiros(
+            [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] int? turmaId, [FromQuery] int? materiaId, [FromQuery] int? alunoId)
+        {
+            try
+            {
+                return Ok(await _relatorioService.ObterIndicadoresFinanceirosAsync(inicio, fim, turmaId, materiaId, alunoId));
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
         [HttpGet("periodo-agenda")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]

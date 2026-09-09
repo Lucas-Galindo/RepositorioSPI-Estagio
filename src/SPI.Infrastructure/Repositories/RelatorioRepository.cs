@@ -36,10 +36,14 @@ namespace SPI.Infrastructure.Repositories
             return pagamentos.Sum();
         }
 
-        public async Task<decimal> ObterValorFaturadoNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default)
+        public async Task<decimal> ObterValorFaturadoNoPeriodoAsync(
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null)
         {
-            var pagamentos = await _dbContext.Pagamentos
-                .Where(p => p.Status == "Pago" && p.DataPagamento != null && p.DataPagamento >= inicio && p.DataPagamento <= fim)
+            var query = AplicarFiltroReceita(
+                _dbContext.Pagamentos.Where(p => p.Status == "Pago" && p.DataPagamento != null && p.DataPagamento >= inicio && p.DataPagamento <= fim),
+                turmaId, materiaId, alunoId);
+            var pagamentos = await query
                 .Select(p => p.ValorFinal)
                 .ToListAsync(cancellationToken);
 
@@ -252,12 +256,37 @@ namespace SPI.Infrastructure.Repositories
                 .Distinct()
                 .CountAsync(cancellationToken);
 
+        // Filtro compartilhado por turma/materia/aluno nos indicadores financeiros
+        // filtrados (Sprint 3 da evolucao do Financeiro): so se aplica ao lado da
+        // receita (Pagamento) -- despesas (ContaPagar) nao tem nenhuma ligacao com
+        // aluno/turma/materia, entao nunca sao filtradas por esses criterios.
+        private static IQueryable<Pagamento> AplicarFiltroReceita(
+            IQueryable<Pagamento> query, int? turmaId, int? materiaId, int? alunoId)
+        {
+            if (alunoId.HasValue)
+            {
+                query = query.Where(p => p.AlunoId == alunoId.Value);
+            }
+            if (turmaId.HasValue)
+            {
+                query = query.Where(p => p.Aluno.AlunosTurma.Any(at => at.TurmaId == turmaId.Value));
+            }
+            if (materiaId.HasValue)
+            {
+                query = query.Where(p => p.PagamentosAula.Any(pa => pa.Aula.MateriaId == materiaId.Value));
+            }
+            return query;
+        }
+
         public async Task<(decimal TotalVencidoNoPeriodo, decimal ValorInadimplente)> ObterInadimplenciaNoPeriodoAsync(
-            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default)
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null)
         {
             var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
-            var contas = await _dbContext.Pagamentos
-                .Where(p => p.Status != "Cancelado" && p.DataVencimento >= inicio && p.DataVencimento <= fim)
+            var query = AplicarFiltroReceita(
+                _dbContext.Pagamentos.Where(p => p.Status != "Cancelado" && p.DataVencimento >= inicio && p.DataVencimento <= fim),
+                turmaId, materiaId, alunoId);
+            var contas = await query
                 .Select(p => new { p.ValorFinal, p.Status, p.DataVencimento })
                 .ToListAsync(cancellationToken);
 
@@ -270,13 +299,16 @@ namespace SPI.Infrastructure.Repositories
         }
 
         public async Task<List<(DateOnly DataVencimento, DateOnly DataPagamento)>> ObterPagamentosComAtrasoNoPeriodoAsync(
-            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default)
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null)
         {
-            var pagos = await _dbContext.Pagamentos
-                .Where(p => p.Status == "Pago"
+            var query = AplicarFiltroReceita(
+                _dbContext.Pagamentos.Where(p => p.Status == "Pago"
                     && p.DataPagamento != null
                     && p.DataPagamento >= inicio && p.DataPagamento <= fim
-                    && p.DataPagamento > p.DataVencimento)
+                    && p.DataPagamento > p.DataVencimento),
+                turmaId, materiaId, alunoId);
+            var pagos = await query
                 .Select(p => new { p.DataVencimento, DataPagamento = p.DataPagamento!.Value })
                 .ToListAsync(cancellationToken);
 
@@ -284,10 +316,13 @@ namespace SPI.Infrastructure.Repositories
         }
 
         public async Task<List<(int Dia, decimal Valor)>> ObterEntradasPorDiaDoMesAsync(
-            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default)
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null)
         {
-            var pagamentos = await _dbContext.Pagamentos
-                .Where(p => p.Status != "Cancelado" && p.DataVencimento >= inicio && p.DataVencimento <= fim)
+            var query = AplicarFiltroReceita(
+                _dbContext.Pagamentos.Where(p => p.Status != "Cancelado" && p.DataVencimento >= inicio && p.DataVencimento <= fim),
+                turmaId, materiaId, alunoId);
+            var pagamentos = await query
                 .Select(p => new { p.DataVencimento, p.ValorFinal })
                 .ToListAsync(cancellationToken);
 
