@@ -35,6 +35,12 @@ export function fmtHora(hora: string): string {
   return hora.slice(0, 5);
 }
 
+/** Formata um DateTime ISO (ex: "2026-09-10T14:00:00") para "10/09/2026 14:00". */
+export function fmtDataHora(iso: string): string {
+  const [data, hora] = iso.split("T");
+  return `${fmtData(data)} ${(hora ?? "").slice(0, 5)}`;
+}
+
 const MESES = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
