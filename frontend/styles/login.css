@@ -237,6 +237,8 @@
 .spi-login .toggle-eye {
   position: absolute;
   right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--c-text-muted);
