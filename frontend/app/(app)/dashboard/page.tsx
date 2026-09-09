@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { obterDashboard, type Dashboard } from "@/lib/api/dashboard";
-import { currency, fmtHora, fmtMesAbreviado } from "@/lib/format";
+import { currency, fmtHora } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -100,115 +100,6 @@ export default function DashboardPage() {
           <div className="big-label">Contas a receber pagas no mês</div>
         </div>
       </div>
-
-      {dashboard && (
-        <>
-          <div className="section-title" style={{ marginTop: 26 }}>
-            Indicadores financeiros
-          </div>
-          <div className="section-sub">Baseados no mês corrente</div>
-
-          <div className="kpi-row">
-            <div className="kpi">
-              <div className="label">
-                <Icon name="warn" size={12} /> Inadimplência
-              </div>
-              <div className={`value ${dashboard.indicadores.taxaInadimplenciaPercentual > 0 ? "danger" : "turq"}`}>
-                {dashboard.indicadores.taxaInadimplenciaPercentual}%
-              </div>
-              <div className="delta">Do valor vencido no mês</div>
-            </div>
-            <div className="kpi">
-              <div className="label">
-                <Icon name="cal" size={12} /> Prazo médio de atraso
-              </div>
-              <div className="value">
-                {dashboard.indicadores.prazoMedioAtrasoDias !== null ? `${dashboard.indicadores.prazoMedioAtrasoDias} dias` : "—"}
-              </div>
-              <div className="delta">Contas pagas com atraso</div>
-            </div>
-            <div className="kpi">
-              <div className="label">
-                <Icon name="wallet" size={12} /> Margem de segurança
-              </div>
-              <div className={`value ${dashboard.indicadores.margemSegurancaPercentual >= 0 ? "turq" : "danger"}`}>
-                {dashboard.indicadores.margemSegurancaPercentual}%
-              </div>
-              <div className="delta">Folga do caixa após despesas</div>
-            </div>
-            <div className="kpi">
-              <div className="label">
-                <Icon name="money" size={12} /> Cobertura de custos
-              </div>
-              <div className={`value ${dashboard.indicadores.indiceCoberturaCustosFixos === null || dashboard.indicadores.indiceCoberturaCustosFixos >= 1 ? "turq" : "danger"}`}>
-                {dashboard.indicadores.indiceCoberturaCustosFixos !== null ? `${dashboard.indicadores.indiceCoberturaCustosFixos}x` : "—"}
-              </div>
-              <div className="delta">Recebido ÷ pago no mês</div>
-            </div>
-          </div>
-
-          <div className="grid-2b">
-            <div className="mini-panel">
-              <h4>
-                <Icon name="cal" size={15} /> Gargalo de caixa
-              </h4>
-              <div className="lesson-item" style={{ cursor: "default", paddingLeft: 0 }}>
-                <div className="lesson-info">
-                  <div className="subj">Maior entrada do mês</div>
-                  <div className="who">
-                    {dashboard.indicadores.gargaloCaixa.diaMaiorEntrada !== null
-                      ? `Dia ${dashboard.indicadores.gargaloCaixa.diaMaiorEntrada} — ${currency(dashboard.indicadores.gargaloCaixa.valorMaiorEntrada)}`
-                      : "Sem dados"}
-                  </div>
-                </div>
-              </div>
-              <div className="lesson-item" style={{ cursor: "default", paddingLeft: 0 }}>
-                <div className="lesson-info">
-                  <div className="subj">Maior saída do mês</div>
-                  <div className="who">
-                    {dashboard.indicadores.gargaloCaixa.diaMaiorSaida !== null
-                      ? `Dia ${dashboard.indicadores.gargaloCaixa.diaMaiorSaida} — ${currency(dashboard.indicadores.gargaloCaixa.valorMaiorSaida)}`
-                      : "Sem dados"}
-                  </div>
-                </div>
-              </div>
-              <p className="hint" style={{ marginTop: 12 }}>
-                Datas de vencimento com maior concentração de valor — ajuda a antecipar a necessidade de capital de giro.
-              </p>
-            </div>
-
-            <div className="mini-panel">
-              <h4>
-                <Icon name="wallet" size={15} /> Fluxo de caixa (últimos 6 meses)
-              </h4>
-              <div className="table-wrap" style={{ boxShadow: "none", margin: 0 }}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Período</th>
-                      <th>Entradas</th>
-                      <th>Saídas</th>
-                      <th>Saldo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dashboard.fluxoCaixaMensal.map((item) => (
-                      <tr key={`${item.ano}-${item.mes}`}>
-                        <td>{fmtMesAbreviado(item.ano, item.mes)}</td>
-                        <td>{currency(item.entradas)}</td>
-                        <td>{currency(item.saidas)}</td>
-                        <td style={{ color: item.saldo >= 0 ? "var(--c-accent-deep)" : "var(--c-danger)", fontWeight: 700 }}>
-                          {currency(item.saldo)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
 
       <div className="row-gap" style={{ marginTop: 6 }}>
         <div>

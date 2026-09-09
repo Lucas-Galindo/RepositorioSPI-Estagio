@@ -6,12 +6,12 @@ import { Icon } from "@/components/shared/Icon";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
-import { obterRelatorioFinanceiro, type RelatorioFinanceiro } from "@/lib/api/relatorios";
+import { obterRelatorioFinanceiro, obterIndicadoresFinanceiros, type RelatorioFinanceiro, type IndicadoresFinanceirosFiltrados } from "@/lib/api/relatorios";
 import { listarFormasPagamento, type FormaPagamento } from "@/lib/api/pagamentos";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
 import { listarMaterias, type Materia } from "@/lib/api/materias";
-import { currency } from "@/lib/format";
+import { currency, fmtMesAbreviado } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 // Relatorio Financeiro Consolidado (Sprint 8): complementa a Visao Geral
@@ -30,12 +30,18 @@ export default function RelatorioFinanceiroPage() {
   usePageHeader("Relatórios", "Relatório Financeiro Consolidado");
   const { sessao } = useAuth();
 
+  // Duas visoes dentro da mesma pagina (Sprint 3 da evolucao do Financeiro):
+  // troca de estado local, sem navegacao de rota.
+  const [aba, setAba] = useState<"financeiro" | "indicadores">("financeiro");
+
   const [dados, setDados] = useState<RelatorioFinanceiro | null>(null);
+  const [indicadoresDados, setIndicadoresDados] = useState<IndicadoresFinanceirosFiltrados | null>(null);
   const [formas, setFormas] = useState<FormaPagamento[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [erro, setErro] = useState("");
+  const [erroIndicadores, setErroIndicadores] = useState("");
 
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
@@ -79,6 +85,30 @@ export default function RelatorioFinanceiroPage() {
       });
   }, [sessao, inicio, fim, formaPagamentoId, alunoId, turmaId, materiaId]);
 
+  // Indicadores buscados em paralelo, independente da aba ativa, pra troca
+  // de aba ser instantanea (sem esperar a requisicao). Nao usa formaPagamentoId
+  // (esse filtro so existe na Visao Financeiro).
+  const requisicaoIndicadoresAtual = useRef(0);
+  useEffect(() => {
+    if (!sessao) return;
+    const idDestaRequisicao = ++requisicaoIndicadoresAtual.current;
+    obterIndicadoresFinanceiros(sessao.accessToken, {
+      inicio: inicio || undefined,
+      fim: fim || undefined,
+      turmaId: turmaId ? Number(turmaId) : undefined,
+      materiaId: materiaId ? Number(materiaId) : undefined,
+      alunoId: alunoId ? Number(alunoId) : undefined,
+    })
+      .then((resultado) => {
+        if (idDestaRequisicao === requisicaoIndicadoresAtual.current) setIndicadoresDados(resultado);
+      })
+      .catch((excecao) => {
+        if (idDestaRequisicao === requisicaoIndicadoresAtual.current) {
+          setErroIndicadores(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar os indicadores.");
+        }
+      });
+  }, [sessao, inicio, fim, turmaId, materiaId, alunoId]);
+
   const selecionarSemestre = (valor: string) => {
     setSemestre(valor);
     if (valor === "1" || valor === "2") {
@@ -108,6 +138,15 @@ export default function RelatorioFinanceiroPage() {
         <Icon name="back" size={13} /> Relatórios
       </Link>
 
+      <div className="row-gap" style={{ marginBottom: 18, gap: 8 }}>
+        <button type="button" className={`btn btn-sm ${aba === "financeiro" ? "btn-primary" : "btn-ghost"}`} onClick={() => setAba("financeiro")}>
+          Visão Financeiro
+        </button>
+        <button type="button" className={`btn btn-sm ${aba === "indicadores" ? "btn-primary" : "btn-ghost"}`} onClick={() => setAba("indicadores")}>
+          Visão de Indicadores
+        </button>
+      </div>
+
       <div className="filter-bar">
         <input className="filter-input" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} title="Recebido/pago a partir de" />
         <input className="filter-input" type="date" value={fim} onChange={(e) => setFim(e.target.value)} title="Recebido/pago até" />
@@ -116,14 +155,16 @@ export default function RelatorioFinanceiroPage() {
           <option value="1">1º semestre</option>
           <option value="2">2º semestre</option>
         </select>
-        <select className="filter-select" value={formaPagamentoId} onChange={(e) => setFormaPagamentoId(e.target.value)}>
-          <option value="">Forma — todas</option>
-          {formas.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.forma}
-            </option>
-          ))}
-        </select>
+        {aba === "financeiro" && (
+          <select className="filter-select" value={formaPagamentoId} onChange={(e) => setFormaPagamentoId(e.target.value)}>
+            <option value="">Forma — todas</option>
+            {formas.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.forma}
+              </option>
+            ))}
+          </select>
+        )}
         <select className="filter-select" value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
           <option value="">Turma — todas</option>
           {turmas.map((t) => (
@@ -155,10 +196,10 @@ export default function RelatorioFinanceiroPage() {
         )}
       </div>
 
-      {erro && <EmptyState title="Não foi possível carregar" desc={erro} />}
-      {!erro && !dados && <p className="count-text">Carregando...</p>}
+      {aba === "financeiro" && erro && <EmptyState title="Não foi possível carregar" desc={erro} />}
+      {aba === "financeiro" && !erro && !dados && <p className="count-text">Carregando...</p>}
 
-      {dados && (
+      {aba === "financeiro" && dados && (
         <>
           <div className="kpi-row kpi-row-3">
             <div className="kpi">
@@ -290,6 +331,124 @@ export default function RelatorioFinanceiroPage() {
               ) : (
                 <EmptyState title="Sem dados" desc="Nenhum recebimento no período/filtros selecionados." />
               )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {aba === "indicadores" && erroIndicadores && <EmptyState title="Não foi possível carregar" desc={erroIndicadores} />}
+      {aba === "indicadores" && !erroIndicadores && !indicadoresDados && <p className="count-text">Carregando...</p>}
+
+      {aba === "indicadores" && indicadoresDados && (
+        <>
+          <div className="kpi-row">
+            <div className="kpi">
+              <div className="label">
+                <Icon name="warn" size={12} /> Inadimplência
+              </div>
+              <div className={`value ${indicadoresDados.indicadores.taxaInadimplenciaPercentual > 0 ? "danger" : "turq"}`}>
+                {indicadoresDados.indicadores.taxaInadimplenciaPercentual}%
+              </div>
+              <div className="delta">Do valor vencido no período</div>
+            </div>
+            <div className="kpi">
+              <div className="label">
+                <Icon name="cal" size={12} /> Prazo médio de atraso
+              </div>
+              <div className="value">
+                {indicadoresDados.indicadores.prazoMedioAtrasoDias !== null ? `${indicadoresDados.indicadores.prazoMedioAtrasoDias} dias` : "—"}
+              </div>
+              <div className="delta">Contas pagas com atraso</div>
+            </div>
+            <div className="kpi">
+              <div className="label">
+                <Icon name="wallet" size={12} /> Margem de segurança
+              </div>
+              <div className={`value ${indicadoresDados.indicadores.margemSegurancaPercentual >= 0 ? "turq" : "danger"}`}>
+                {indicadoresDados.indicadores.margemSegurancaPercentual}%
+              </div>
+              <div className="delta">Folga do caixa após despesas</div>
+            </div>
+            <div className="kpi">
+              <div className="label">
+                <Icon name="money" size={12} /> Cobertura de custos
+              </div>
+              <div
+                className={`value ${
+                  indicadoresDados.indicadores.indiceCoberturaCustosFixos === null || indicadoresDados.indicadores.indiceCoberturaCustosFixos >= 1
+                    ? "turq"
+                    : "danger"
+                }`}
+              >
+                {indicadoresDados.indicadores.indiceCoberturaCustosFixos !== null ? `${indicadoresDados.indicadores.indiceCoberturaCustosFixos}x` : "—"}
+              </div>
+              <div className="delta">Recebido ÷ pago no período</div>
+            </div>
+          </div>
+
+          <p className="hint" style={{ marginTop: -10, marginBottom: 18 }}>
+            Filtros de turma/matéria/aluno aqui se aplicam só ao lado da receita — despesas (Contas a Pagar) não têm ligação
+            com aluno/turma/matéria, então continuam representando o total do negócio.
+          </p>
+
+          <div className="grid-2b">
+            <div className="mini-panel">
+              <h4>
+                <Icon name="cal" size={15} /> Gargalo de caixa
+              </h4>
+              <div className="lesson-item" style={{ cursor: "default", paddingLeft: 0 }}>
+                <div className="lesson-info">
+                  <div className="subj">Maior entrada do período</div>
+                  <div className="who">
+                    {indicadoresDados.indicadores.gargaloCaixa.diaMaiorEntrada !== null
+                      ? `Dia ${indicadoresDados.indicadores.gargaloCaixa.diaMaiorEntrada} — ${currency(indicadoresDados.indicadores.gargaloCaixa.valorMaiorEntrada)}`
+                      : "Sem dados"}
+                  </div>
+                </div>
+              </div>
+              <div className="lesson-item" style={{ cursor: "default", paddingLeft: 0 }}>
+                <div className="lesson-info">
+                  <div className="subj">Maior saída do período</div>
+                  <div className="who">
+                    {indicadoresDados.indicadores.gargaloCaixa.diaMaiorSaida !== null
+                      ? `Dia ${indicadoresDados.indicadores.gargaloCaixa.diaMaiorSaida} — ${currency(indicadoresDados.indicadores.gargaloCaixa.valorMaiorSaida)}`
+                      : "Sem dados"}
+                  </div>
+                </div>
+              </div>
+              <p className="hint" style={{ marginTop: 12 }}>
+                Datas de vencimento com maior concentração de valor — ajuda a antecipar a necessidade de capital de giro.
+              </p>
+            </div>
+
+            <div className="mini-panel">
+              <h4>
+                <Icon name="wallet" size={15} /> Fluxo de caixa (últimos 6 meses)
+              </h4>
+              <div className="table-wrap" style={{ boxShadow: "none", margin: 0 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Período</th>
+                      <th>Entradas</th>
+                      <th>Saídas</th>
+                      <th>Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {indicadoresDados.fluxoCaixaMensal.map((item) => (
+                      <tr key={`${item.ano}-${item.mes}`}>
+                        <td>{fmtMesAbreviado(item.ano, item.mes)}</td>
+                        <td>{currency(item.entradas)}</td>
+                        <td>{currency(item.saidas)}</td>
+                        <td style={{ color: item.saldo >= 0 ? "var(--c-accent-deep)" : "var(--c-danger)", fontWeight: 700 }}>
+                          {currency(item.saldo)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </>
