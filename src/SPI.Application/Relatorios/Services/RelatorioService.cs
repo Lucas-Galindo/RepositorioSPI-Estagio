@@ -94,9 +94,9 @@ namespace SPI.Application.Relatorios.Services
         }
 
         public async Task<RelatorioFinanceiroResponse> ObterFinanceiroAsync(
-            DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, int? turmaId, CancellationToken cancellationToken = default)
+            DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, int? turmaId, int? materiaId, CancellationToken cancellationToken = default)
         {
-            var pagos = await _relatorioRepository.ListarPagosNoPeriodoAsync(inicio, fim, formaPagamentoId, alunoId, turmaId, cancellationToken);
+            var pagos = await _relatorioRepository.ListarPagosNoPeriodoAsync(inicio, fim, formaPagamentoId, alunoId, turmaId, materiaId, cancellationToken);
             var totalRecebido = pagos.Sum(p => p.ValorFinal);
 
             // Sem periodo informado, ListarPagosNoPeriodoAsync nao aplica limite

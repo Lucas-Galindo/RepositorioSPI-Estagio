@@ -109,13 +109,15 @@ namespace SPI.Api.Controllers
         /// <param name="formaPagamentoId">Filtro por forma de pagamento</param>
         /// <param name="alunoId">Filtro por aluno</param>
         /// <param name="turmaId">Filtro por turma (do aluno vinculado ao pagamento)</param>
+        /// <param name="materiaId">Filtro por matéria (das aulas vinculadas ao pagamento)</param>
         /// <returns>Retorna o total recebido e o detalhamento por forma de pagamento, por aluno e por turma</returns>
         public async Task<IActionResult> Financeiro(
-            [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] int? formaPagamentoId, [FromQuery] int? alunoId, [FromQuery] int? turmaId)
+            [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] int? formaPagamentoId, [FromQuery] int? alunoId,
+            [FromQuery] int? turmaId, [FromQuery] int? materiaId)
         {
             try
             {
-                return Ok(await _relatorioService.ObterFinanceiroAsync(inicio, fim, formaPagamentoId, alunoId, turmaId));
+                return Ok(await _relatorioService.ObterFinanceiroAsync(inicio, fim, formaPagamentoId, alunoId, turmaId, materiaId));
             }
             catch (Exception e)
             {
