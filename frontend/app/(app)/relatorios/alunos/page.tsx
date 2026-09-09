@@ -8,20 +8,33 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { listarPagamentos, type Pagamento } from "@/lib/api/pagamentos";
+import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { currency } from "@/lib/format";
 
 // Dashboard de negocio da base de alunos (Sprint 2 da evolucao de
 // Relatorios). O protótipo (spi_prototipo_clay_final.html) tem um painel
-// "Distribuição por matéria", mas Aluno nao tem materia principal no schema
-// atual (materia so existe em Aula) -- por isso o painel equivalente aqui
-// e "Distribuição por turma", usando aluno.turmas (dado real).
+// "Distribuição por matéria" usando Aluno.materiaPrincipal (mock), campo
+// que nao existe no schema real -- matéria so se liga ao aluno atraves das
+// Aulas. Aqui a "matéria principal" de cada aluno e derivada como a matéria
+// com mais aulas frequentadas por ele (no semestre filtrado, se houver);
+// alunos sem nenhuma aula no periodo ficam fora do gráfico.
+const CORES_MATERIA = ["var(--c-accent)", "var(--c-accent2)", "var(--c-accent-deep)", "var(--c-accent3)", "var(--c-danger)"];
+
+function inSemestre(dataIso: string, semestre: string): boolean {
+  if (!semestre) return true;
+  const mes = Number(dataIso.split("-")[1]);
+  return semestre === "1" ? mes <= 6 : mes >= 7;
+}
+
 export default function DashboardAlunosPage() {
   usePageHeader("Relatórios", "Dashboard de Alunos");
   const { sessao } = useAuth();
 
   const [alunos, setAlunos] = useState<Aluno[] | null>(null);
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
+  const [aulas, setAulas] = useState<Aula[]>([]);
   const [erro, setErro] = useState("");
+  const [semestre, setSemestre] = useState("");
 
   useEffect(() => {
     if (!sessao) return;
@@ -29,6 +42,7 @@ export default function DashboardAlunosPage() {
       .then(setAlunos)
       .catch(() => setErro("Não foi possível carregar os alunos."));
     listarPagamentos(sessao.accessToken).then(setPagamentos).catch(() => setPagamentos([]));
+    listarAulas(sessao.accessToken).then(setAulas).catch(() => setAulas([]));
   }, [sessao]);
 
   if (erro) return <EmptyState title="Não foi possível carregar" desc={erro} />;
@@ -39,11 +53,48 @@ export default function DashboardAlunosPage() {
   const inativos = total - ativos;
   const emTurma = alunos.filter((a) => a.turmas.length > 0).length;
 
+  const aulasNoPeriodo = aulas.filter((a) => inSemestre(a.dataInicio, semestre));
+  const pagamentosNoPeriodo = pagamentos.filter((p) => (p.dataPagamento ? inSemestre(p.dataPagamento, semestre) : false));
+
   const idsAlunos = new Set(alunos.map((a) => a.id));
-  const faturado = pagamentos
+  const faturado = pagamentosNoPeriodo
     .filter((p) => p.status === "Pago" && idsAlunos.has(p.alunoId))
     .reduce((s, p) => s + p.valorFinal, 0);
   const ticketMedio = ativos ? faturado / ativos : 0;
+
+  // Materia principal de cada aluno = materia com mais aulas frequentadas no periodo.
+  const contagemPorAlunoMateria = new Map<number, Map<string, number>>();
+  aulasNoPeriodo.forEach((aula) => {
+    aula.alunos.forEach((al) => {
+      if (!contagemPorAlunoMateria.has(al.alunoId)) contagemPorAlunoMateria.set(al.alunoId, new Map());
+      const porMateria = contagemPorAlunoMateria.get(al.alunoId)!;
+      porMateria.set(aula.materiaNome, (porMateria.get(aula.materiaNome) ?? 0) + 1);
+    });
+  });
+  const distribuicaoMateria = new Map<string, number>();
+  contagemPorAlunoMateria.forEach((porMateria) => {
+    let melhor = "";
+    let maiorContagem = 0;
+    porMateria.forEach((contagem, materia) => {
+      if (contagem > maiorContagem) {
+        melhor = materia;
+        maiorContagem = contagem;
+      }
+    });
+    if (melhor) distribuicaoMateria.set(melhor, (distribuicaoMateria.get(melhor) ?? 0) + 1);
+  });
+  const materiasLista = [...distribuicaoMateria.entries()].sort((a, b) => b[1] - a[1]);
+  const totalNaPizza = materiasLista.reduce((s, [, v]) => s + v, 0);
+
+  let acumulado = 0;
+  const stops = materiasLista
+    .map(([, valor], i) => {
+      const pct = totalNaPizza ? (valor / totalNaPizza) * 100 : 0;
+      const inicio = acumulado;
+      acumulado += pct;
+      return `${CORES_MATERIA[i % CORES_MATERIA.length]} ${inicio.toFixed(2)}% ${acumulado.toFixed(2)}%`;
+    })
+    .join(", ");
 
   const porTurma = new Map<string, number>();
   let semTurma = 0;
@@ -64,6 +115,14 @@ export default function DashboardAlunosPage() {
         <Icon name="back" size={13} /> Relatórios
       </Link>
 
+      <div className="filter-bar">
+        <select className="filter-select" value={semestre} onChange={(e) => setSemestre(e.target.value)}>
+          <option value="">Semestre — todos</option>
+          <option value="1">1º semestre</option>
+          <option value="2">2º semestre</option>
+        </select>
+      </div>
+
       <div className="kpi-row kpi-row-3">
         <div className="kpi">
           <div className="label">
@@ -79,7 +138,7 @@ export default function DashboardAlunosPage() {
             <Icon name="wallet" size={12} /> Ticket médio
           </div>
           <div className="value">{currency(ticketMedio)}</div>
-          <div className="delta">por aluno ativo</div>
+          <div className="delta">por aluno ativo, no período</div>
         </div>
         <div className="kpi">
           <div className="label">
@@ -92,22 +151,30 @@ export default function DashboardAlunosPage() {
 
       <div className="grid-2">
         <div className="panel">
-          <div className="section-title">Distribuição por turma</div>
-          <div className="section-sub">Quantidade de alunos matriculados por turma</div>
-          {distribuicaoTurma.length ? (
-            <div className="bar-list">
-              {distribuicaoTurma.map(([nome, valor]) => (
-                <div className="bar-row" key={nome}>
-                  <div className="lb">{nome}</div>
-                  <div className="bar-track">
-                    <div className="bar-fill" style={{ width: `${(valor / maiorTurma) * 100}%` }} />
-                  </div>
-                  <div className="val">{valor}</div>
+          <div className="section-title">Distribuição por matéria</div>
+          <div className="section-sub">Matéria com mais aulas frequentadas por aluno, no período</div>
+          {materiasLista.length ? (
+            <div className="pie-wrap">
+              <div className="pie-chart" style={{ background: `conic-gradient(${stops})` }}>
+                <div className="pie-center">
+                  <div className="pie-center-val">{totalNaPizza}</div>
+                  <div className="pie-center-lb">alunos</div>
                 </div>
-              ))}
+              </div>
+              <div className="pie-legend">
+                {materiasLista.map(([nome, valor], i) => (
+                  <div className="pie-legend-item" key={nome}>
+                    <span className="pie-dot" style={{ background: CORES_MATERIA[i % CORES_MATERIA.length] }} />
+                    <span className="pie-label">{nome}</span>
+                    <span className="pie-val">
+                      {valor} aluno(s) · {totalNaPizza ? Math.round((valor / totalNaPizza) * 100) : 0}%
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
-            <EmptyState title="Nenhum aluno cadastrado" desc="Cadastre alunos para ver a distribuição por turma." />
+            <EmptyState title="Nenhuma aula no período" desc="Ajuste o filtro de semestre para ver outros resultados." />
           )}
         </div>
         <div className="panel">
@@ -140,6 +207,26 @@ export default function DashboardAlunosPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="panel" style={{ marginTop: 18 }}>
+        <div className="section-title">Distribuição por turma</div>
+        <div className="section-sub">Quantidade de alunos matriculados por turma</div>
+        {distribuicaoTurma.length ? (
+          <div className="bar-list">
+            {distribuicaoTurma.map(([nome, valor]) => (
+              <div className="bar-row" key={nome}>
+                <div className="lb">{nome}</div>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{ width: `${(valor / maiorTurma) * 100}%` }} />
+                </div>
+                <div className="val">{valor}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Nenhum aluno cadastrado" desc="Cadastre alunos para ver a distribuição por turma." />
+        )}
       </div>
     </>
   );
