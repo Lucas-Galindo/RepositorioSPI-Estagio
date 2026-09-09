@@ -33,6 +33,9 @@ const RELATORIOS: {
   { titulo: "Período da Agenda", desc: "Taxa de ocupação e distribuição das aulas ao longo do tempo.", icone: "cal" },
   { titulo: "Relatório de Alunos", desc: "Lista de alunos ativos com informações de contato.", icone: "users", href: "/alunos" },
   { titulo: "Relatório de Matérias", desc: "Matérias cadastradas e quantidade de aulas ministradas.", icone: "book", href: "/materias" },
+  { titulo: "Dashboard de Alunos", desc: "Distribuição por turma e situação da base de alunos.", icone: "users", href: "/relatorios/alunos" },
+  { titulo: "Dashboard de Turmas", desc: "Turmas por matéria, alunos por matéria e aulas realizadas x agendadas.", icone: "users", href: "/relatorios/turmas" },
+  { titulo: "Dashboard de Pagamentos", desc: "Recebidos, pendentes e atrasados, com últimos lançamentos.", icone: "wallet", href: "/relatorios/pagamentos" },
 ];
 
 export default function RelatoriosPage() {
