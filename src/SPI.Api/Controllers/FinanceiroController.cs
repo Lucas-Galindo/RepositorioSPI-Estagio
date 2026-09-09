@@ -28,12 +28,17 @@ namespace SPI.Api.Controllers
         /// </summary>
         /// <param name="periodoInicio">Inicio do periodo considerado para recebido/pago (padrao: inicio do mes corrente)</param>
         /// <param name="periodoFim">Fim do periodo considerado (padrao: fim do mes corrente)</param>
+        /// <param name="turmaNome">Busca por nome da turma (so filtra o lado da receita)</param>
+        /// <param name="materiaNome">Busca por nome da matéria (so filtra o lado da receita)</param>
+        /// <param name="alunoBusca">Busca por nome ou RA do aluno (so filtra o lado da receita)</param>
         /// <returns>Retorna a visao geral consolidada</returns>
-        public async Task<IActionResult> ObterVisaoGeral([FromQuery] DateOnly? periodoInicio, [FromQuery] DateOnly? periodoFim)
+        public async Task<IActionResult> ObterVisaoGeral(
+            [FromQuery] DateOnly? periodoInicio, [FromQuery] DateOnly? periodoFim,
+            [FromQuery] string? turmaNome, [FromQuery] string? materiaNome, [FromQuery] string? alunoBusca)
         {
             try
             {
-                return Ok(await _financeiroService.ObterVisaoGeralAsync(periodoInicio, periodoFim));
+                return Ok(await _financeiroService.ObterVisaoGeralAsync(periodoInicio, periodoFim, turmaNome: turmaNome, materiaNome: materiaNome, alunoBusca: alunoBusca));
             }
             catch (Exception e)
             {

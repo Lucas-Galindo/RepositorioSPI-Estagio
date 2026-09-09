@@ -21,7 +21,10 @@ namespace SPI.Application.Financeiro.Services
         public async Task<VisaoGeralFinanceiraResponse> ObterVisaoGeralAsync(
             DateOnly? periodoInicio,
             DateOnly? periodoFim,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            string? turmaNome = null,
+            string? materiaNome = null,
+            string? alunoBusca = null)
         {
             // Mesma convencao de periodo padrao do Dashboard (Estoria 11):
             // sem periodo informado, assume o mes corrente.
@@ -29,12 +32,15 @@ namespace SPI.Application.Financeiro.Services
             var inicio = periodoInicio ?? new DateOnly(hoje.Year, hoje.Month, 1);
             var fim = periodoFim ?? inicio.AddMonths(1).AddDays(-1);
 
-            var recebidoNoPeriodo = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(inicio, fim, cancellationToken);
+            var recebidoNoPeriodo = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(
+                inicio, fim, cancellationToken, turmaNome: turmaNome, materiaNome: materiaNome, alunoBusca: alunoBusca);
             var pagoNoPeriodo = await _relatorioRepository.ObterValorPagoNoPeriodoAsync(inicio, fim, cancellationToken);
-            var (aReceber, receitaAtrasada) = await _relatorioRepository.ObterReceitasPendentesSegregadasAsync(cancellationToken);
+            var (aReceber, receitaAtrasada) = await _relatorioRepository.ObterReceitasPendentesSegregadasAsync(
+                cancellationToken, turmaNome, materiaNome, alunoBusca);
             var (aPagar, despesaAtrasada) = await _relatorioRepository.ObterDespesasPendentesSegregadasAsync(cancellationToken);
 
-            var proximasReceber = await _relatorioRepository.ObterProximasContasAReceberAsync(DiasProximosVencimentos, cancellationToken);
+            var proximasReceber = await _relatorioRepository.ObterProximasContasAReceberAsync(
+                DiasProximosVencimentos, cancellationToken, turmaNome, materiaNome, alunoBusca);
             var proximasPagar = await _relatorioRepository.ObterProximasContasAPagarAsync(DiasProximosVencimentos, cancellationToken);
 
             var proximosVencimentos = proximasReceber

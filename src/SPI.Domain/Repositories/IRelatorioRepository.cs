@@ -21,9 +21,12 @@ namespace SPI.Domain.Repositories
         // Soma de pagamentos com status Pago, pela DataPagamento no periodo.
         // turmaId/materiaId/alunoId (Sprint 3 da evolucao do Financeiro) filtram
         // pelo lado da receita -- ver AplicarFiltroReceita na implementacao.
+        // turmaNome/materiaNome/alunoBusca (Sprint 4.2, Visao Geral): mesma coisa,
+        // so que por texto (nome/RA) em vez de Id -- ver AplicarFiltroReceitaPorNome.
         Task<decimal> ObterValorFaturadoNoPeriodoAsync(
             DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
-            int? turmaId = null, int? materiaId = null, int? alunoId = null);
+            int? turmaId = null, int? materiaId = null, int? alunoId = null,
+            string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null);
 
         // Contrapartida das duas consultas acima, para Contas a Pagar (Sprint 4
         // da evolucao do Financeiro). Usadas pela Visao Geral (Sprint 7) e pelo
@@ -38,13 +41,19 @@ namespace SPI.Domain.Repositories
         // "Atrasado" continua sendo calculado (nunca persistido), so que aqui a
         // segregacao acontece no repositorio para nao trazer todas as linhas
         // "Pendente" para a Application camada so para separar em dois grupos.
-        Task<(decimal AVencer, decimal Atrasado)> ObterReceitasPendentesSegregadasAsync(CancellationToken cancellationToken = default);
+        // turmaNome/materiaNome/alunoBusca (Sprint 4.2): filtram pelo lado da
+        // receita, por texto (nome/RA) -- Visao Geral.
+        Task<(decimal AVencer, decimal Atrasado)> ObterReceitasPendentesSegregadasAsync(
+            CancellationToken cancellationToken = default, string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null);
 
         Task<(decimal AVencer, decimal Atrasado)> ObterDespesasPendentesSegregadasAsync(CancellationToken cancellationToken = default);
 
         // Contas a receber/pagar (status Pendente) vencendo nos proximos `dias`
         // dias, para o painel de proximos vencimentos da Visao Geral.
-        Task<List<Pagamento>> ObterProximasContasAReceberAsync(int dias, CancellationToken cancellationToken = default);
+        // turmaNome/materiaNome/alunoBusca (Sprint 4.2): filtram so as contas a
+        // receber (Contas a Pagar nao tem ligacao com aluno/turma/materia).
+        Task<List<Pagamento>> ObterProximasContasAReceberAsync(
+            int dias, CancellationToken cancellationToken = default, string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null);
 
         Task<List<ContaPagar>> ObterProximasContasAPagarAsync(int dias, CancellationToken cancellationToken = default);
 

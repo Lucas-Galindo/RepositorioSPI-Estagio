@@ -38,11 +38,14 @@ namespace SPI.Infrastructure.Repositories
 
         public async Task<decimal> ObterValorFaturadoNoPeriodoAsync(
             DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
-            int? turmaId = null, int? materiaId = null, int? alunoId = null)
+            int? turmaId = null, int? materiaId = null, int? alunoId = null,
+            string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null)
         {
-            var query = AplicarFiltroReceita(
-                _dbContext.Pagamentos.Where(p => p.Status == "Pago" && p.DataPagamento != null && p.DataPagamento >= inicio && p.DataPagamento <= fim),
-                turmaId, materiaId, alunoId);
+            var query = AplicarFiltroReceitaPorNome(
+                AplicarFiltroReceita(
+                    _dbContext.Pagamentos.Where(p => p.Status == "Pago" && p.DataPagamento != null && p.DataPagamento >= inicio && p.DataPagamento <= fim),
+                    turmaId, materiaId, alunoId),
+                turmaNome, materiaNome, alunoBusca);
             var pagamentos = await query
                 .Select(p => p.ValorFinal)
                 .ToListAsync(cancellationToken);
@@ -73,11 +76,13 @@ namespace SPI.Infrastructure.Repositories
             return contas.Sum();
         }
 
-        public async Task<(decimal AVencer, decimal Atrasado)> ObterReceitasPendentesSegregadasAsync(CancellationToken cancellationToken = default)
+        public async Task<(decimal AVencer, decimal Atrasado)> ObterReceitasPendentesSegregadasAsync(
+            CancellationToken cancellationToken = default, string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null)
         {
             var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
-            var pendentes = await _dbContext.Pagamentos
-                .Where(p => p.Status == "Pendente")
+            var query = AplicarFiltroReceitaPorNome(
+                _dbContext.Pagamentos.Where(p => p.Status == "Pendente"), turmaNome, materiaNome, alunoBusca);
+            var pendentes = await query
                 .Select(p => new { p.ValorFinal, p.DataVencimento })
                 .ToListAsync(cancellationToken);
 
@@ -99,16 +104,17 @@ namespace SPI.Infrastructure.Repositories
                 pendentes.Where(c => c.DataVencimento < hoje).Sum(c => c.Valor));
         }
 
-        public Task<List<Pagamento>> ObterProximasContasAReceberAsync(int dias, CancellationToken cancellationToken = default)
+        public Task<List<Pagamento>> ObterProximasContasAReceberAsync(
+            int dias, CancellationToken cancellationToken = default, string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null)
         {
             var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
             var limite = hoje.AddDays(dias);
 
-            return _dbContext.Pagamentos
-                .Include(p => p.Aluno)
-                .Where(p => p.Status == "Pendente" && p.DataVencimento >= hoje && p.DataVencimento <= limite)
-                .OrderBy(p => p.DataVencimento)
-                .ToListAsync(cancellationToken);
+            var query = AplicarFiltroReceitaPorNome(
+                _dbContext.Pagamentos.Include(p => p.Aluno).Where(p => p.Status == "Pendente" && p.DataVencimento >= hoje && p.DataVencimento <= limite),
+                turmaNome, materiaNome, alunoBusca);
+
+            return query.OrderBy(p => p.DataVencimento).ToListAsync(cancellationToken);
         }
 
         public Task<List<ContaPagar>> ObterProximasContasAPagarAsync(int dias, CancellationToken cancellationToken = default)
@@ -274,6 +280,27 @@ namespace SPI.Infrastructure.Repositories
             if (materiaId.HasValue)
             {
                 query = query.Where(p => p.PagamentosAula.Any(pa => pa.Aula.MateriaId == materiaId.Value));
+            }
+            return query;
+        }
+
+        // Variante por nome/RA (Sprint 4.2 da evolucao do Financeiro, Visao
+        // Geral): a professora busca por texto em vez de escolher de um
+        // dropdown com Id. Mesma regra de so filtrar o lado da receita.
+        private static IQueryable<Pagamento> AplicarFiltroReceitaPorNome(
+            IQueryable<Pagamento> query, string? turmaNome, string? materiaNome, string? alunoBusca)
+        {
+            if (!string.IsNullOrWhiteSpace(alunoBusca))
+            {
+                query = query.Where(p => p.Aluno.Nome.Contains(alunoBusca) || p.Aluno.Ra.Contains(alunoBusca));
+            }
+            if (!string.IsNullOrWhiteSpace(turmaNome))
+            {
+                query = query.Where(p => p.Aluno.AlunosTurma.Any(at => at.Turma.Nome.Contains(turmaNome)));
+            }
+            if (!string.IsNullOrWhiteSpace(materiaNome))
+            {
+                query = query.Where(p => p.PagamentosAula.Any(pa => pa.Aula.Materia.Nome.Contains(materiaNome)));
             }
             return query;
         }
