@@ -23,6 +23,9 @@ namespace SPI.Infrastructure.Repositories
         public Task<bool> ExisteAlgumAsync(CancellationToken cancellationToken = default) =>
             _dbContext.Professores.AnyAsync(cancellationToken);
 
+        public Task<Professor?> ObterUnicaAsync(CancellationToken cancellationToken = default) =>
+            _dbContext.Professores.FirstOrDefaultAsync(cancellationToken);
+
         public Task<bool> ExisteCpfAsync(string cpf, CancellationToken cancellationToken = default) =>
             _dbContext.Professores.AnyAsync(p => p.Cpf == cpf, cancellationToken);
 

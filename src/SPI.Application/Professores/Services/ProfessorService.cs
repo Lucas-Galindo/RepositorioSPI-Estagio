@@ -103,6 +103,31 @@ namespace SPI.Application.Professores.Services
             await _refreshTokenRepository.SalvarAlteracoesAsync(cancellationToken);
         }
 
+        public async Task<ProfessorResponse?> ObterUnicaAsync(CancellationToken cancellationToken = default)
+        {
+            var professor = await _professorRepository.ObterUnicaAsync(cancellationToken);
+            return professor is null ? null : Mapear(professor);
+        }
+
+        public async Task<ProfessorResponse> AtualizarComoAdminAsync(AtualizarProfessorRequest request, CancellationToken cancellationToken = default)
+        {
+            var professor = await _professorRepository.ObterUnicaAsync(cancellationToken)
+                ?? throw new NaoEncontradoException("Nenhuma professora cadastrada ainda.");
+
+            if (await _professorRepository.ExisteEmailAsync(request.Email, professor.Id, cancellationToken))
+            {
+                throw new ConflitoException("Ja existe um cadastro com este e-mail.");
+            }
+
+            professor.Nome = request.Nome;
+            professor.Email = request.Email;
+            professor.Telefone = request.Telefone ?? professor.Telefone;
+
+            await _professorRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            return Mapear(professor);
+        }
+
         private static ProfessorResponse Mapear(Domain.Entities.Professor professor) => new()
         {
             Id = professor.Id,

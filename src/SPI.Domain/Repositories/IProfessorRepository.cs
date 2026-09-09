@@ -12,6 +12,10 @@ namespace SPI.Domain.Repositories
         // inicial da professora somente enquanto nenhuma existir (Estoria 1).
         Task<bool> ExisteAlgumAsync(CancellationToken cancellationToken = default);
 
+        // Sistema e single-tenant: usado pelo Admin para ver/editar a
+        // professora ja cadastrada, sem precisar saber o Id dela.
+        Task<Professor?> ObterUnicaAsync(CancellationToken cancellationToken = default);
+
         Task<bool> ExisteCpfAsync(string cpf, CancellationToken cancellationToken = default);
 
         Task<bool> ExisteEmailAsync(string email, int? ignorarId = null, CancellationToken cancellationToken = default);

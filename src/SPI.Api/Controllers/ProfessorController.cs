@@ -74,6 +74,76 @@ namespace SPI.Api.Controllers
             }
         }
 
+        [HttpGet("admin")]
+        [Authorize(Roles = nameof(PerfilUsuario.Admin))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para o Admin visualizar a professora ja cadastrada (sistema single-tenant)
+        /// </summary>
+        /// <returns>Retorna os dados da professora, ou 404 se nenhuma tiver sido cadastrada ainda</returns>
+        public async Task<IActionResult> ObterComoAdmin()
+        {
+            try
+            {
+                var response = await _professorService.ObterUnicaAsync();
+                return response is null ? NotFound() : Ok(response);
+            }
+            catch (Exception e)
+            {
+                return Problem(
+                    title: "Erro inesperado",
+                    detail: e.Message,
+                    statusCode: StatusCodes.Status500InternalServerError
+                );
+            }
+        }
+
+        [HttpPut("admin")]
+        [Authorize(Roles = nameof(PerfilUsuario.Admin))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para o Admin atualizar Nome, Email e/ou Telefone da professora ja cadastrada
+        /// </summary>
+        /// <param name="request">Novos dados do perfil</param>
+        /// <returns>Retorna o perfil atualizado</returns>
+        public async Task<IActionResult> AtualizarComoAdmin([FromBody] AtualizarProfessorRequest request)
+        {
+            try
+            {
+                var validacao = await _atualizarValidator.ValidateAsync(request);
+                if (!validacao.IsValid)
+                {
+                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+                }
+
+                var response = await _professorService.AtualizarComoAdminAsync(request);
+                _logger.LogInformation("Perfil da professora {ProfessorId} atualizado pelo Admin", response.Id);
+                return Ok(response);
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (ConflitoException e)
+            {
+                return Conflict(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(
+                    title: "Erro inesperado",
+                    detail: e.Message,
+                    statusCode: StatusCodes.Status500InternalServerError
+                );
+            }
+        }
+
         [HttpGet("me")]
         [Authorize(Roles = nameof(PerfilUsuario.Professor))]
         [ProducesResponseType(StatusCodes.Status200OK)]
