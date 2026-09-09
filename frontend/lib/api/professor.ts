@@ -44,6 +44,16 @@ export function obterMeuPerfil(accessToken: string): Promise<Professor> {
   return apiGet<Professor>("/api/professor/me", accessToken);
 }
 
+/** Executado pelo Admin. Lanca ApiError com status 404 se nenhuma professora existir ainda. */
+export function obterProfessorComoAdmin(accessToken: string): Promise<Professor> {
+  return apiGet<Professor>("/api/professor/admin", accessToken);
+}
+
+/** Executado pelo Admin, para editar a professora ja cadastrada (Nome/Email/Telefone). */
+export function atualizarProfessorComoAdmin(request: AtualizarProfessorRequest, accessToken: string): Promise<Professor> {
+  return apiPut<Professor>("/api/professor/admin", request, accessToken);
+}
+
 export function atualizarMeuPerfil(request: AtualizarProfessorRequest, accessToken: string): Promise<Professor> {
   return apiPut<Professor>("/api/professor/me", request, accessToken);
 }

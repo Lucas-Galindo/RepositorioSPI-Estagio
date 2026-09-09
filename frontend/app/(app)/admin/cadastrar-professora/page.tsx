@@ -4,7 +4,7 @@ import { CadastrarProfessoraForm } from "@/components/admin/CadastrarProfessoraF
 import { usePageHeader } from "@/lib/usePageHeader";
 
 export default function CadastrarProfessoraPage() {
-  usePageHeader("Cadastrar professora", "Cadastro único — só é possível enquanto nenhuma professora existir");
+  usePageHeader("Cadastro da professora", "Cadastro único do sistema — edite os dados caso já exista, ou cadastre a primeira vez");
 
   return <CadastrarProfessoraForm />;
 }
