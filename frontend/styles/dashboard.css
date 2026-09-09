@@ -740,6 +740,19 @@ nav.nav-group {
   margin-bottom: 16px;
 }
 
+/* Popup compacto de aula (Agenda): mesmo AulaForm da pagina cheia
+   (/aulas/nova, /aulas/[id]/editar), só que dentro de um modal menor em
+   vez de navegar pra uma pagina separada. */
+.modal.modal-aula-popup {
+  max-width: 480px;
+}
+.modal-aula-popup .form-wrap {
+  padding: 0;
+}
+.modal-aula-popup .field-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 /* ===== panels / lists ===== */
 .panel {
   padding: 24px;

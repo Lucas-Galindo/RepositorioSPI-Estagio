@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
+import { AulaForm } from "@/components/aulas/AulaForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
@@ -35,7 +34,6 @@ export default function AgendaPage() {
   usePageHeader("Agenda", "Agenda mensal e painel operacional de aulas");
   const { sessao } = useAuth();
   const { mostrarToast } = useToast();
-  const router = useRouter();
 
   const hoje = new Date();
   const [ano, setAno] = useState(hoje.getFullYear());
@@ -46,6 +44,10 @@ export default function AgendaPage() {
   const [diaSelecionado, setDiaSelecionado] = useState<string | null>(null);
   const [exclusaoPendente, setExclusaoPendente] = useState<Aula | null>(null);
   const [excluindo, setExcluindo] = useState(false);
+  // Popup compacto de criar/editar (em vez de navegar pra /aulas/nova ou
+  // /aulas/[id]/editar): permite cadastrar ou selecionar uma aula do dia e
+  // alterar as informações sem sair da Agenda.
+  const [popupAula, setPopupAula] = useState<{ modo: "criar"; data: string } | { modo: "editar"; aula: Aula } | null>(null);
 
   const hojeIso = `${hoje.getFullYear()}-${pad2(hoje.getMonth() + 1)}-${pad2(hoje.getDate())}`;
   const primeiroDiaMes = `${ano}-${pad2(mes)}-01`;
@@ -229,7 +231,7 @@ export default function AgendaPage() {
                       key={a.id}
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/aulas/${a.id}`);
+                        setPopupAula({ modo: "editar", aula: a });
                       }}
                     >
                       <b>{fmtHora(a.horaInicio)}</b> {a.materiaNome}
@@ -258,7 +260,7 @@ export default function AgendaPage() {
             <div className="section-sub">A partir de hoje</div>
             {proximasDoMes.length ? (
               proximasDoMes.map((a) => (
-                <div className="lesson-item" key={a.id} onClick={() => router.push(`/aulas/${a.id}`)}>
+                <div className="lesson-item" key={a.id} onClick={() => setPopupAula({ modo: "editar", aula: a })}>
                   <div className="lesson-time">{fmtHora(a.horaInicio)}</div>
                   <div className="lesson-info">
                     <div className="subj">{a.materiaNome}</div>
@@ -284,25 +286,22 @@ export default function AgendaPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflow: "auto", marginBottom: 18 }}>
               {diaModal.length ? (
                 diaModal.map((a) => (
-                  <div className="lesson-item" key={a.id} style={{ cursor: "pointer" }} onClick={() => router.push(`/aulas/${a.id}`)}>
+                  <div
+                    className="lesson-item"
+                    key={a.id}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      setDiaSelecionado(null);
+                      setPopupAula({ modo: "editar", aula: a });
+                    }}
+                    title="Clique para selecionar e alterar esta aula"
+                  >
                     <div className="lesson-time">{fmtHora(a.horaInicio)}</div>
                     <div className="lesson-info">
                       <div className="subj">{a.materiaNome}</div>
                       <div className="who">{nomeParticipantes(a)}</div>
                     </div>
                     <StatusBadge status={a.status} />
-                    <button
-                      type="button"
-                      className="icon-round"
-                      style={{ width: 28, height: 28, borderRadius: 9, marginLeft: 4 }}
-                      title="Editar aula"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/aulas/${a.id}/editar`);
-                      }}
-                    >
-                      <Icon name="edit" size={13} />
-                    </button>
                     <button
                       type="button"
                       className="icon-round"
@@ -325,9 +324,17 @@ export default function AgendaPage() {
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDiaSelecionado(null)}>
                 Fechar
               </button>
-              <Link href={`/aulas/nova?data=${diaSelecionado}`} className="btn btn-primary btn-sm">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  if (!diaSelecionado) return;
+                  setPopupAula({ modo: "criar", data: diaSelecionado });
+                  setDiaSelecionado(null);
+                }}
+              >
                 <Icon name="plus" size={13} /> Agendar aula neste dia
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -341,6 +348,23 @@ export default function AgendaPage() {
           onCancelar={() => setExclusaoPendente(null)}
           confirmando={excluindo}
         />
+      )}
+
+      {popupAula && (
+        <div className="modal-overlay" onClick={() => setPopupAula(null)}>
+          <div className="modal modal-aula-popup" onClick={(e) => e.stopPropagation()}>
+            <h3>{popupAula.modo === "editar" ? "Editar aula" : "Agendar aula"}</h3>
+            <AulaForm
+              aula={popupAula.modo === "editar" ? popupAula.aula : undefined}
+              dataPadrao={popupAula.modo === "criar" ? popupAula.data : undefined}
+              onSalvo={() => {
+                setPopupAula(null);
+                carregarMes();
+              }}
+              onCancelar={() => setPopupAula(null)}
+            />
+          </div>
+        </div>
       )}
     </>
   );

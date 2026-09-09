@@ -11,7 +11,17 @@ import { listarTurmas, type Turma } from "@/lib/api/turmas";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { cadastrarAula, atualizarAula, type Aula, type AulaRequest } from "@/lib/api/aulas";
 
-export function AulaForm({ aula }: { aula?: Aula }) {
+interface AulaFormProps {
+  aula?: Aula;
+  /** Pre-preenche a data ao criar (ex: vinda de um clique na Agenda). Tem prioridade sobre "?data=" na URL. */
+  dataPadrao?: string;
+  /** Quando informado, substitui a navegacao padrao apos salvar (uso no popup da Agenda). */
+  onSalvo?: (aula: Aula) => void;
+  /** Quando informado, substitui a navegacao padrao ao cancelar (uso no popup da Agenda). */
+  onCancelar?: () => void;
+}
+
+export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProps) {
   const { sessao } = useAuth();
   const { mostrarToast } = useToast();
   const router = useRouter();
@@ -19,7 +29,7 @@ export function AulaForm({ aula }: { aula?: Aula }) {
   const editando = Boolean(aula);
   // Vinda da Agenda (clique num dia do calendario): pre-preenche a data,
   // so ao criar -- editando sempre usa a data ja salva na aula.
-  const dataPreSelecionada = searchParams.get("data");
+  const dataPreSelecionada = dataPadrao ?? searchParams.get("data");
 
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
@@ -64,7 +74,11 @@ export function AulaForm({ aula }: { aula?: Aula }) {
         ? await atualizarAula(aula.id, request, sessao.accessToken)
         : await cadastrarAula(request, sessao.accessToken);
       mostrarToast(editando ? "Aula atualizada com sucesso." : "Aula agendada com sucesso.");
-      router.push(`/aulas/${resultado.id}`);
+      if (onSalvo) {
+        onSalvo(resultado);
+      } else {
+        router.push(`/aulas/${resultado.id}`);
+      }
     } catch (excecao) {
       setErros(excecao instanceof ApiError ? excecao.details ?? [excecao.message] : ["Não foi possível salvar a aula."]);
     } finally {
@@ -169,7 +183,7 @@ export function AulaForm({ aula }: { aula?: Aula }) {
           <button
             type="button"
             className="btn btn-ghost"
-            onClick={() => router.push(editando && aula ? `/aulas/${aula.id}` : "/aulas")}
+            onClick={() => (onCancelar ? onCancelar() : router.push(editando && aula ? `/aulas/${aula.id}` : "/aulas"))}
           >
             Cancelar
           </button>
