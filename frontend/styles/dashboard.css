@@ -744,7 +744,7 @@ nav.nav-group {
    (/aulas/nova, /aulas/[id]/editar), só que dentro de um modal menor em
    vez de navegar pra uma pagina separada. */
 .modal.modal-aula-popup {
-  max-width: 480px;
+  max-width: 620px;
 }
 .modal-aula-popup .form-wrap {
   padding: 0;
