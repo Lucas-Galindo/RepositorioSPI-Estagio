@@ -15,7 +15,7 @@ export interface VisaoGeralFinanceira {
 
 export function obterVisaoGeralFinanceira(
   accessToken: string,
-  filtros?: { periodoInicio?: string; periodoFim?: string }
+  filtros?: { periodoInicio?: string; periodoFim?: string; turmaNome?: string; materiaNome?: string; alunoBusca?: string }
 ): Promise<VisaoGeralFinanceira> {
   return apiGet<VisaoGeralFinanceira>("/api/financeiro/visao-geral", accessToken, filtros);
 }
