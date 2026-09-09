@@ -12,6 +12,7 @@ const NAV_ITEMS: { href: string; label: string; icon: React.ComponentProps<typeo
   { href: "/materias", label: "Matérias", icon: "book" },
   { href: "/turmas", label: "Turmas", icon: "users" },
   { href: "/aulas", label: "Aulas", icon: "cal" },
+  { href: "/pagamentos", label: "Pagamentos", icon: "wallet" },
   { href: "/financeiro", label: "Financeiro", icon: "money" },
   { href: "/lembretes", label: "Lembretes", icon: "bell" },
   { href: "/relatorios", label: "Relatórios", icon: "fwd" },
