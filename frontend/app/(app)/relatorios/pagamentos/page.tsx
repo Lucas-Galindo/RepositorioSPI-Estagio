@@ -16,7 +16,13 @@ import { ApiError } from "@/lib/api/client";
 // evolucao de Relatorios), espelhando ROUTES['pagamentos-dashboard'] do
 // protótipo. Usa o mesmo endpoint /api/pagamentos ja usado em Contas a
 // Receber, filtrando por vencimento (mesmo campo/nome de filtro ja usado
-// la, em vez do "semestre" fictício do protótipo).
+// la). O filtro de semestre e so um atalho de UI: preenche o periodo
+// (vencimentoInicio/vencimentoFim) do ano corrente.
+function periodoSemestre(semestre: "1" | "2"): { inicio: string; fim: string } {
+  const ano = new Date().getFullYear();
+  return semestre === "1" ? { inicio: `${ano}-01-01`, fim: `${ano}-06-30` } : { inicio: `${ano}-07-01`, fim: `${ano}-12-31` };
+}
+
 export default function DashboardPagamentosPage() {
   usePageHeader("Relatórios", "Dashboard de Pagamentos");
   const { sessao } = useAuth();
@@ -26,6 +32,16 @@ export default function DashboardPagamentosPage() {
   const [erro, setErro] = useState("");
   const [vencimentoInicio, setVencimentoInicio] = useState("");
   const [vencimentoFim, setVencimentoFim] = useState("");
+  const [semestre, setSemestre] = useState("");
+
+  const selecionarSemestre = (valor: string) => {
+    setSemestre(valor);
+    if (valor === "1" || valor === "2") {
+      const periodo = periodoSemestre(valor);
+      setVencimentoInicio(periodo.inicio);
+      setVencimentoFim(periodo.fim);
+    }
+  };
 
   const requisicaoAtual = useRef(0);
   useEffect(() => {
@@ -48,6 +64,7 @@ export default function DashboardPagamentosPage() {
   const limparFiltros = () => {
     setVencimentoInicio("");
     setVencimentoFim("");
+    setSemestre("");
   };
   const temFiltro = Boolean(vencimentoInicio || vencimentoFim);
 
@@ -80,6 +97,11 @@ export default function DashboardPagamentosPage() {
           title="Vencimento a partir de"
         />
         <input className="filter-input" type="date" value={vencimentoFim} onChange={(e) => setVencimentoFim(e.target.value)} title="Vencimento até" />
+        <select className="filter-select" value={semestre} onChange={(e) => selecionarSemestre(e.target.value)}>
+          <option value="">Semestre — todos</option>
+          <option value="1">1º semestre</option>
+          <option value="2">2º semestre</option>
+        </select>
         {temFiltro && (
           <button type="button" className="filter-clear" onClick={limparFiltros}>
             Limpar filtros
