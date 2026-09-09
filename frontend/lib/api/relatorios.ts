@@ -15,7 +15,7 @@ export interface RelatorioFinanceiro {
 
 export function obterRelatorioFinanceiro(
   accessToken: string,
-  filtros?: { inicio?: string; fim?: string; formaPagamentoId?: number; alunoId?: number; turmaId?: number }
+  filtros?: { inicio?: string; fim?: string; formaPagamentoId?: number; alunoId?: number; turmaId?: number; materiaId?: number }
 ): Promise<RelatorioFinanceiro> {
   return apiGet<RelatorioFinanceiro>("/api/relatorios/financeiro", accessToken, filtros);
 }

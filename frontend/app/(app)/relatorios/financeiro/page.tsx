@@ -10,6 +10,7 @@ import { obterRelatorioFinanceiro, type RelatorioFinanceiro } from "@/lib/api/re
 import { listarFormasPagamento, type FormaPagamento } from "@/lib/api/pagamentos";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
+import { listarMaterias, type Materia } from "@/lib/api/materias";
 import { currency } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
@@ -33,6 +34,7 @@ export default function RelatorioFinanceiroPage() {
   const [formas, setFormas] = useState<FormaPagamento[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [materias, setMaterias] = useState<Materia[]>([]);
   const [erro, setErro] = useState("");
 
   const [inicio, setInicio] = useState("");
@@ -40,6 +42,7 @@ export default function RelatorioFinanceiroPage() {
   const [formaPagamentoId, setFormaPagamentoId] = useState("");
   const [alunoId, setAlunoId] = useState("");
   const [turmaId, setTurmaId] = useState("");
+  const [materiaId, setMateriaId] = useState("");
   const [semestre, setSemestre] = useState("");
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export default function RelatorioFinanceiroPage() {
     listarFormasPagamento(sessao.accessToken).then(setFormas).catch(() => setFormas([]));
     listarAlunos(sessao.accessToken, { ativo: true }).then(setAlunos).catch(() => setAlunos([]));
     listarTurmas(sessao.accessToken, { ativo: true }).then(setTurmas).catch(() => setTurmas([]));
+    listarMaterias(sessao.accessToken, { ativo: true }).then(setMaterias).catch(() => setMaterias([]));
   }, [sessao]);
 
   // Contador de requisicoes: evita que uma resposta antiga (de um filtro ja
@@ -63,6 +67,7 @@ export default function RelatorioFinanceiroPage() {
       formaPagamentoId: formaPagamentoId ? Number(formaPagamentoId) : undefined,
       alunoId: alunoId ? Number(alunoId) : undefined,
       turmaId: turmaId ? Number(turmaId) : undefined,
+      materiaId: materiaId ? Number(materiaId) : undefined,
     })
       .then((resultado) => {
         if (idDestaRequisicao === requisicaoAtual.current) setDados(resultado);
@@ -72,7 +77,7 @@ export default function RelatorioFinanceiroPage() {
           setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar o relatório.");
         }
       });
-  }, [sessao, inicio, fim, formaPagamentoId, alunoId, turmaId]);
+  }, [sessao, inicio, fim, formaPagamentoId, alunoId, turmaId, materiaId]);
 
   const selecionarSemestre = (valor: string) => {
     setSemestre(valor);
@@ -89,9 +94,10 @@ export default function RelatorioFinanceiroPage() {
     setFormaPagamentoId("");
     setAlunoId("");
     setTurmaId("");
+    setMateriaId("");
     setSemestre("");
   };
-  const temFiltro = Boolean(inicio || fim || formaPagamentoId || alunoId || turmaId);
+  const temFiltro = Boolean(inicio || fim || formaPagamentoId || alunoId || turmaId || materiaId);
   const maiorForma = Math.max(1, ...(dados?.porFormaPagamento.map((f) => f.total) ?? [1]));
   const maiorTurma = Math.max(1, ...(dados?.porTurma.map((t) => t.total) ?? [1]));
   const totalPorTurma = dados?.porTurma.reduce((s, t) => s + t.total, 0) ?? 0;
@@ -123,6 +129,14 @@ export default function RelatorioFinanceiroPage() {
           {turmas.map((t) => (
             <option key={t.id} value={t.id}>
               {t.nome}
+            </option>
+          ))}
+        </select>
+        <select className="filter-select" value={materiaId} onChange={(e) => setMateriaId(e.target.value)}>
+          <option value="">Matéria — todas</option>
+          {materias.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nome}
             </option>
           ))}
         </select>
@@ -235,7 +249,7 @@ export default function RelatorioFinanceiroPage() {
             </div>
           </div>
 
-          <div className="grid-2b">
+          <div className="grid-2b" style={{ marginTop: 24 }}>
             <div className="mini-panel">
               <h4>
                 <Icon name="users" size={15} /> Recebido por aluno
