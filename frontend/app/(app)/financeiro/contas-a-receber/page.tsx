@@ -17,6 +17,7 @@ import {
   type CategoriaReceita,
 } from "@/lib/api/pagamentos";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
+import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { currency, fmtData } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
@@ -27,12 +28,18 @@ export default function ContasAReceberPage() {
 
   const [pagamentos, setPagamentos] = useState<Pagamento[] | null>(null);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [aulas, setAulas] = useState<Aula[]>([]);
   const [formas, setFormas] = useState<FormaPagamento[]>([]);
   const [categorias, setCategorias] = useState<CategoriaReceita[]>([]);
   const [erro, setErro] = useState("");
 
   const [status, setStatus] = useState("");
-  const [alunoId, setAlunoId] = useState("");
+  // Turma/matéria/aluno (Sprint 4.2, instrucao direta do usuario): busca por
+  // texto (nome, ou nome/RA no caso do aluno), filtrada no cliente -- mesmo
+  // padrao ja usado aqui para categoria/forma.
+  const [turmaBusca, setTurmaBusca] = useState("");
+  const [materiaBusca, setMateriaBusca] = useState("");
+  const [alunoBusca, setAlunoBusca] = useState("");
   const [categoriaReceitaId, setCategoriaReceitaId] = useState("");
   const [formaPagamentoId, setFormaPagamentoId] = useState("");
   const [vencimentoInicio, setVencimentoInicio] = useState("");
@@ -40,7 +47,8 @@ export default function ContasAReceberPage() {
 
   useEffect(() => {
     if (!sessao) return;
-    listarAlunos(sessao.accessToken, { ativo: true }).then(setAlunos).catch(() => setAlunos([]));
+    listarAlunos(sessao.accessToken).then(setAlunos).catch(() => setAlunos([]));
+    listarAulas(sessao.accessToken).then(setAulas).catch(() => setAulas([]));
     listarFormasPagamento(sessao.accessToken).then(setFormas).catch(() => setFormas([]));
     listarCategoriasReceita(sessao.accessToken).then(setCategorias).catch(() => setCategorias([]));
   }, [sessao]);
@@ -53,7 +61,6 @@ export default function ContasAReceberPage() {
     if (!sessao) return;
     const idDestaRequisicao = ++requisicaoAtual.current;
     listarPagamentos(sessao.accessToken, {
-      alunoId: alunoId ? Number(alunoId) : undefined,
       status: status || undefined,
       vencimentoInicio: vencimentoInicio || undefined,
       vencimentoFim: vencimentoFim || undefined,
@@ -66,18 +73,34 @@ export default function ContasAReceberPage() {
           setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as contas a receber.");
         }
       });
-  }, [sessao, alunoId, status, vencimentoInicio, vencimentoFim]);
+  }, [sessao, status, vencimentoInicio, vencimentoFim]);
 
-  // Categoria e forma de pagamento sao filtradas no cliente: o volume de
-  // contas de uma professora independente e pequeno, e assim evitamos
-  // inflar a API com mais parametros de filtro so para isso.
+  const alunoPorId = useMemo(() => new Map(alunos.map((a) => [a.id, a])), [alunos]);
+  const materiaPorAula = useMemo(() => new Map(aulas.map((a) => [a.id, a.materiaNome])), [aulas]);
+
+  // Categoria, forma e turma/materia/aluno sao filtrados no cliente: o
+  // volume de contas de uma professora independente e pequeno, e assim
+  // evitamos inflar a API com mais parametros de filtro so para isso.
   const filtrados = useMemo(() => {
     return (pagamentos ?? []).filter((p) => {
       if (categoriaReceitaId && p.categoriaReceitaId !== Number(categoriaReceitaId)) return false;
       if (formaPagamentoId && p.formaPagamentoId !== Number(formaPagamentoId)) return false;
+      if (alunoBusca) {
+        const aluno = alunoPorId.get(p.alunoId);
+        const alvo = `${p.alunoNome} ${aluno?.ra ?? ""}`.toLowerCase();
+        if (!alvo.includes(alunoBusca.toLowerCase())) return false;
+      }
+      if (turmaBusca) {
+        const turmas = alunoPorId.get(p.alunoId)?.turmas ?? [];
+        if (!turmas.some((t) => t.nome.toLowerCase().includes(turmaBusca.toLowerCase()))) return false;
+      }
+      if (materiaBusca) {
+        const encontrou = p.aulaIds.some((id) => (materiaPorAula.get(id) ?? "").toLowerCase().includes(materiaBusca.toLowerCase()));
+        if (!encontrou) return false;
+      }
       return true;
     });
-  }, [pagamentos, categoriaReceitaId, formaPagamentoId]);
+  }, [pagamentos, categoriaReceitaId, formaPagamentoId, alunoBusca, turmaBusca, materiaBusca, alunoPorId, materiaPorAula]);
 
   const total = filtrados.length;
   const totalPendente = filtrados
@@ -87,13 +110,17 @@ export default function ContasAReceberPage() {
 
   const limparFiltros = () => {
     setStatus("");
-    setAlunoId("");
+    setTurmaBusca("");
+    setMateriaBusca("");
+    setAlunoBusca("");
     setCategoriaReceitaId("");
     setFormaPagamentoId("");
     setVencimentoInicio("");
     setVencimentoFim("");
   };
-  const temFiltro = Boolean(status || alunoId || categoriaReceitaId || formaPagamentoId || vencimentoInicio || vencimentoFim);
+  const temFiltro = Boolean(
+    status || turmaBusca || materiaBusca || alunoBusca || categoriaReceitaId || formaPagamentoId || vencimentoInicio || vencimentoFim
+  );
 
   return (
     <>
@@ -126,14 +153,14 @@ export default function ContasAReceberPage() {
           <option value="Atrasado">Atrasado</option>
           <option value="Cancelado">Cancelado</option>
         </select>
-        <select className="filter-select" value={alunoId} onChange={(e) => setAlunoId(e.target.value)}>
-          <option value="">Aluno — todos</option>
-          {alunos.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.nome}
-            </option>
-          ))}
-        </select>
+        <input className="filter-input" placeholder="Buscar turma..." value={turmaBusca} onChange={(e) => setTurmaBusca(e.target.value)} />
+        <input className="filter-input" placeholder="Buscar matéria..." value={materiaBusca} onChange={(e) => setMateriaBusca(e.target.value)} />
+        <input
+          className="filter-input"
+          placeholder="Buscar aluno (nome ou RA)..."
+          value={alunoBusca}
+          onChange={(e) => setAlunoBusca(e.target.value)}
+        />
         <select className="filter-select" value={categoriaReceitaId} onChange={(e) => setCategoriaReceitaId(e.target.value)}>
           <option value="">Categoria — todas</option>
           {categorias.map((c) => (
