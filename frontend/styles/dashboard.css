@@ -745,14 +745,23 @@ nav.nav-group {
    vez de navegar pra uma pagina separada. */
 .modal.modal-aula-popup {
   max-width: 660px;
-  padding-top: 38px;
-  padding-bottom: 38px;
+  padding: 38px;
 }
 .modal-aula-popup .form-wrap {
   padding: 0;
 }
 .modal-aula-popup .field-grid {
   grid-template-columns: repeat(2, 1fr);
+  gap: 20px 24px;
+}
+.modal-aula-popup .form-section {
+  margin-bottom: 32px;
+}
+.modal-aula-popup .fs-title {
+  margin-bottom: 20px;
+}
+.modal-aula-popup .form-actions {
+  margin-top: 6px;
 }
 
 /* ===== panels / lists ===== */
@@ -1385,6 +1394,7 @@ tbody tr.row-link:hover {
   justify-content: center;
   z-index: 100;
   padding: 16px;
+  overflow-y: auto;
 }
 .modal {
   background: var(--c-surface);
@@ -1393,6 +1403,8 @@ tbody tr.row-link:hover {
   padding: 28px;
   max-width: 360px;
   width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 .modal .ic {
