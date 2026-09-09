@@ -21,6 +21,16 @@ export function login(request: LoginRequest): Promise<LoginResponse> {
   return apiPost<LoginResponse>("/api/auth/login", request);
 }
 
+/** Troca um refresh token valido por um novo par de tokens (rotacao: o antigo e revogado). */
+export function refresh(refreshToken: string): Promise<LoginResponse> {
+  return apiPost<LoginResponse>("/api/auth/refresh", { refreshToken });
+}
+
+/** Revoga o refresh token da sessao/dispositivo atual. */
+export function logout(refreshToken: string): Promise<void> {
+  return apiPost<void>("/api/auth/logout", { refreshToken });
+}
+
 /** Espelha SPI.Application.Auth.Dtos.EsqueciSenhaRequest. */
 export interface EsqueciSenhaRequest {
   email: string;

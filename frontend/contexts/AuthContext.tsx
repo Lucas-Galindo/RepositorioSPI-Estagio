@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { LoginResponse, Perfil } from "@/lib/api/auth";
+import { refresh, logout as logoutApi } from "@/lib/api/auth";
 import { extrairNomeDoToken } from "@/lib/jwt";
 
 export interface Sessao {
@@ -14,33 +15,77 @@ export interface Sessao {
 
 interface AuthContextValue {
   sessao: Sessao | null;
-  definirSessao: (resposta: LoginResponse) => void;
+  /** true enquanto tenta restaurar a sessao a partir do refresh token salvo (ver "Manter conectada"). */
+  carregando: boolean;
+  definirSessao: (resposta: LoginResponse, manterConectada?: boolean) => void;
   encerrarSessao: () => void;
 }
 
-// Guardado somente em memoria (estado do Context): nada e persistido em
-// localStorage/sessionStorage. Ao recarregar a pagina a sessao se perde e
-// e preciso logar de novo -- decisao deliberada para esta fase do projeto.
+// Guardado somente em memoria por padrao (estado do Context): ao recarregar
+// a pagina a sessao se perde e e preciso logar de novo. Quando a professora
+// marca "Manter conectada" no login, o refresh token (nao o access token,
+// que e curto e sensivel) e salvo aqui para restaurar a sessao no proximo
+// carregamento via POST /api/auth/refresh.
+const CHAVE_REFRESH_TOKEN = "spi.refreshToken";
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function montarSessao(resposta: LoginResponse): Sessao {
+  return {
+    perfil: resposta.perfil,
+    nome: extrairNomeDoToken(resposta.accessToken) ?? resposta.perfil,
+    accessToken: resposta.accessToken,
+    refreshToken: resposta.refreshToken,
+    accessTokenExpiraEm: resposta.accessTokenExpiraEm,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const sessaoRef = useRef<Sessao | null>(null);
+  sessaoRef.current = sessao;
 
-  const definirSessao = useCallback((resposta: LoginResponse) => {
-    setSessao({
-      perfil: resposta.perfil,
-      nome: extrairNomeDoToken(resposta.accessToken) ?? resposta.perfil,
-      accessToken: resposta.accessToken,
-      refreshToken: resposta.refreshToken,
-      accessTokenExpiraEm: resposta.accessTokenExpiraEm,
-    });
+  useEffect(() => {
+    const tokenSalvo = localStorage.getItem(CHAVE_REFRESH_TOKEN);
+    if (!tokenSalvo) {
+      setCarregando(false);
+      return;
+    }
+
+    refresh(tokenSalvo)
+      .then((resposta) => {
+        setSessao(montarSessao(resposta));
+        // Rotacao: o backend revoga o token usado e emite um novo a cada troca.
+        localStorage.setItem(CHAVE_REFRESH_TOKEN, resposta.refreshToken);
+      })
+      .catch(() => {
+        localStorage.removeItem(CHAVE_REFRESH_TOKEN);
+      })
+      .finally(() => setCarregando(false));
   }, []);
 
-  const encerrarSessao = useCallback(() => setSessao(null), []);
+  const definirSessao = useCallback((resposta: LoginResponse, manterConectada = false) => {
+    setSessao(montarSessao(resposta));
+    if (manterConectada) {
+      localStorage.setItem(CHAVE_REFRESH_TOKEN, resposta.refreshToken);
+    } else {
+      localStorage.removeItem(CHAVE_REFRESH_TOKEN);
+    }
+  }, []);
+
+  const encerrarSessao = useCallback(() => {
+    const refreshTokenAtual = sessaoRef.current?.refreshToken;
+    setSessao(null);
+    localStorage.removeItem(CHAVE_REFRESH_TOKEN);
+    if (refreshTokenAtual) {
+      logoutApi(refreshTokenAtual).catch(() => {});
+    }
+  }, []);
 
   const value = useMemo(
-    () => ({ sessao, definirSessao, encerrarSessao }),
-    [sessao, definirSessao, encerrarSessao]
+    () => ({ sessao, carregando, definirSessao, encerrarSessao }),
+    [sessao, carregando, definirSessao, encerrarSessao]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

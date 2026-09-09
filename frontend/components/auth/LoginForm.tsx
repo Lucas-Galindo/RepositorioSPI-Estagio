@@ -13,6 +13,7 @@ export function LoginForm() {
   const [identificador, setIdentificador] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [manterConectada, setManterConectada] = useState(false);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
 
@@ -29,7 +30,7 @@ export function LoginForm() {
 
     try {
       const resposta = await login({ login: identificador.trim(), senha });
-      definirSessao(resposta);
+      definirSessao(resposta, manterConectada);
       // Admin nao tem acesso as telas da professora (todas Authorize
       // Roles=Professor no backend); sua unica funcao hoje e o cadastro
       // inicial da professora.
@@ -120,8 +121,8 @@ export function LoginForm() {
         </div>
 
         <div className="field-row">
-          <label className="remember" title="Em breve">
-            <input type="checkbox" disabled /> Manter conectada
+          <label className="remember">
+            <input type="checkbox" checked={manterConectada} onChange={(e) => setManterConectada(e.target.checked)} /> Manter conectada
           </label>
           <Link href="/recuperar-senha" className="link">
             Esqueci minha senha

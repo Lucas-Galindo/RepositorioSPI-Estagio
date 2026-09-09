@@ -7,13 +7,18 @@ import { HeaderProvider } from "@/contexts/HeaderContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { sessao } = useAuth();
+  const { sessao, carregando } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Sessao vive so em memoria (AuthContext): sem login nesta aba/sessao,
-    // nao ha como abrir a area logada -- volta para o login.
+    // Enquanto o AuthContext tenta restaurar a sessao a partir do refresh
+    // token salvo ("Manter conectada"), ainda nao sabemos se ha sessao ou
+    // nao -- so decide redirecionar depois que essa checagem terminar.
+    if (carregando) return;
+
+    // Sem sessao (nem em memoria, nem restaurada), nao ha como abrir a area
+    // logada -- volta para o login.
     if (!sessao) {
       router.replace("/");
       return;
@@ -27,9 +32,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } else if (sessao.perfil !== "Admin" && emRotaDeAdmin) {
       router.replace("/dashboard");
     }
-  }, [sessao, pathname, router]);
+  }, [sessao, carregando, pathname, router]);
 
-  if (!sessao) {
+  if (carregando || !sessao) {
     return null;
   }
 
