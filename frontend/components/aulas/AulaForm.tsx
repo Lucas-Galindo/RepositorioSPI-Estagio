@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -15,7 +15,11 @@ export function AulaForm({ aula }: { aula?: Aula }) {
   const { sessao } = useAuth();
   const { mostrarToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const editando = Boolean(aula);
+  // Vinda da Agenda (clique num dia do calendario): pre-preenche a data,
+  // so ao criar -- editando sempre usa a data ja salva na aula.
+  const dataPreSelecionada = searchParams.get("data");
 
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
@@ -25,7 +29,7 @@ export function AulaForm({ aula }: { aula?: Aula }) {
   const [materiaId, setMateriaId] = useState(aula?.materiaId.toString() ?? "");
   const [turmaId, setTurmaId] = useState(aula?.turmaId?.toString() ?? "");
   const [alunoId, setAlunoId] = useState(aula?.alunos[0]?.alunoId.toString() ?? "");
-  const [dataInicio, setDataInicio] = useState(aula?.dataInicio ?? "");
+  const [dataInicio, setDataInicio] = useState(aula?.dataInicio ?? dataPreSelecionada ?? "");
   const [horaInicio, setHoraInicio] = useState(aula?.horaInicio.slice(0, 5) ?? "");
   const [horaFim, setHoraFim] = useState(aula?.horaFim.slice(0, 5) ?? "");
   const [erros, setErros] = useState<string[]>([]);
