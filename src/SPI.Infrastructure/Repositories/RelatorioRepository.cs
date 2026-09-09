@@ -210,10 +210,10 @@ namespace SPI.Infrastructure.Repositories
         }
 
         public Task<List<Pagamento>> ListarPagosNoPeriodoAsync(
-            DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, CancellationToken cancellationToken = default)
+            DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, int? turmaId, CancellationToken cancellationToken = default)
         {
             var query = _dbContext.Pagamentos
-                .Include(p => p.Aluno)
+                .Include(p => p.Aluno).ThenInclude(a => a.AlunosTurma).ThenInclude(at => at.Turma)
                 .Include(p => p.FormaPagamento)
                 .Where(p => p.Status == "Pago");
 
@@ -232,6 +232,10 @@ namespace SPI.Infrastructure.Repositories
             if (alunoId.HasValue)
             {
                 query = query.Where(p => p.AlunoId == alunoId.Value);
+            }
+            if (turmaId.HasValue)
+            {
+                query = query.Where(p => p.Aluno.AlunosTurma.Any(at => at.TurmaId == turmaId.Value));
             }
 
             return query.OrderBy(p => p.DataPagamento).ToListAsync(cancellationToken);

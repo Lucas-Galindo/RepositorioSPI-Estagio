@@ -63,8 +63,9 @@ namespace SPI.Domain.Repositories
 
         // Estoria 15: pagamentos "Pago" filtrados pela DataPagamento (nao pela
         // DataVencimento, que e o filtro usado em IPagamentoRepository.ListarAsync).
+        // turmaId filtra pelos alunos vinculados aquela turma (AlunoTurma).
         Task<List<Pagamento>> ListarPagosNoPeriodoAsync(
-            DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, CancellationToken cancellationToken = default);
+            DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, int? turmaId, CancellationToken cancellationToken = default);
 
         // Sprint 9 (Dashboard e Fluxo de Caixa) -----------------------------
 

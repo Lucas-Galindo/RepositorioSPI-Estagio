@@ -94,9 +94,9 @@ namespace SPI.Application.Relatorios.Services
         }
 
         public async Task<RelatorioFinanceiroResponse> ObterFinanceiroAsync(
-            DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, CancellationToken cancellationToken = default)
+            DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, int? turmaId, CancellationToken cancellationToken = default)
         {
-            var pagos = await _relatorioRepository.ListarPagosNoPeriodoAsync(inicio, fim, formaPagamentoId, alunoId, cancellationToken);
+            var pagos = await _relatorioRepository.ListarPagosNoPeriodoAsync(inicio, fim, formaPagamentoId, alunoId, turmaId, cancellationToken);
             var totalRecebido = pagos.Sum(p => p.ValorFinal);
 
             // Sem periodo informado, ListarPagosNoPeriodoAsync nao aplica limite
@@ -128,6 +128,13 @@ namespace SPI.Application.Relatorios.Services
                     .ToList(),
                 PorAluno = pagos
                     .GroupBy(p => p.Aluno.Nome)
+                    .Select(g => new RelatorioFinanceiroItem { Chave = g.Key, Total = g.Sum(p => p.ValorFinal) })
+                    .OrderByDescending(i => i.Total)
+                    .ToList(),
+                // Turma do aluno no momento do pagamento (primeira, se vinculado
+                // a mais de uma); "Atendimento particular" se nao tiver turma.
+                PorTurma = pagos
+                    .GroupBy(p => p.Aluno.AlunosTurma.Select(at => at.Turma.Nome).FirstOrDefault() ?? "Atendimento particular")
                     .Select(g => new RelatorioFinanceiroItem { Chave = g.Key, Total = g.Sum(p => p.ValorFinal) })
                     .OrderByDescending(i => i.Total)
                     .ToList()

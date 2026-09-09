@@ -22,5 +22,10 @@ namespace SPI.Application.Relatorios.Dtos
         public decimal SaldoPrevisto { get; set; }
         public List<RelatorioFinanceiroItem> PorFormaPagamento { get; set; } = new();
         public List<RelatorioFinanceiroItem> PorAluno { get; set; } = new();
+
+        // Sprint 4.1 (evolucao do Financeiro): total recebido atribuido a
+        // turma do aluno (primeira turma, se vinculado a mais de uma) ou
+        // "Atendimento particular" quando o aluno nao tem turma.
+        public List<RelatorioFinanceiroItem> PorTurma { get; set; } = new();
     }
 }
