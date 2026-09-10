@@ -748,7 +748,16 @@ nav.nav-group {
   padding: 38px;
 }
 .modal-aula-popup .form-wrap {
+  /* .form-wrap normalmente e um cartao proprio (fundo + sombra + borda
+     arredondada, ver a regra compartilhada com .panel/.card/etc mais acima)
+     -- dentro do popup isso criava um "cartao dentro do cartao" do .modal,
+     com a sombra do form-wrap aparecendo por cima, como se fossem duas
+     divs sobrepostas. Aqui ele vira soh um container invisivel: o cartao
+     visivel e o proprio .modal. */
   padding: 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 .modal-aula-popup .field-grid {
   grid-template-columns: repeat(2, 1fr);
