@@ -1,6 +1,6 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "./client";
 
-export type CanalLembrete = "Email" | "WhatsApp" | "SMS";
+export type CanalLembrete = "Email";
 export type DestinatariosLembrete = "Alunos" | "Responsaveis" | "AlunosEResponsaveis";
 
 /** Espelha SPI.Application.Lembretes.Dtos.LembreteResponse. */

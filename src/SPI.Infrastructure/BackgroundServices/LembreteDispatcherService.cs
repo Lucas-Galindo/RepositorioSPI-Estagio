@@ -9,9 +9,9 @@ using SPI.Domain.Repositories;
 namespace SPI.Infrastructure.BackgroundServices
 {
     // Estoria 19: verifica periodicamente os lembretes "Pendente" cuja Hora
-    // Programada ja chegou e dispara o envio. Nesta fase, so o canal
-    // "Email" e efetivamente enviado (ver prompt mestre) -- WhatsApp/SMS
-    // ficam registrados como Pendente ate um provedor ser integrado.
+    // Programada ja chegou e dispara o envio. WhatsApp e SMS foram
+    // descontinuados como canal (ver LembreteRequestValidator); somente
+    // "Email" e um canal valido.
     public class LembreteDispatcherService : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
@@ -60,7 +60,7 @@ namespace SPI.Infrastructure.BackgroundServices
             {
                 if (lembrete.Canal != "Email")
                 {
-                    // Canal ainda nao suportado para envio real: permanece Pendente.
+                    // Defesa contra dados legados: WhatsApp/SMS nao sao mais um canal valido.
                     continue;
                 }
 

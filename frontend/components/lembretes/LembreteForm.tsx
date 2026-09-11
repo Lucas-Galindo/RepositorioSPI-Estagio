@@ -92,9 +92,7 @@ export function LembreteForm({ lembrete }: { lembrete?: Lembrete }) {
                 Canal<span className="req">*</span>
               </label>
               <select required value={canal} onChange={(e) => setCanal(e.target.value as CanalLembrete)}>
-                <option value="WhatsApp">WhatsApp</option>
                 <option value="Email">E-mail</option>
-                <option value="SMS">SMS</option>
               </select>
             </div>
           </div>
@@ -129,7 +127,7 @@ export function LembreteForm({ lembrete }: { lembrete?: Lembrete }) {
           </div>
           <span className="hint" style={{ display: "block", marginTop: 10 }}>
             A hora programada é calculada automaticamente a partir da próxima aula da turma, menos a antecedência.
-            Somente o canal E-mail é efetivamente enviado nesta fase — WhatsApp e SMS ficam registrados.
+            O canal de envio é sempre E-mail.
           </span>
         </div>
 

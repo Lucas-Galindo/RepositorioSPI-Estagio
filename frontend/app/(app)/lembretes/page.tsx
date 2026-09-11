@@ -210,9 +210,7 @@ export default function LembretesPage() {
         </select>
         <select className="filter-select" value={canal} onChange={(e) => setCanal(e.target.value)}>
           <option value="">Canal — todos</option>
-          <option value="WhatsApp">WhatsApp</option>
           <option value="Email">E-mail</option>
-          <option value="SMS">SMS</option>
         </select>
         <select className="filter-select" value={destinatarios} onChange={(e) => setDestinatarios(e.target.value)}>
           <option value="">Destinatários — todos</option>

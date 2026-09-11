@@ -5,8 +5,7 @@ namespace SPI.Application.Lembretes.Dtos
         public int TurmaId { get; set; }
 
         /// <summary>
-        /// "Email", "WhatsApp" ou "SMS". Somente "Email" e efetivamente
-        /// disparado nesta fase (Estoria 19); os demais ficam registrados.
+        /// Somente "Email" e aceito. WhatsApp e SMS foram descontinuados.
         /// </summary>
         public string Canal { get; set; } = string.Empty;
 
