@@ -11,7 +11,7 @@ import { listarFormasPagamento, type FormaPagamento } from "@/lib/api/pagamentos
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
 import { listarMaterias, type Materia } from "@/lib/api/materias";
-import { currency, fmtMesAbreviado } from "@/lib/format";
+import { currency, fmtMesAbreviado, fmtData } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 // Relatorio Financeiro Consolidado (Sprint 8): complementa a Visao Geral
@@ -50,6 +50,11 @@ export default function RelatorioFinanceiroPage() {
   const [turmaId, setTurmaId] = useState("");
   const [materiaId, setMateriaId] = useState("");
   const [semestre, setSemestre] = useState("");
+
+  // Filtro de tipo da tabela de lançamentos (specs/022) — estado de UI puro,
+  // independente do estado de dados (indicadoresDados): trocar de período não
+  // deve resetar esse filtro (FR-009).
+  const [tipoLancamento, setTipoLancamento] = useState<"todos" | "Entrada" | "Saida">("todos");
 
   useEffect(() => {
     if (!sessao) return;
@@ -394,31 +399,66 @@ export default function RelatorioFinanceiroPage() {
           <div className="grid-2b">
             <div className="mini-panel">
               <h4>
-                <Icon name="cal" size={15} /> Gargalo de caixa
+                <Icon name="money" size={15} /> Lançamentos do período
               </h4>
-              <div className="lesson-item" style={{ cursor: "default", paddingLeft: 0 }}>
-                <div className="lesson-info">
-                  <div className="subj">Maior entrada do período</div>
-                  <div className="who">
-                    {indicadoresDados.indicadores.gargaloCaixa.diaMaiorEntrada !== null
-                      ? `Dia ${indicadoresDados.indicadores.gargaloCaixa.diaMaiorEntrada} — ${currency(indicadoresDados.indicadores.gargaloCaixa.valorMaiorEntrada)}`
-                      : "Sem dados"}
-                  </div>
-                </div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${tipoLancamento === "Entrada" ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => setTipoLancamento((tipo) => (tipo === "Entrada" ? "todos" : "Entrada"))}
+                >
+                  Entradas
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${tipoLancamento === "Saida" ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => setTipoLancamento((tipo) => (tipo === "Saida" ? "todos" : "Saida"))}
+                >
+                  Saídas
+                </button>
               </div>
-              <div className="lesson-item" style={{ cursor: "default", paddingLeft: 0 }}>
-                <div className="lesson-info">
-                  <div className="subj">Maior saída do período</div>
-                  <div className="who">
-                    {indicadoresDados.indicadores.gargaloCaixa.diaMaiorSaida !== null
-                      ? `Dia ${indicadoresDados.indicadores.gargaloCaixa.diaMaiorSaida} — ${currency(indicadoresDados.indicadores.gargaloCaixa.valorMaiorSaida)}`
-                      : "Sem dados"}
+              {(() => {
+                const lancamentosFiltrados =
+                  tipoLancamento === "todos"
+                    ? indicadoresDados.lancamentos
+                    : indicadoresDados.lancamentos.filter((l) => l.tipo === tipoLancamento);
+
+                if (lancamentosFiltrados.length === 0) {
+                  return (
+                    <EmptyState
+                      title="Sem lançamentos"
+                      desc={
+                        tipoLancamento === "Entrada"
+                          ? "Nenhuma entrada no período."
+                          : tipoLancamento === "Saida"
+                            ? "Nenhuma saída no período."
+                            : "Nenhum lançamento no período."
+                      }
+                    />
+                  );
+                }
+
+                return (
+                  <div className="table-wrap" style={{ boxShadow: "none", margin: 0 }}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Descrição</th>
+                          <th>Data</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lancamentosFiltrados.map((lancamento) => (
+                          <tr key={`${lancamento.tipo}-${lancamento.id}`}>
+                            <td>{lancamento.descricao}</td>
+                            <td>{fmtData(lancamento.dataVencimento)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
-              </div>
-              <p className="hint" style={{ marginTop: 12 }}>
-                Datas de vencimento com maior concentração de valor — ajuda a antecipar a necessidade de capital de giro.
-              </p>
+                );
+              })()}
             </div>
 
             <div className="mini-panel">

@@ -10,5 +10,6 @@ namespace SPI.Application.Relatorios.Dtos
     {
         public IndicadoresFinanceirosResponse Indicadores { get; set; } = new();
         public List<FluxoCaixaMensalItem> FluxoCaixaMensal { get; set; } = new();
+        public List<LancamentoIndicadorItem> Lancamentos { get; set; } = new();
     }
 }

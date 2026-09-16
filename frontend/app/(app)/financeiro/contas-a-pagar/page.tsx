@@ -180,7 +180,7 @@ export default function ContasAPagarPage() {
           ) : total === 0 ? (
             <EmptyState title="Nenhuma conta a pagar encontrada" desc="Registre a primeira conta a pagar para começar." />
           ) : (
-            <table>
+            <table className="contas-pagar-table">
               <thead>
                 <tr>
                   <th>Descrição</th>

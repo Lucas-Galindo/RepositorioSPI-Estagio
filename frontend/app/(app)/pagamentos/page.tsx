@@ -142,7 +142,34 @@ export default function PagamentosPage() {
         </Link>
       </div>
 
-      <div className="table-wrap">
+      <div className="panel" style={{ marginTop: 18 }}>
+        <div className="section-title">Métodos de pagamento</div>
+        <div className="section-sub">Formas de pagamento cadastradas no sistema</div>
+        {formas.length ? (
+          <div className="table-wrap" style={{ boxShadow: "none", margin: 0 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Forma</th>
+                  <th>Descrição</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formas.map((f) => (
+                  <tr key={f.id}>
+                    <td style={{ fontWeight: 600 }}>{f.forma}</td>
+                    <td>{f.descricao ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState title="Nenhum método de pagamento cadastrado" desc="Cadastre formas de pagamento para vê-las aqui." />
+        )}
+      </div>
+
+      <div className="table-wrap" style={{ marginTop: 18 }}>
         {pagamentos === null ? (
           <p className="count-text" style={{ padding: 24 }}>
             Carregando...
@@ -188,33 +215,6 @@ export default function PagamentosPage() {
               <EmptyState title="Nenhum pagamento encontrado" desc="Ajuste os filtros para ver outros resultados." />
             )}
           </>
-        )}
-      </div>
-
-      <div className="panel" style={{ marginTop: 18 }}>
-        <div className="section-title">Métodos de pagamento</div>
-        <div className="section-sub">Formas de pagamento cadastradas no sistema</div>
-        {formas.length ? (
-          <div className="table-wrap" style={{ boxShadow: "none", margin: 0 }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Forma</th>
-                  <th>Descrição</th>
-                </tr>
-              </thead>
-              <tbody>
-                {formas.map((f) => (
-                  <tr key={f.id}>
-                    <td style={{ fontWeight: 600 }}>{f.forma}</td>
-                    <td>{f.descricao ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState title="Nenhum método de pagamento cadastrado" desc="Cadastre formas de pagamento para vê-las aqui." />
         )}
       </div>
     </>

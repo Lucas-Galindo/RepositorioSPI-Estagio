@@ -216,7 +216,37 @@ namespace SPI.Application.Relatorios.Services
                 });
             }
 
-            return new IndicadoresFinanceirosFiltradosResponse { Indicadores = indicadores, FluxoCaixaMensal = fluxoCaixaMensal };
+            // specs/022: lancamentos individuais que substituem o card "Gargalo
+            // de caixa" na tela -- mesmo periodo/filtros das consultas acima.
+            var lancamentosEntrada = await _relatorioRepository.ListarEntradasNoPeriodoAsync(
+                periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
+            var lancamentosSaida = await _relatorioRepository.ListarSaidasNoPeriodoAsync(periodoInicio, periodoFim, cancellationToken);
+
+            var lancamentos = lancamentosEntrada
+                .Select(e => new LancamentoIndicadorItem
+                {
+                    Id = e.Id,
+                    Tipo = "Entrada",
+                    Descricao = string.IsNullOrWhiteSpace(e.Descricao) ? e.AlunoNome : e.Descricao,
+                    DataVencimento = e.DataVencimento,
+                    Valor = e.Valor,
+                    Status = e.Status
+                })
+                .Concat(lancamentosSaida.Select(s => new LancamentoIndicadorItem
+                {
+                    Id = s.Id,
+                    Tipo = "Saida",
+                    Descricao = string.IsNullOrWhiteSpace(s.Descricao)
+                        ? (string.IsNullOrWhiteSpace(s.Favorecido) ? s.CategoriaNome : s.Favorecido)
+                        : s.Descricao,
+                    DataVencimento = s.DataVencimento,
+                    Valor = s.Valor,
+                    Status = s.Status
+                }))
+                .OrderByDescending(l => l.DataVencimento)
+                .ToList();
+
+            return new IndicadoresFinanceirosFiltradosResponse { Indicadores = indicadores, FluxoCaixaMensal = fluxoCaixaMensal, Lancamentos = lancamentos };
         }
 
         public async Task<RelatorioPeriodoAgendaResponse> ObterPeriodoAgendaAsync(

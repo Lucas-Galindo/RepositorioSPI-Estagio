@@ -48,7 +48,9 @@ export default function TurmasPage() {
           {turmas === null ? (
             <p className="count-text">Carregando...</p>
           ) : total === 0 ? (
-            <EmptyState title="Nenhuma turma encontrada" desc="Cadastre a primeira turma para organizar seus alunos." />
+            <div style={{ gridColumn: "1 / -1" }}>
+              <EmptyState title="Nenhuma turma encontrada" desc="Cadastre a primeira turma para organizar seus alunos." />
+            </div>
           ) : (
             turmas.map((t) => (
               <div className="report-card" key={t.id} onClick={() => router.push(`/turmas/${t.id}`)}>

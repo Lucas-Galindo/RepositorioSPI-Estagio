@@ -115,5 +115,16 @@ namespace SPI.Domain.Repositories
 
         Task<List<(int Dia, decimal Valor)>> ObterSaidasPorDiaDoMesAsync(
             DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);
+
+        // specs/022: lancamentos individuais (nao agregados por dia) de entrada
+        // e saida do periodo, para a tabela que substitui o card "Gargalo de
+        // caixa" na Visao de Indicadores. Mesma regra de filtro de
+        // turma/materia/aluno (so entradas) das duas consultas acima.
+        Task<List<(int Id, string? Descricao, string AlunoNome, DateOnly DataVencimento, decimal Valor, string Status)>> ListarEntradasNoPeriodoAsync(
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null);
+
+        Task<List<(int Id, string? Descricao, string? Favorecido, string CategoriaNome, DateOnly DataVencimento, decimal Valor, string Status)>> ListarSaidasNoPeriodoAsync(
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);
     }
 }

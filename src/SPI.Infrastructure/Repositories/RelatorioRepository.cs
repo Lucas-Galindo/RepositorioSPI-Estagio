@@ -374,5 +374,35 @@ namespace SPI.Infrastructure.Repositories
                 .OrderBy(x => x.Key)
                 .ToList();
         }
+
+        public async Task<List<(int Id, string? Descricao, string AlunoNome, DateOnly DataVencimento, decimal Valor, string Status)>> ListarEntradasNoPeriodoAsync(
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null)
+        {
+            var query = AplicarFiltroReceita(
+                _dbContext.Pagamentos.Include(p => p.Aluno).Where(p => p.Status != "Cancelado" && p.DataVencimento >= inicio && p.DataVencimento <= fim),
+                turmaId, materiaId, alunoId);
+            var pagamentos = await query
+                .Select(p => new { p.Id, p.Descricao, AlunoNome = p.Aluno.Nome, p.DataVencimento, p.ValorFinal, p.Status })
+                .ToListAsync(cancellationToken);
+
+            return pagamentos
+                .Select(p => (p.Id, p.Descricao, p.AlunoNome, p.DataVencimento, p.ValorFinal, p.Status))
+                .ToList();
+        }
+
+        public async Task<List<(int Id, string? Descricao, string? Favorecido, string CategoriaNome, DateOnly DataVencimento, decimal Valor, string Status)>> ListarSaidasNoPeriodoAsync(
+            DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default)
+        {
+            var contas = await _dbContext.ContasPagar
+                .Include(c => c.CategoriaDespesa)
+                .Where(c => c.Status != "Cancelado" && c.DataVencimento >= inicio && c.DataVencimento <= fim)
+                .Select(c => new { c.Id, c.Descricao, c.Favorecido, CategoriaNome = c.CategoriaDespesa.Nome, c.DataVencimento, c.Valor, c.Status })
+                .ToListAsync(cancellationToken);
+
+            return contas
+                .Select(c => (c.Id, (string?)c.Descricao, c.Favorecido, c.CategoriaNome, c.DataVencimento, c.Valor, c.Status))
+                .ToList();
+        }
     }
 }

@@ -27,6 +27,16 @@ export interface FluxoCaixaMensalItem {
   saldo: number;
 }
 
+/** Espelha SPI.Application.Relatorios.Dtos.LancamentoIndicadorItem. */
+export interface LancamentoIndicador {
+  id: number;
+  tipo: "Entrada" | "Saida";
+  descricao: string;
+  dataVencimento: string;
+  valor: number;
+  status: string;
+}
+
 /** Espelha SPI.Application.Dashboard.Dtos.AulaResumoResponse. */
 export interface AulaResumo {
   id: number;

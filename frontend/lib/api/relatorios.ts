@@ -1,5 +1,5 @@
 import { apiGet } from "./client";
-import type { IndicadoresFinanceiros, FluxoCaixaMensalItem } from "./dashboard";
+import type { IndicadoresFinanceiros, FluxoCaixaMensalItem, LancamentoIndicador } from "./dashboard";
 
 /** Espelha SPI.Application.Relatorios.Dtos.RelatorioFinanceiroResponse. */
 export interface RelatorioFinanceiro {
@@ -25,6 +25,7 @@ export function obterRelatorioFinanceiro(
 export interface IndicadoresFinanceirosFiltrados {
   indicadores: IndicadoresFinanceiros;
   fluxoCaixaMensal: FluxoCaixaMensalItem[];
+  lancamentos: LancamentoIndicador[];
 }
 
 export function obterIndicadoresFinanceiros(

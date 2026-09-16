@@ -248,6 +248,14 @@ nav.nav-group {
   justify-content: space-between;
   margin-bottom: 16px;
 }
+.financeiro-tabs {
+  display: flex;
+  align-items: stretch;
+}
+.financeiro-tabs > a {
+  flex: 1 1 0;
+  justify-content: center;
+}
 
 /* ===== buttons ===== */
 .btn {
@@ -1075,6 +1083,9 @@ thead th {
   padding: 11px 24px;
   font-weight: 700;
   white-space: nowrap;
+}
+.contas-pagar-table thead th {
+  padding-bottom: 20px;
 }
 tbody td {
   padding: 13px 24px;

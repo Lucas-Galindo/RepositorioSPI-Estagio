@@ -14,7 +14,7 @@ export default function FinanceiroLayout({ children }: { children: React.ReactNo
 
   return (
     <>
-      <div className="row-gap" style={{ marginBottom: 18, gap: 8 }}>
+      <div className="financeiro-tabs" style={{ marginBottom: 18 }}>
         {TABS.map((tab) => {
           const ativo = tab.href === "/financeiro" ? pathname === "/financeiro" : pathname.startsWith(tab.href);
           return (

@@ -157,7 +157,7 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
           )}
 
           {alunosDisponiveis.length > 0 && (
-            <div className="field-row" style={{ marginTop: 14, gap: 8 }}>
+            <div className="field-row" style={{ marginTop: 14, gap: 20 }}>
               <select
                 className="filter-select"
                 style={{ flex: 1, maxWidth: "none" }}
