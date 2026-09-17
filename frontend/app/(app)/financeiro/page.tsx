@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { obterVisaoGeralFinanceira, type VisaoGeralFinanceira } from "@/lib/api/financeiro";
@@ -63,8 +64,8 @@ export default function FinanceiroPage() {
   return (
     <>
       <div className="filter-bar">
-        <input className="filter-input" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} title="Período a partir de" />
-        <input className="filter-input" type="date" value={fim} onChange={(e) => setFim(e.target.value)} title="Período até" />
+        <DateInput className="filter-input filter-date" value={inicio} onChange={setInicio} title="Período a partir de" />
+        <DateInput className="filter-input filter-date" value={fim} onChange={setFim} title="Período até" />
         <input className="filter-input" placeholder="Buscar turma..." value={turmaNome} onChange={(e) => setTurmaNome(e.target.value)} />
         <input className="filter-input" placeholder="Buscar matéria..." value={materiaNome} onChange={(e) => setMateriaNome(e.target.value)} />
         <input

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { listarPagamentos, listarFormasPagamento, type Pagamento, type FormaPagamento } from "@/lib/api/pagamentos";
@@ -131,14 +132,13 @@ export default function DashboardPagamentosPage() {
       </Link>
 
       <div className="filter-bar">
-        <input
-          className="filter-input"
-          type="date"
+        <DateInput
+          className="filter-input filter-date"
           value={vencimentoInicio}
-          onChange={(e) => setVencimentoInicio(e.target.value)}
+          onChange={setVencimentoInicio}
           title="Vencimento a partir de"
         />
-        <input className="filter-input" type="date" value={vencimentoFim} onChange={(e) => setVencimentoFim(e.target.value)} title="Vencimento até" />
+        <DateInput className="filter-input filter-date" value={vencimentoFim} onChange={setVencimentoFim} title="Vencimento até" />
         <select className="filter-select" value={semestre} onChange={(e) => selecionarSemestre(e.target.value)}>
           <option value="">Semestre — todos</option>
           <option value="1">1º semestre</option>

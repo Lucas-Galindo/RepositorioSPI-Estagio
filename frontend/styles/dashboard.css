@@ -1730,6 +1730,14 @@ input[type="color"]::-moz-color-swatch {
   cursor: text;
   font-weight: 500;
 }
+.date-input,
+.time-input {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.time-input {
+  max-width: 90px;
+}
 .filter-input::placeholder {
   color: var(--c-text-muted);
   font-weight: 500;

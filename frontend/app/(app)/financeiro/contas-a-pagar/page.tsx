@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import {
@@ -143,18 +144,16 @@ export default function ContasAPagarPage() {
           onChange={(e) => setFavorecido(e.target.value)}
           placeholder="Fornecedor/favorecido"
         />
-        <input
-          className="filter-input"
-          type="date"
+        <DateInput
+          className="filter-input filter-date"
           value={vencimentoInicio}
-          onChange={(e) => setVencimentoInicio(e.target.value)}
+          onChange={setVencimentoInicio}
           title="Vencimento a partir de"
         />
-        <input
-          className="filter-input"
-          type="date"
+        <DateInput
+          className="filter-input filter-date"
           value={vencimentoFim}
-          onChange={(e) => setVencimentoFim(e.target.value)}
+          onChange={setVencimentoFim}
           title="Vencimento até"
         />
         {temFiltro && (

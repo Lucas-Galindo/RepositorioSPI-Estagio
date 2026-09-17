@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
+import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
@@ -130,7 +131,7 @@ export default function NovaContaAPagarPage() {
                 <label>
                   Data de vencimento<span className="req">*</span>
                 </label>
-                <input required type="date" value={dataVencimento} onChange={(e) => setDataVencimento(e.target.value)} />
+                <DateInput required value={dataVencimento} onChange={setDataVencimento} />
               </div>
               <div className="field">
                 <label>Competência (opcional)</label>

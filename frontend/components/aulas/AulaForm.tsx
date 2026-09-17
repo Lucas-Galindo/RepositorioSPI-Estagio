@@ -3,6 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
+import { DateInput } from "@/components/shared/DateInput";
+import { TimeInput } from "@/components/shared/TimeInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { ApiError } from "@/lib/api/client";
@@ -162,19 +164,19 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
               <label>
                 Data<span className="req">*</span>
               </label>
-              <input required type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+              <DateInput required value={dataInicio} onChange={setDataInicio} />
             </div>
             <div className="field">
               <label>
                 Horário início<span className="req">*</span>
               </label>
-              <input required type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
+              <TimeInput required value={horaInicio} onChange={setHoraInicio} />
             </div>
             <div className="field">
               <label>
                 Horário fim<span className="req">*</span>
               </label>
-              <input required type="time" value={horaFim} onChange={(e) => setHoraFim(e.target.value)} />
+              <TimeInput required value={horaFim} onChange={setHoraFim} />
             </div>
           </div>
         </div>

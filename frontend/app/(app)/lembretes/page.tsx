@@ -7,6 +7,7 @@ import { Icon } from "@/components/shared/Icon";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
+import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
@@ -240,8 +241,8 @@ export default function LembretesPage() {
             </option>
           ))}
         </select>
-        <input className="filter-input" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} title="Próxima notificação de" />
-        <input className="filter-input" type="date" value={fim} onChange={(e) => setFim(e.target.value)} title="Próxima notificação até" />
+        <DateInput className="filter-input filter-date" value={inicio} onChange={setInicio} title="Próxima notificação de" />
+        <DateInput className="filter-input filter-date" value={fim} onChange={setFim} title="Próxima notificação até" />
         <select className="filter-select" value={semestre} onChange={(e) => selecionarSemestre(e.target.value)}>
           <option value="">Semestre — todos</option>
           <option value="1">1º semestre</option>

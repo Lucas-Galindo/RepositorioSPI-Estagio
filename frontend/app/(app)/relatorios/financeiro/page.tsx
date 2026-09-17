@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { obterRelatorioFinanceiro, obterIndicadoresFinanceiros, type RelatorioFinanceiro, type IndicadoresFinanceirosFiltrados } from "@/lib/api/relatorios";
@@ -153,8 +154,8 @@ export default function RelatorioFinanceiroPage() {
       </div>
 
       <div className="filter-bar">
-        <input className="filter-input" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} title="Recebido/pago a partir de" />
-        <input className="filter-input" type="date" value={fim} onChange={(e) => setFim(e.target.value)} title="Recebido/pago até" />
+        <DateInput className="filter-input filter-date" value={inicio} onChange={setInicio} title="Recebido/pago a partir de" />
+        <DateInput className="filter-input filter-date" value={fim} onChange={setFim} title="Recebido/pago até" />
         <select className="filter-select" value={semestre} onChange={(e) => selecionarSemestre(e.target.value)}>
           <option value="">Semestre — todos</option>
           <option value="1">1º semestre</option>

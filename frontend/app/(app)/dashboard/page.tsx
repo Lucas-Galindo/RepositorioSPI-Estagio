@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { obterDashboard, type Dashboard } from "@/lib/api/dashboard";
-import { currency, fmtHora } from "@/lib/format";
+import { currency, fmtData, fmtHora } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -24,7 +24,7 @@ function diasDaSemana(): { chave: string; label: string; curto: string }[] {
     return {
       chave,
       label: DIAS_SEMANA[dia.getDay()],
-      curto: dia.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+      curto: fmtData(chave).slice(0, 5),
     };
   });
 }
