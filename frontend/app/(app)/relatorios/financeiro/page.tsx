@@ -346,7 +346,7 @@ export default function RelatorioFinanceiroPage() {
 
       {aba === "indicadores" && indicadoresDados && (
         <>
-          <div className="kpi-row">
+          <div className="kpi-row kpi-row-3">
             <div className="kpi">
               <div className="label">
                 <Icon name="warn" size={12} /> Inadimplência
@@ -373,21 +373,6 @@ export default function RelatorioFinanceiroPage() {
                 {indicadoresDados.indicadores.margemSegurancaPercentual}%
               </div>
               <div className="delta">Folga do caixa após despesas</div>
-            </div>
-            <div className="kpi">
-              <div className="label">
-                <Icon name="money" size={12} /> Cobertura de custos
-              </div>
-              <div
-                className={`value ${
-                  indicadoresDados.indicadores.indiceCoberturaCustosFixos === null || indicadoresDados.indicadores.indiceCoberturaCustosFixos >= 1
-                    ? "turq"
-                    : "danger"
-                }`}
-              >
-                {indicadoresDados.indicadores.indiceCoberturaCustosFixos !== null ? `${indicadoresDados.indicadores.indiceCoberturaCustosFixos}x` : "—"}
-              </div>
-              <div className="delta">Recebido ÷ pago no período</div>
             </div>
           </div>
 
