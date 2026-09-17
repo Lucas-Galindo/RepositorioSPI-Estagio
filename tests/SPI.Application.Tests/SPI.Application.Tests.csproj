@@ -19,4 +19,9 @@
     <ProjectReference Include="..\..\src\SPI.Application\SPI.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Necessario para instanciar FormFile nos testes do AnexoValidator (T025). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 </Project>

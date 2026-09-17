@@ -58,7 +58,31 @@ namespace SPI.Infrastructure.Repositories
                 query = query.Where(p => p.DataVencimento <= vencimentoFim.Value);
             }
 
-            return await query.OrderByDescending(p => p.DataVencimento).ToListAsync(cancellationToken);
+            // Projeta explicitamente sem ArquivoConteudo: a listagem nao deve
+            // carregar o BLOB do comprovante de cada linha (ate 10MB cada),
+            // so o detalhe individual (ObterPorIdAsync) precisa dele --
+            // ver contracts/anexo-comprovante.md "Compatibilidade".
+            return await query
+                .OrderByDescending(p => p.DataVencimento)
+                .Select(p => new Pagamento
+                {
+                    Id = p.Id,
+                    AlunoId = p.AlunoId,
+                    Descricao = p.Descricao,
+                    FormaPagamentoId = p.FormaPagamentoId,
+                    CategoriaReceitaId = p.CategoriaReceitaId,
+                    DataVencimento = p.DataVencimento,
+                    DataPagamento = p.DataPagamento,
+                    Competencia = p.Competencia,
+                    ValorFinal = p.ValorFinal,
+                    Status = p.Status,
+                    Observacoes = p.Observacoes,
+                    Aluno = p.Aluno,
+                    FormaPagamento = p.FormaPagamento,
+                    CategoriaReceita = p.CategoriaReceita,
+                    PagamentosAula = p.PagamentosAula
+                })
+                .ToListAsync(cancellationToken);
         }
 
         public async Task AdicionarAsync(Pagamento pagamento, CancellationToken cancellationToken = default) =>

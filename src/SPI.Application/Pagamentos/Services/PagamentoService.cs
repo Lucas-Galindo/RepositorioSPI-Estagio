@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+using SPI.Application.Anexos.Dtos;
 using SPI.Application.Pagamentos.Dtos;
 using SPI.Domain.Entities;
 using SPI.Domain.Exceptions;
@@ -157,6 +159,42 @@ namespace SPI.Application.Pagamentos.Services
             return Mapear(pagamentoAtualizado!);
         }
 
+        public async Task<AnexoResponse> AnexarArquivoAsync(int id, IFormFile arquivo, CancellationToken cancellationToken = default)
+        {
+            var pagamento = await _pagamentoRepository.ObterPorIdAsync(id, cancellationToken)
+                ?? throw new NaoEncontradoException("Pagamento nao encontrado.");
+
+            using var stream = new MemoryStream();
+            await arquivo.CopyToAsync(stream, cancellationToken);
+
+            pagamento.ArquivoConteudo = stream.ToArray();
+            pagamento.ArquivoNomeOriginal = arquivo.FileName;
+            pagamento.ArquivoTipoMime = arquivo.ContentType;
+            pagamento.ArquivoTamanhoBytes = (int)arquivo.Length;
+            pagamento.ArquivoDataUpload = DateTime.UtcNow;
+
+            await _pagamentoRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            return new AnexoResponse
+            {
+                NomeOriginal = pagamento.ArquivoNomeOriginal,
+                TipoMime = pagamento.ArquivoTipoMime,
+                TamanhoBytes = pagamento.ArquivoTamanhoBytes.Value,
+                DataUpload = pagamento.ArquivoDataUpload.Value
+            };
+        }
+
+        public async Task<(byte[] Conteudo, string TipoMime, string NomeOriginal)?> ObterArquivoAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var pagamento = await _pagamentoRepository.ObterPorIdAsync(id, cancellationToken);
+            if (pagamento?.ArquivoConteudo is null)
+            {
+                return null;
+            }
+
+            return (pagamento.ArquivoConteudo, pagamento.ArquivoTipoMime!, pagamento.ArquivoNomeOriginal!);
+        }
+
         private static PagamentoResponse Mapear(Pagamento pagamento)
         {
             var statusEfetivo = pagamento.Status == "Pendente" && pagamento.DataVencimento < DateOnly.FromDateTime(DateTime.UtcNow)
@@ -179,7 +217,16 @@ namespace SPI.Application.Pagamentos.Services
                 ValorFinal = pagamento.ValorFinal,
                 Observacoes = pagamento.Observacoes,
                 Status = statusEfetivo,
-                AulaIds = pagamento.PagamentosAula.Select(pa => pa.AulaId).ToList()
+                AulaIds = pagamento.PagamentosAula.Select(pa => pa.AulaId).ToList(),
+                Anexo = pagamento.ArquivoConteudo is not null
+                    ? new AnexoResponse
+                    {
+                        NomeOriginal = pagamento.ArquivoNomeOriginal!,
+                        TipoMime = pagamento.ArquivoTipoMime!,
+                        TamanhoBytes = pagamento.ArquivoTamanhoBytes!.Value,
+                        DataUpload = pagamento.ArquivoDataUpload!.Value
+                    }
+                    : null
             };
         }
     }

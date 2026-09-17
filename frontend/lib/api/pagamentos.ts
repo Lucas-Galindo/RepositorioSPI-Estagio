@@ -1,6 +1,12 @@
-import { apiGet, apiPost, apiPut } from "./client";
+import { apiGet, apiGetBlob, apiPost, apiPostFile, apiPut } from "./client";
+import type { Anexo } from "./contasPagar";
 
-/** Espelha SPI.Application.Pagamentos.Dtos.PagamentoResponse (Contas a Receber). */
+/**
+ * Espelha SPI.Application.Pagamentos.Dtos.PagamentoResponse (Contas a Receber).
+ * `anexo` e opcional (nao obrigatoriamente presente): listarPagamentos nunca
+ * traz esse campo (fica undefined em runtime), so obterPagamento sempre traz
+ * (null ou preenchido) -- ver contracts/anexo-comprovante.md.
+ */
 export interface Pagamento {
   id: number;
   alunoId: number;
@@ -17,6 +23,7 @@ export interface Pagamento {
   observacoes: string | null;
   status: "Pendente" | "Pago" | "Atrasado" | "Cancelado";
   aulaIds: number[];
+  anexo?: Anexo | null;
 }
 
 /** Espelha SPI.Application.Pagamentos.Dtos.RegistrarPagamentoRequest. */
@@ -88,4 +95,12 @@ export function listarFormasPagamento(accessToken: string): Promise<FormaPagamen
 
 export function listarCategoriasReceita(accessToken: string): Promise<CategoriaReceita[]> {
   return apiGet<CategoriaReceita[]>("/api/categorias-receita", accessToken);
+}
+
+export function anexarArquivoPagamento(id: number, arquivo: File, accessToken: string): Promise<Anexo> {
+  return apiPostFile<Anexo>(`/api/pagamentos/${id}/anexo`, arquivo, accessToken);
+}
+
+export function obterAnexoPagamento(id: number, accessToken: string): Promise<{ blob: Blob; nomeArquivo: string }> {
+  return apiGetBlob(`/api/pagamentos/${id}/anexo`, accessToken);
 }

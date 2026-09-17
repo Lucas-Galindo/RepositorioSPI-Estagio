@@ -61,7 +61,7 @@ export default function NovaContaAPagarPage() {
         sessao.accessToken
       );
       mostrarToast("Conta a pagar registrada com sucesso.");
-      router.push(`/financeiro/contas-a-pagar/${criada.id}`);
+      router.push(`/financeiro/contas-a-pagar/${criada.id}?anexar=1`);
     } catch (excecao) {
       setErros(excecao instanceof ApiError ? excecao.details ?? [excecao.message] : ["Não foi possível registrar a conta a pagar."]);
     } finally {

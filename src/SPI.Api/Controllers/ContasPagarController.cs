@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SPI.Application.Anexos.Services;
 using SPI.Application.ContasPagar.Dtos;
 using SPI.Application.ContasPagar.Services;
 using SPI.Domain.Enums;
@@ -14,6 +15,7 @@ namespace SPI.Api.Controllers
     public class ContasPagarController : ControllerBase
     {
         private readonly IContaPagarService _contaPagarService;
+        private readonly IAnexoValidator _anexoValidator;
         private readonly IValidator<RegistrarContaPagarRequest> _registrarValidator;
         private readonly IValidator<AtualizarContaPagarRequest> _atualizarValidator;
         private readonly IValidator<AtualizarStatusContaPagarRequest> _statusValidator;
@@ -21,12 +23,14 @@ namespace SPI.Api.Controllers
 
         public ContasPagarController(
             IContaPagarService contaPagarService,
+            IAnexoValidator anexoValidator,
             IValidator<RegistrarContaPagarRequest> registrarValidator,
             IValidator<AtualizarContaPagarRequest> atualizarValidator,
             IValidator<AtualizarStatusContaPagarRequest> statusValidator,
             ILogger<ContasPagarController> logger)
         {
             _contaPagarService = contaPagarService;
+            _anexoValidator = anexoValidator;
             _registrarValidator = registrarValidator;
             _atualizarValidator = atualizarValidator;
             _statusValidator = statusValidator;
@@ -187,6 +191,70 @@ namespace SPI.Api.Controllers
             catch (NaoEncontradoException e)
             {
                 return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpPost("{id}/anexo")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para anexar (ou substituir) o comprovante (nota fiscal/cupom) de uma conta a pagar.
+        /// Aceita apenas JPG, PNG ou PDF de ate 10MB; um novo envio sempre sobrescreve o anexo anterior.
+        /// </summary>
+        /// <param name="id">Id da conta a pagar</param>
+        /// <param name="arquivo">Arquivo do comprovante</param>
+        /// <returns>Retorna os metadados do anexo salvo</returns>
+        public async Task<IActionResult> AnexarArquivo(int id, IFormFile arquivo)
+        {
+            try
+            {
+                var erros = _anexoValidator.Validar(arquivo);
+                if (erros.Count > 0)
+                {
+                    return BadRequest(erros);
+                }
+
+                var response = await _contaPagarService.AnexarArquivoAsync(id, arquivo);
+                _logger.LogInformation("Anexo da conta a pagar {Id} atualizado", id);
+                return Ok(response);
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpGet("{id}/anexo")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para baixar/visualizar o comprovante anexado a uma conta a pagar
+        /// </summary>
+        /// <param name="id">Id da conta a pagar</param>
+        /// <returns>Retorna o conteudo binario do anexo, identico ao originalmente enviado</returns>
+        public async Task<IActionResult> ObterAnexo(int id)
+        {
+            try
+            {
+                var anexo = await _contaPagarService.ObterArquivoAsync(id);
+                if (anexo is null)
+                {
+                    return NotFound();
+                }
+
+                return File(anexo.Value.Conteudo, anexo.Value.TipoMime, anexo.Value.NomeOriginal);
             }
             catch (Exception e)
             {

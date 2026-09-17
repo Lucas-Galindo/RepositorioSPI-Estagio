@@ -128,6 +128,52 @@ export async function apiPut<TResponse>(
   return (texto ? JSON.parse(texto) : undefined) as TResponse;
 }
 
+/**
+ * Envia um arquivo como multipart/form-data (campo "arquivo"). Nao define
+ * Content-Type manualmente -- o navegador define o boundary automaticamente.
+ */
+export async function apiPostFile<TResponse>(
+  path: string,
+  arquivo: File,
+  accessToken: string
+): Promise<TResponse> {
+  const formData = new FormData();
+  formData.append("arquivo", arquivo);
+
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw await extrairErro(response);
+  }
+
+  const texto = await response.text();
+  return (texto ? JSON.parse(texto) : undefined) as TResponse;
+}
+
+/** Extrai o nome do arquivo do cabecalho Content-Disposition (attachment/inline; filename="..."). */
+function extrairNomeArquivo(response: Response): string {
+  const cabecalho = response.headers.get("Content-Disposition") ?? "";
+  const match = /filename="?([^";]+)"?/i.exec(cabecalho);
+  return match ? match[1] : "arquivo";
+}
+
+/** Baixa um anexo binario (Blob), com o nome original extraido do cabecalho da resposta. */
+export async function apiGetBlob(path: string, accessToken: string): Promise<{ blob: Blob; nomeArquivo: string }> {
+  const response = await fetch(`${API_URL}${path}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw await extrairErro(response);
+  }
+
+  return { blob: await response.blob(), nomeArquivo: extrairNomeArquivo(response) };
+}
+
 export async function apiDelete(path: string, accessToken: string): Promise<void> {
   const response = await fetch(`${API_URL}${path}`, {
     method: "DELETE",

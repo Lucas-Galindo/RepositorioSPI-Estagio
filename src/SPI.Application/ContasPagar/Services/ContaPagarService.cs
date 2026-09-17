@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+using SPI.Application.Anexos.Dtos;
 using SPI.Application.ContasPagar.Dtos;
 using SPI.Domain.Entities;
 using SPI.Domain.Exceptions;
@@ -133,6 +135,42 @@ namespace SPI.Application.ContasPagar.Services
             return Mapear(contaPagarAtualizada!);
         }
 
+        public async Task<AnexoResponse> AnexarArquivoAsync(int id, IFormFile arquivo, CancellationToken cancellationToken = default)
+        {
+            var contaPagar = await _contaPagarRepository.ObterPorIdAsync(id, cancellationToken)
+                ?? throw new NaoEncontradoException("Conta a pagar nao encontrada.");
+
+            using var stream = new MemoryStream();
+            await arquivo.CopyToAsync(stream, cancellationToken);
+
+            contaPagar.ArquivoConteudo = stream.ToArray();
+            contaPagar.ArquivoNomeOriginal = arquivo.FileName;
+            contaPagar.ArquivoTipoMime = arquivo.ContentType;
+            contaPagar.ArquivoTamanhoBytes = (int)arquivo.Length;
+            contaPagar.ArquivoDataUpload = DateTime.UtcNow;
+
+            await _contaPagarRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            return new AnexoResponse
+            {
+                NomeOriginal = contaPagar.ArquivoNomeOriginal,
+                TipoMime = contaPagar.ArquivoTipoMime,
+                TamanhoBytes = contaPagar.ArquivoTamanhoBytes.Value,
+                DataUpload = contaPagar.ArquivoDataUpload.Value
+            };
+        }
+
+        public async Task<(byte[] Conteudo, string TipoMime, string NomeOriginal)?> ObterArquivoAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var contaPagar = await _contaPagarRepository.ObterPorIdAsync(id, cancellationToken);
+            if (contaPagar?.ArquivoConteudo is null)
+            {
+                return null;
+            }
+
+            return (contaPagar.ArquivoConteudo, contaPagar.ArquivoTipoMime!, contaPagar.ArquivoNomeOriginal!);
+        }
+
         private static ContaPagarResponse Mapear(ContaPagar contaPagar)
         {
             var statusEfetivo = contaPagar.Status == "Pendente" && contaPagar.DataVencimento < DateOnly.FromDateTime(DateTime.UtcNow)
@@ -153,7 +191,16 @@ namespace SPI.Application.ContasPagar.Services
                 FormaPagamentoId = contaPagar.FormaPagamentoId,
                 FormaPagamentoNome = contaPagar.FormaPagamento?.Forma,
                 Observacoes = contaPagar.Observacoes,
-                Status = statusEfetivo
+                Status = statusEfetivo,
+                Anexo = contaPagar.ArquivoConteudo is not null
+                    ? new AnexoResponse
+                    {
+                        NomeOriginal = contaPagar.ArquivoNomeOriginal!,
+                        TipoMime = contaPagar.ArquivoTipoMime!,
+                        TamanhoBytes = contaPagar.ArquivoTamanhoBytes!.Value,
+                        DataUpload = contaPagar.ArquivoDataUpload!.Value
+                    }
+                    : null
             };
         }
     }

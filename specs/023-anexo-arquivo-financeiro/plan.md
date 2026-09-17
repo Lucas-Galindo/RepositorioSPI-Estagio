@@ -97,14 +97,13 @@ src/
 │           ├── ContaPagarConfiguration.cs # + HasColumnName para as colunas novas
 │           └── PagamentoConfiguration.cs  # + HasColumnName para as colunas novas
 └── SPI.Application/
-    ├── Anexos/                            # novo: validacao de arquivo compartilhada entre
-    │   └── Services/                      #   ContaPagar e Pagamento (Principio II)
+    ├── Anexos/                            # novo: DTO e validacao de arquivo compartilhados
+    │   ├── Dtos/AnexoResponse.cs          #   entre ContaPagar e Pagamento (Principio II)
+    │   └── Services/
     │       └── IAnexoValidator.cs / AnexoValidator.cs
     ├── ContasPagar/
-    │   ├── Dtos/AnexoResponse.cs          # novo: metadados do anexo (sem o binario)
     │   └── Services/ContaPagarService.cs  # + AnexarArquivoAsync/ObterArquivoAsync
     └── Pagamentos/
-        ├── Dtos/AnexoResponse.cs          # (ou tipo compartilhado — ver data-model.md)
         └── Services/PagamentoService.cs   # + AnexarArquivoAsync/ObterArquivoAsync
 
 src/SPI.Api/

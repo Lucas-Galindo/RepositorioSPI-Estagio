@@ -1,3 +1,5 @@
+using SPI.Application.Anexos.Dtos;
+
 namespace SPI.Application.Pagamentos.Dtos
 {
     public record PagamentoResponse
@@ -23,5 +25,7 @@ namespace SPI.Application.Pagamentos.Dtos
         public string Status { get; set; } = string.Empty;
 
         public List<int> AulaIds { get; set; } = new();
+
+        public AnexoResponse? Anexo { get; set; }
     }
 }

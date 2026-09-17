@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using SPI.Application.Alunos.Services;
+using SPI.Application.Anexos.Services;
 using SPI.Application.Aulas.Services;
 using SPI.Application.Auth.Services;
 using SPI.Application.ContasPagar.Services;
@@ -37,6 +38,7 @@ namespace SPI.Application.DependencyInjection
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IFinanceiroService, FinanceiroService>();
             services.AddScoped<IRelatorioService, RelatorioService>();
+            services.AddScoped<IAnexoValidator, AnexoValidator>();
 
             return services;
         }

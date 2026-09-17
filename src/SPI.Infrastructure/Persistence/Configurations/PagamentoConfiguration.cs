@@ -22,6 +22,11 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(p => p.ValorFinal).HasColumnName("valor_final").HasColumnType("decimal(10,2)");
             builder.Property(p => p.Status).HasColumnName("status").HasMaxLength(20).HasDefaultValue("Pendente");
             builder.Property(p => p.Observacoes).HasColumnName("observacoes");
+            builder.Property(p => p.ArquivoConteudo).HasColumnName("arquivo_conteudo");
+            builder.Property(p => p.ArquivoNomeOriginal).HasColumnName("arquivo_nome_original").HasMaxLength(255);
+            builder.Property(p => p.ArquivoTipoMime).HasColumnName("arquivo_tipo_mime").HasMaxLength(100);
+            builder.Property(p => p.ArquivoTamanhoBytes).HasColumnName("arquivo_tamanho_bytes");
+            builder.Property(p => p.ArquivoDataUpload).HasColumnName("arquivo_data_upload");
 
             builder.HasOne(p => p.Aluno)
                 .WithMany(a => a.Pagamentos)

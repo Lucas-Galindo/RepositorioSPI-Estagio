@@ -16,6 +16,12 @@ namespace SPI.Domain.Entities
         public string Status { get; set; } = "Pendente";
         public string? Observacoes { get; set; }
 
+        public byte[]? ArquivoConteudo { get; set; }
+        public string? ArquivoNomeOriginal { get; set; }
+        public string? ArquivoTipoMime { get; set; }
+        public int? ArquivoTamanhoBytes { get; set; }
+        public DateTime? ArquivoDataUpload { get; set; }
+
         public CategoriaDespesa CategoriaDespesa { get; set; } = null!;
         public FormaPagamento? FormaPagamento { get; set; }
     }

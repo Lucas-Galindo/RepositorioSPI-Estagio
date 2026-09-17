@@ -89,7 +89,7 @@ export default function NovaContaAReceberPage() {
         sessao.accessToken
       );
       mostrarToast("Conta a receber registrada com sucesso.");
-      router.push(`/financeiro/contas-a-receber/${criado.id}`);
+      router.push(`/financeiro/contas-a-receber/${criado.id}?anexar=1`);
     } catch (excecao) {
       setErros(excecao instanceof ApiError ? excecao.details ?? [excecao.message] : ["Não foi possível registrar a conta a receber."]);
     } finally {

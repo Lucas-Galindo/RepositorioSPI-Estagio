@@ -1,3 +1,5 @@
+using SPI.Application.Anexos.Dtos;
+
 namespace SPI.Application.ContasPagar.Dtos
 {
     public record ContaPagarResponse
@@ -20,5 +22,7 @@ namespace SPI.Application.ContasPagar.Dtos
         /// e exibido como "Atrasado" (calculado, nao persistido -- mesma convencao de Pagamento).
         /// </summary>
         public string Status { get; set; } = string.Empty;
+
+        public AnexoResponse? Anexo { get; set; }
     }
 }

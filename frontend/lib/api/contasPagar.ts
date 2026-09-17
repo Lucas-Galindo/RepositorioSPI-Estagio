@@ -1,6 +1,19 @@
-import { apiGet, apiPost, apiPut } from "./client";
+import { apiGet, apiGetBlob, apiPost, apiPostFile, apiPut } from "./client";
 
-/** Espelha SPI.Application.ContasPagar.Dtos.ContaPagarResponse. */
+/** Espelha SPI.Application.Anexos.Dtos.AnexoResponse. */
+export interface Anexo {
+  nomeOriginal: string;
+  tipoMime: string;
+  tamanhoBytes: number;
+  dataUpload: string;
+}
+
+/**
+ * Espelha SPI.Application.ContasPagar.Dtos.ContaPagarResponse.
+ * `anexo` e opcional (nao obrigatoriamente presente): listarContasPagar
+ * nunca traz esse campo (fica undefined em runtime), so obterContaPagar
+ * sempre traz (null ou preenchido) -- ver contracts/anexo-comprovante.md.
+ */
 export interface ContaPagar {
   id: number;
   descricao: string;
@@ -15,6 +28,7 @@ export interface ContaPagar {
   formaPagamentoNome: string | null;
   observacoes: string | null;
   status: "Pendente" | "Pago" | "Atrasado" | "Cancelado";
+  anexo?: Anexo | null;
 }
 
 /** Espelha SPI.Application.ContasPagar.Dtos.RegistrarContaPagarRequest. */
@@ -76,4 +90,12 @@ export function atualizarStatusContaPagar(
 
 export function listarCategoriasDespesa(accessToken: string): Promise<CategoriaDespesa[]> {
   return apiGet<CategoriaDespesa[]>("/api/categorias-despesa", accessToken);
+}
+
+export function anexarArquivoContaPagar(id: number, arquivo: File, accessToken: string): Promise<Anexo> {
+  return apiPostFile<Anexo>(`/api/contas-pagar/${id}/anexo`, arquivo, accessToken);
+}
+
+export function obterAnexoContaPagar(id: number, accessToken: string): Promise<{ blob: Blob; nomeArquivo: string }> {
+  return apiGetBlob(`/api/contas-pagar/${id}/anexo`, accessToken);
 }

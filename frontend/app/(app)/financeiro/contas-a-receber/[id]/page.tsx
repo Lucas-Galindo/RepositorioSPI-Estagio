@@ -2,13 +2,21 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { AnexoComprovante } from "@/components/financeiro/AnexoComprovante";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
-import { obterPagamento, atualizarStatusPagamento, type Pagamento } from "@/lib/api/pagamentos";
+import {
+  obterPagamento,
+  atualizarStatusPagamento,
+  anexarArquivoPagamento,
+  obterAnexoPagamento,
+  type Pagamento,
+} from "@/lib/api/pagamentos";
 import { currency, fmtData, fmtMesAno } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
@@ -19,10 +27,12 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
   usePageHeader("Financeiro", "Detalhes da conta a receber");
   const { sessao } = useAuth();
   const { mostrarToast } = useToast();
+  const searchParams = useSearchParams();
 
   const [pagamento, setPagamento] = useState<Pagamento | null>(null);
   const [erro, setErro] = useState("");
   const [processando, setProcessando] = useState(false);
+  const [ofertaAnexoVisivel, setOfertaAnexoVisivel] = useState(searchParams.get("anexar") === "1");
 
   useEffect(() => {
     if (!sessao) return;
@@ -43,6 +53,14 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
     } finally {
       setProcessando(false);
     }
+  };
+
+  const handleAnexar = async (arquivo: File) => {
+    if (!sessao || !pagamento) return;
+    const anexo = await anexarArquivoPagamento(pagamento.id, arquivo, sessao.accessToken);
+    setPagamento({ ...pagamento, anexo });
+    setOfertaAnexoVisivel(false);
+    mostrarToast("Comprovante anexado com sucesso.");
   };
 
   if (erro) return <EmptyState title="Não foi possível carregar" desc={erro} />;
@@ -71,6 +89,16 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
           <Icon name="edit" size={13} /> Editar
         </Link>
       </div>
+
+      {ofertaAnexoVisivel && (
+        <div className="err-banner show" style={{ marginBottom: 20, background: "var(--c-accent2-tint)", color: "var(--c-accent2)" }}>
+          <Icon name="paperclip" size={15} />
+          <span style={{ flex: 1 }}>Registro salvo! Deseja anexar o comprovante agora?</span>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setOfertaAnexoVisivel(false)}>
+            Agora não
+          </button>
+        </div>
+      )}
 
       <div className="grid-2b">
         <div className="mini-panel">
@@ -123,6 +151,11 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
           )}
+          <AnexoComprovante
+            anexo={pagamento.anexo ?? null}
+            onAnexar={handleAnexar}
+            onVisualizar={() => obterAnexoPagamento(pagamento.id, sessao!.accessToken)}
+          />
         </div>
 
         <div className="mini-panel">
