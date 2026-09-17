@@ -128,6 +128,21 @@ export async function apiPut<TResponse>(
   return (texto ? JSON.parse(texto) : undefined) as TResponse;
 }
 
+/** PATCH sem corpo de requisicao -- para acoes pontuais como reativar um registro. */
+export async function apiPatch<TResponse>(path: string, accessToken: string): Promise<TResponse> {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw await extrairErro(response);
+  }
+
+  const texto = await response.text();
+  return (texto ? JSON.parse(texto) : undefined) as TResponse;
+}
+
 /**
  * Envia um arquivo como multipart/form-data (campo "arquivo"). Nao define
  * Content-Type manualmente -- o navegador define o boundary automaticamente.

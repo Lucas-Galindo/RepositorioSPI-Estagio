@@ -11,7 +11,7 @@ import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
-import { obterMateria, excluirMateria, type Materia } from "@/lib/api/materias";
+import { obterMateria, excluirMateria, reativarMateria, type Materia } from "@/lib/api/materias";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { fmtData, fmtHora } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
@@ -28,6 +28,7 @@ export default function MateriaDetailPage({ params }: { params: Promise<{ id: st
   const [erro, setErro] = useState("");
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
+  const [reativando, setReativando] = useState(false);
 
   useEffect(() => {
     if (!sessao) return;
@@ -56,6 +57,20 @@ export default function MateriaDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const handleReativar = async () => {
+    if (!sessao || !materia) return;
+    setReativando(true);
+    try {
+      const materiaReativada = await reativarMateria(materia.id, sessao.accessToken);
+      setMateria(materiaReativada);
+      mostrarToast("Matéria reativada com sucesso.");
+    } catch (excecao) {
+      mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível reativar a matéria.");
+    } finally {
+      setReativando(false);
+    }
+  };
+
   if (erro) return <EmptyState title="Não foi possível carregar" desc={erro} />;
   if (!materia) return <p className="count-text">Carregando...</p>;
 
@@ -81,9 +96,16 @@ export default function MateriaDetailPage({ params }: { params: Promise<{ id: st
           <Link href={`/materias/${materia.id}/editar`} className="btn btn-ghost btn-sm">
             <Icon name="edit" size={13} /> Editar
           </Link>
-          <button className="btn btn-danger btn-sm" type="button" onClick={() => setConfirmandoExclusao(true)}>
-            <Icon name="trash" size={13} /> Excluir
-          </button>
+          {materia.ativo && (
+            <button className="btn btn-danger btn-sm" type="button" onClick={() => setConfirmandoExclusao(true)}>
+              <Icon name="trash" size={13} /> Excluir
+            </button>
+          )}
+          {!materia.ativo && (
+            <button className="btn btn-success btn-sm" type="button" onClick={handleReativar} disabled={reativando}>
+              <Icon name="check" size={13} /> Reativar
+            </button>
+          )}
         </div>
       </div>
 

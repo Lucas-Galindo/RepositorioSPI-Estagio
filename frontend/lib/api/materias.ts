@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut } from "./client";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 
 /** Espelha SPI.Application.Materias.Dtos.MateriaResponse. */
 export interface Materia {
@@ -37,4 +37,8 @@ export function atualizarMateria(id: number, request: MateriaRequest, accessToke
 
 export function excluirMateria(id: number, accessToken: string): Promise<void> {
   return apiDelete(`/api/materias/${id}`, accessToken);
+}
+
+export function reativarMateria(id: number, accessToken: string): Promise<Materia> {
+  return apiPatch<Materia>(`/api/materias/${id}/reativar`, accessToken);
 }

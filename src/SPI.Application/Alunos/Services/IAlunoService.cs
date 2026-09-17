@@ -13,5 +13,7 @@ namespace SPI.Application.Alunos.Services
         Task<AlunoResponse> AtualizarAsync(int id, AtualizarAlunoRequest request, CancellationToken cancellationToken = default);
 
         Task ExcluirAsync(int id, CancellationToken cancellationToken = default);
+
+        Task<AlunoResponse> ReativarAsync(int id, CancellationToken cancellationToken = default);
     }
 }

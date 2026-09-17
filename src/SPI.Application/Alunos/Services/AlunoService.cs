@@ -105,6 +105,17 @@ namespace SPI.Application.Alunos.Services
             await _alunoRepository.SalvarAlteracoesAsync(cancellationToken);
         }
 
+        public async Task<AlunoResponse> ReativarAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var aluno = await _alunoRepository.ObterPorIdAsync(id, cancellationToken)
+                ?? throw new NaoEncontradoException("Aluno nao encontrado.");
+
+            aluno.Ativo = true;
+            await _alunoRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            return Mapear(aluno);
+        }
+
         private static AlunoResponse Mapear(Aluno aluno) => new()
         {
             Id = aluno.Id,

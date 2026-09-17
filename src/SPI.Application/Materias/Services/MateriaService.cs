@@ -79,6 +79,17 @@ namespace SPI.Application.Materias.Services
             await _materiaRepository.SalvarAlteracoesAsync(cancellationToken);
         }
 
+        public async Task<MateriaResponse> ReativarAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var materia = await _materiaRepository.ObterPorIdAsync(id, cancellationToken)
+                ?? throw new NaoEncontradoException("Materia nao encontrada.");
+
+            materia.Ativo = true;
+            await _materiaRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            return Mapear(materia);
+        }
+
         private static MateriaResponse Mapear(Materia materia) => new()
         {
             Id = materia.Id,

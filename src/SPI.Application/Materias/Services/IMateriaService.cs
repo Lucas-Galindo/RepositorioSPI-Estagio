@@ -13,5 +13,7 @@ namespace SPI.Application.Materias.Services
         Task<MateriaResponse> AtualizarAsync(int id, MateriaRequest request, CancellationToken cancellationToken = default);
 
         Task ExcluirAsync(int id, CancellationToken cancellationToken = default);
+
+        Task<MateriaResponse> ReativarAsync(int id, CancellationToken cancellationToken = default);
     }
 }

@@ -14,6 +14,8 @@ namespace SPI.Application.Turmas.Services
 
         Task ExcluirAsync(int id, CancellationToken cancellationToken = default);
 
+        Task<TurmaResponse> ReativarAsync(int id, CancellationToken cancellationToken = default);
+
         Task<TurmaResponse> VincularAlunoAsync(int turmaId, int alunoId, CancellationToken cancellationToken = default);
 
         Task<TurmaResponse> DesvincularAlunoAsync(int turmaId, int alunoId, CancellationToken cancellationToken = default);

@@ -183,5 +183,32 @@ namespace SPI.Api.Controllers
                 return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
             }
         }
+
+        [HttpPatch("{id}/reativar")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para reativar um aluno desativado
+        /// </summary>
+        /// <param name="id">Id do aluno</param>
+        /// <returns>O aluno reativado</returns>
+        public async Task<IActionResult> Reativar(int id)
+        {
+            try
+            {
+                var response = await _alunoService.ReativarAsync(id);
+                _logger.LogInformation("Aluno {Id} reativado", id);
+                return Ok(response);
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
     }
 }

@@ -66,6 +66,17 @@ namespace SPI.Application.Turmas.Services
             await _turmaRepository.SalvarAlteracoesAsync(cancellationToken);
         }
 
+        public async Task<TurmaResponse> ReativarAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var turma = await _turmaRepository.ObterPorIdAsync(id, cancellationToken)
+                ?? throw new NaoEncontradoException("Turma nao encontrada.");
+
+            turma.Ativo = true;
+            await _turmaRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            return Mapear(turma);
+        }
+
         public async Task<TurmaResponse> VincularAlunoAsync(int turmaId, int alunoId, CancellationToken cancellationToken = default)
         {
             var turma = await _turmaRepository.ObterPorIdAsync(turmaId, cancellationToken)

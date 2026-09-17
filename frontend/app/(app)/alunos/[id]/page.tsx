@@ -10,7 +10,7 @@ import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
-import { obterAluno, excluirAluno, type Aluno } from "@/lib/api/alunos";
+import { obterAluno, excluirAluno, reativarAluno, type Aluno } from "@/lib/api/alunos";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { listarPagamentos, type Pagamento } from "@/lib/api/pagamentos";
 import { avatarColor, initials, fmtData, fmtHora, currency } from "@/lib/format";
@@ -29,6 +29,7 @@ export default function AlunoDetailPage({ params }: { params: Promise<{ id: stri
   const [erro, setErro] = useState("");
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
+  const [reativando, setReativando] = useState(false);
 
   useEffect(() => {
     if (!sessao) return;
@@ -59,6 +60,20 @@ export default function AlunoDetailPage({ params }: { params: Promise<{ id: stri
       setConfirmandoExclusao(false);
     } finally {
       setExcluindo(false);
+    }
+  };
+
+  const handleReativar = async () => {
+    if (!sessao || !aluno) return;
+    setReativando(true);
+    try {
+      const alunoReativado = await reativarAluno(aluno.id, sessao.accessToken);
+      setAluno(alunoReativado);
+      mostrarToast("Aluno reativado com sucesso.");
+    } catch (excecao) {
+      mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível reativar o aluno.");
+    } finally {
+      setReativando(false);
     }
   };
 
@@ -97,9 +112,16 @@ export default function AlunoDetailPage({ params }: { params: Promise<{ id: stri
           <Link href={`/alunos/${aluno.id}/editar`} className="btn btn-ghost btn-sm">
             <Icon name="edit" size={13} /> Editar
           </Link>
-          <button className="btn btn-danger btn-sm" type="button" onClick={() => setConfirmandoExclusao(true)}>
-            <Icon name="trash" size={13} /> Excluir
-          </button>
+          {aluno.ativo && (
+            <button className="btn btn-danger btn-sm" type="button" onClick={() => setConfirmandoExclusao(true)}>
+              <Icon name="trash" size={13} /> Excluir
+            </button>
+          )}
+          {!aluno.ativo && (
+            <button className="btn btn-success btn-sm" type="button" onClick={handleReativar} disabled={reativando}>
+              <Icon name="check" size={13} /> Reativar
+            </button>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut } from "./client";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 
 /** Espelha SPI.Application.Common.Dtos.TurmaResumoResponse. */
 export interface TurmaResumo {
@@ -69,4 +69,8 @@ export function atualizarAluno(id: number, request: AtualizarAlunoRequest, acces
 
 export function excluirAluno(id: number, accessToken: string): Promise<void> {
   return apiDelete(`/api/alunos/${id}`, accessToken);
+}
+
+export function reativarAluno(id: number, accessToken: string): Promise<Aluno> {
+  return apiPatch<Aluno>(`/api/alunos/${id}/reativar`, accessToken);
 }

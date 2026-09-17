@@ -162,6 +162,33 @@ namespace SPI.Api.Controllers
             }
         }
 
+        [HttpPatch("{id}/reativar")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para reativar uma turma desativada
+        /// </summary>
+        /// <param name="id">Id da turma</param>
+        /// <returns>A turma reativada</returns>
+        public async Task<IActionResult> Reativar(int id)
+        {
+            try
+            {
+                var response = await _turmaService.ReativarAsync(id);
+                _logger.LogInformation("Turma {Id} reativada", id);
+                return Ok(response);
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
         [HttpPost("{id}/alunos/{alunoId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

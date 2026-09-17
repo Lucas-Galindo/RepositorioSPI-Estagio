@@ -11,7 +11,7 @@ import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
-import { obterTurma, excluirTurma, vincularAluno, desvincularAluno, type Turma } from "@/lib/api/turmas";
+import { obterTurma, excluirTurma, reativarTurma, vincularAluno, desvincularAluno, type Turma } from "@/lib/api/turmas";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { avatarColor, initials, fmtData, fmtHora } from "@/lib/format";
@@ -31,6 +31,7 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
   const [erro, setErro] = useState("");
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
+  const [reativando, setReativando] = useState(false);
   const [processando, setProcessando] = useState(false);
 
   const carregar = () => {
@@ -96,6 +97,20 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  const handleReativar = async () => {
+    if (!sessao || !turma) return;
+    setReativando(true);
+    try {
+      const turmaReativada = await reativarTurma(turma.id, sessao.accessToken);
+      setTurma(turmaReativada);
+      mostrarToast("Turma reativada com sucesso.");
+    } catch (excecao) {
+      mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível reativar a turma.");
+    } finally {
+      setReativando(false);
+    }
+  };
+
   if (erro) return <EmptyState title="Não foi possível carregar" desc={erro} />;
   if (!turma) return <p className="count-text">Carregando...</p>;
 
@@ -119,9 +134,16 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
           <Link href={`/turmas/${turma.id}/editar`} className="btn btn-ghost btn-sm">
             <Icon name="edit" size={13} /> Editar
           </Link>
-          <button className="btn btn-danger btn-sm" type="button" onClick={() => setConfirmandoExclusao(true)}>
-            <Icon name="trash" size={13} /> Excluir
-          </button>
+          {turma.ativo && (
+            <button className="btn btn-danger btn-sm" type="button" onClick={() => setConfirmandoExclusao(true)}>
+              <Icon name="trash" size={13} /> Excluir
+            </button>
+          )}
+          {!turma.ativo && (
+            <button className="btn btn-success btn-sm" type="button" onClick={handleReativar} disabled={reativando}>
+              <Icon name="check" size={13} /> Reativar
+            </button>
+          )}
         </div>
       </div>
 
