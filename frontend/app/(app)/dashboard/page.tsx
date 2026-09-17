@@ -143,7 +143,7 @@ export default function DashboardPage() {
                     key={a.id}
                   >
                     <div className="t">
-                      {fmtHora(a.horaInicio)} · {a.materiaNome}
+                      {fmtHora(a.horaInicio)} {a.materiaNome}
                     </div>
                     <div className="s">{a.turmaNome ?? a.alunos.map((al) => al.nome).join(", ")}</div>
                   </Link>
