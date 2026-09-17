@@ -91,6 +91,46 @@ export default function AlunoDetailPage({ params }: { params: Promise<{ id: stri
   const realizadas = aulas.filter((a) => a.status === "Realizada").length;
   const freqPct = realizadas ? Math.round((aluno.frequencia / realizadas) * 100) : null;
 
+  const temEndereco = Boolean(aluno.cep || aluno.rua || aluno.numero || aluno.complemento || aluno.bairro || aluno.cidade || aluno.estado);
+  const ehMenorDeIdade = Boolean(
+    aluno.telefoneResponsavel ||
+      aluno.emailResponsavel ||
+      aluno.responsavelCep ||
+      aluno.responsavelRua ||
+      aluno.responsavelNumero ||
+      aluno.responsavelComplemento ||
+      aluno.responsavelBairro ||
+      aluno.responsavelCidade ||
+      aluno.responsavelEstado
+  );
+
+  const formatarEndereco = (dados: {
+    rua: string | null;
+    numero: string | null;
+    complemento: string | null;
+    bairro: string | null;
+    cidade: string | null;
+    estado: string | null;
+    cep: string | null;
+  }) => (
+    <>
+      {(dados.rua || dados.numero) && (
+        <div style={{ fontSize: 13 }}>
+          {[dados.rua, dados.numero].filter(Boolean).join(", ")}
+          {dados.complemento ? ` — ${dados.complemento}` : ""}
+        </div>
+      )}
+      {(dados.bairro || dados.cidade || dados.estado) && (
+        <div style={{ fontSize: 12.5, color: "var(--c-text-muted)", marginTop: 4 }}>
+          {[dados.bairro, [dados.cidade, dados.estado].filter(Boolean).join("/")].filter(Boolean).join(" — ")}
+        </div>
+      )}
+      {dados.cep && (
+        <div style={{ fontSize: 12.5, color: "var(--c-text-muted)", marginTop: 4 }}>CEP: {dados.cep}</div>
+      )}
+    </>
+  );
+
   return (
     <>
       <Link href="/alunos" className="breadcrumb">
@@ -197,6 +237,43 @@ export default function AlunoDetailPage({ params }: { params: Promise<{ id: stri
             <EmptyState title="Nenhuma conta a receber" desc="Ainda não há contas a receber registradas para este aluno." />
           )}
         </div>
+      </div>
+
+      <div className="grid-2b" style={{ marginTop: 18 }}>
+        <div className="mini-panel">
+          <h4>
+            <Icon name="home" size={15} /> Endereço
+          </h4>
+          {temEndereco ? (
+            formatarEndereco(aluno)
+          ) : (
+            <EmptyState title="Sem endereço cadastrado" desc="Este aluno ainda não tem endereço registrado." />
+          )}
+        </div>
+
+        {ehMenorDeIdade && (
+          <div className="mini-panel">
+            <h4>
+              <Icon name="home" size={15} /> Endereço do responsável
+            </h4>
+            {aluno.responsavelMesmoEndereco ? (
+              <>
+                <div style={{ fontSize: 12.5, color: "var(--c-text-muted)", marginBottom: 8 }}>Mesmo endereço do aluno</div>
+                {formatarEndereco(aluno)}
+              </>
+            ) : (
+              formatarEndereco({
+                rua: aluno.responsavelRua,
+                numero: aluno.responsavelNumero,
+                complemento: aluno.responsavelComplemento,
+                bairro: aluno.responsavelBairro,
+                cidade: aluno.responsavelCidade,
+                estado: aluno.responsavelEstado,
+                cep: aluno.responsavelCep,
+              })
+            )}
+          </div>
+        )}
       </div>
 
       {confirmandoExclusao && (

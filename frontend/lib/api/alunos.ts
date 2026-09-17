@@ -20,6 +20,21 @@ export interface Aluno {
   frequencia: number;
   ativo: boolean;
   turmas: TurmaResumo[];
+  cep: string | null;
+  rua: string | null;
+  numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  estado: string | null;
+  responsavelMesmoEndereco: boolean;
+  responsavelCep: string | null;
+  responsavelRua: string | null;
+  responsavelNumero: string | null;
+  responsavelComplemento: string | null;
+  responsavelBairro: string | null;
+  responsavelCidade: string | null;
+  responsavelEstado: string | null;
 }
 
 /** Espelha SPI.Application.Alunos.Dtos.CadastrarAlunoRequest. */
@@ -34,6 +49,21 @@ export interface CadastrarAlunoRequest {
   valorAula: number;
   turmaId?: number | null;
   ehMenorDeIdade: boolean;
+  cep?: string | null;
+  rua?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  responsavelMesmoEndereco: boolean;
+  responsavelCep?: string | null;
+  responsavelRua?: string | null;
+  responsavelNumero?: string | null;
+  responsavelComplemento?: string | null;
+  responsavelBairro?: string | null;
+  responsavelCidade?: string | null;
+  responsavelEstado?: string | null;
 }
 
 /** Espelha SPI.Application.Alunos.Dtos.AtualizarAlunoRequest. */
@@ -46,6 +76,21 @@ export interface AtualizarAlunoRequest {
   emailResponsavel?: string | null;
   valorAula: number;
   ehMenorDeIdade: boolean;
+  cep?: string | null;
+  rua?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  responsavelMesmoEndereco: boolean;
+  responsavelCep?: string | null;
+  responsavelRua?: string | null;
+  responsavelNumero?: string | null;
+  responsavelComplemento?: string | null;
+  responsavelBairro?: string | null;
+  responsavelCidade?: string | null;
+  responsavelEstado?: string | null;
 }
 
 export function listarAlunos(

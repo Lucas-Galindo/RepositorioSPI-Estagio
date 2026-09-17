@@ -15,6 +15,22 @@ namespace SPI.Domain.Entities
         public int Frequencia { get; set; }
         public bool Ativo { get; set; }
 
+        public string? Cep { get; set; }
+        public string? Rua { get; set; }
+        public string? Numero { get; set; }
+        public string? Complemento { get; set; }
+        public string? Bairro { get; set; }
+        public string? Cidade { get; set; }
+        public string? Estado { get; set; }
+        public bool ResponsavelMesmoEndereco { get; set; } = true;
+        public string? ResponsavelCep { get; set; }
+        public string? ResponsavelRua { get; set; }
+        public string? ResponsavelNumero { get; set; }
+        public string? ResponsavelComplemento { get; set; }
+        public string? ResponsavelBairro { get; set; }
+        public string? ResponsavelCidade { get; set; }
+        public string? ResponsavelEstado { get; set; }
+
         public ICollection<AlunoTurma> AlunosTurma { get; set; } = new List<AlunoTurma>();
         public ICollection<Pagamento> Pagamentos { get; set; } = new List<Pagamento>();
         public ICollection<AulaAluno> AulaAlunos { get; set; } = new List<AulaAluno>();

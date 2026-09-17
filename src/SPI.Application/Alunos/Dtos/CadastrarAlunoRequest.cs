@@ -12,6 +12,23 @@ namespace SPI.Application.Alunos.Dtos
         public decimal ValorAula { get; set; }
         public int? TurmaId { get; set; }
 
+        public string? Cep { get; set; }
+        public string? Rua { get; set; }
+        public string? Numero { get; set; }
+        public string? Complemento { get; set; }
+        public string? Bairro { get; set; }
+        public string? Cidade { get; set; }
+        public string? Estado { get; set; }
+
+        public bool ResponsavelMesmoEndereco { get; set; } = true;
+        public string? ResponsavelCep { get; set; }
+        public string? ResponsavelRua { get; set; }
+        public string? ResponsavelNumero { get; set; }
+        public string? ResponsavelComplemento { get; set; }
+        public string? ResponsavelBairro { get; set; }
+        public string? ResponsavelCidade { get; set; }
+        public string? ResponsavelEstado { get; set; }
+
         /// <summary>
         /// Informado pela professora no cadastro: quando true, exige Telefone e Email do Responsavel
         /// (o schema atual nao guarda data de nascimento do aluno).

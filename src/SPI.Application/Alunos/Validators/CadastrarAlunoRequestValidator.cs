@@ -20,6 +20,17 @@ namespace SPI.Application.Alunos.Validators
             RuleFor(x => x.ValorAula)
                 .GreaterThanOrEqualTo(0).WithMessage("O Valor da aula nao pode ser negativo.");
 
+            RuleFor(x => x.Cep)
+                .NotEmpty().WithMessage("O campo CEP e obrigatorio.")
+                .Matches(@"^\d{8}$").WithMessage("O CEP deve conter exatamente 8 digitos numericos.")
+                    .When(x => !string.IsNullOrWhiteSpace(x.Cep));
+
+            RuleFor(x => x.Rua)
+                .NotEmpty().WithMessage("O campo Rua e obrigatorio.");
+
+            RuleFor(x => x.Numero)
+                .NotEmpty().WithMessage("O campo Numero e obrigatorio.");
+
             When(x => !string.IsNullOrWhiteSpace(x.Email) || !string.IsNullOrWhiteSpace(x.Senha), () =>
             {
                 RuleFor(x => x.Email!)
@@ -41,6 +52,22 @@ namespace SPI.Application.Alunos.Validators
                     .NotEmpty().WithMessage("Email do Responsavel e obrigatorio para aluno menor de idade.")
                     .EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.EmailResponsavel))
                         .WithMessage("O campo Email do Responsavel deve conter um e-mail valido.");
+            });
+
+            // Endereco do responsavel so e exigido quando o aluno e menor de idade
+            // E o endereco do responsavel nao e o mesmo do aluno (checkbox desmarcado).
+            When(x => x.EhMenorDeIdade && !x.ResponsavelMesmoEndereco, () =>
+            {
+                RuleFor(x => x.ResponsavelCep)
+                    .NotEmpty().WithMessage("O campo CEP do responsavel e obrigatorio.")
+                    .Matches(@"^\d{8}$").WithMessage("O CEP do responsavel deve conter exatamente 8 digitos numericos.")
+                        .When(x => !string.IsNullOrWhiteSpace(x.ResponsavelCep));
+
+                RuleFor(x => x.ResponsavelRua)
+                    .NotEmpty().WithMessage("O campo Rua do responsavel e obrigatorio.");
+
+                RuleFor(x => x.ResponsavelNumero)
+                    .NotEmpty().WithMessage("O campo Numero do responsavel e obrigatorio.");
             });
         }
     }

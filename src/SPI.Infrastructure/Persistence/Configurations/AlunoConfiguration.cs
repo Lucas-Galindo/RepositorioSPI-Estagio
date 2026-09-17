@@ -24,6 +24,22 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(a => a.Frequencia).HasColumnName("frequencia").HasDefaultValue(0);
             builder.Property(a => a.Ativo).HasColumnName("ativo").HasDefaultValue(true);
 
+            builder.Property(a => a.Cep).HasColumnName("cep").HasMaxLength(8);
+            builder.Property(a => a.Rua).HasColumnName("rua").HasMaxLength(150);
+            builder.Property(a => a.Numero).HasColumnName("numero").HasMaxLength(10);
+            builder.Property(a => a.Complemento).HasColumnName("complemento").HasMaxLength(100);
+            builder.Property(a => a.Bairro).HasColumnName("bairro").HasMaxLength(100);
+            builder.Property(a => a.Cidade).HasColumnName("cidade").HasMaxLength(100);
+            builder.Property(a => a.Estado).HasColumnName("estado").HasMaxLength(2);
+            builder.Property(a => a.ResponsavelMesmoEndereco).HasColumnName("responsavel_mesmo_endereco").HasDefaultValue(true);
+            builder.Property(a => a.ResponsavelCep).HasColumnName("responsavel_cep").HasMaxLength(8);
+            builder.Property(a => a.ResponsavelRua).HasColumnName("responsavel_rua").HasMaxLength(150);
+            builder.Property(a => a.ResponsavelNumero).HasColumnName("responsavel_numero").HasMaxLength(10);
+            builder.Property(a => a.ResponsavelComplemento).HasColumnName("responsavel_complemento").HasMaxLength(100);
+            builder.Property(a => a.ResponsavelBairro).HasColumnName("responsavel_bairro").HasMaxLength(100);
+            builder.Property(a => a.ResponsavelCidade).HasColumnName("responsavel_cidade").HasMaxLength(100);
+            builder.Property(a => a.ResponsavelEstado).HasColumnName("responsavel_estado").HasMaxLength(2);
+
             builder.HasIndex(a => a.Ra).IsUnique();
             builder.HasIndex(a => a.Cpf).IsUnique();
         }

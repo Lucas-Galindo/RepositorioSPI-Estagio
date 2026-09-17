@@ -62,11 +62,28 @@ namespace SPI.Application.Alunos.Services
             if (request.TurmaId.HasValue)
             {
                 await _alunoRepository.VincularTurmaAsync(id, request.TurmaId.Value, cancellationToken);
-                await _alunoRepository.SalvarAlteracoesAsync(cancellationToken);
             }
 
             var aluno = await _alunoRepository.ObterPorIdAsync(id, cancellationToken);
-            return Mapear(aluno!);
+
+            aluno!.Cep = request.Cep;
+            aluno.Rua = request.Rua;
+            aluno.Numero = request.Numero;
+            aluno.Complemento = request.Complemento;
+            aluno.Bairro = request.Bairro;
+            aluno.Cidade = request.Cidade;
+            aluno.Estado = request.Estado;
+            aluno.ResponsavelMesmoEndereco = request.ResponsavelMesmoEndereco;
+            aluno.ResponsavelCep = request.ResponsavelMesmoEndereco ? null : request.ResponsavelCep;
+            aluno.ResponsavelRua = request.ResponsavelMesmoEndereco ? null : request.ResponsavelRua;
+            aluno.ResponsavelNumero = request.ResponsavelMesmoEndereco ? null : request.ResponsavelNumero;
+            aluno.ResponsavelComplemento = request.ResponsavelMesmoEndereco ? null : request.ResponsavelComplemento;
+            aluno.ResponsavelBairro = request.ResponsavelMesmoEndereco ? null : request.ResponsavelBairro;
+            aluno.ResponsavelCidade = request.ResponsavelMesmoEndereco ? null : request.ResponsavelCidade;
+            aluno.ResponsavelEstado = request.ResponsavelMesmoEndereco ? null : request.ResponsavelEstado;
+            await _alunoRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            return Mapear(aluno);
         }
 
         public async Task<AlunoResponse> AtualizarAsync(int id, AtualizarAlunoRequest request, CancellationToken cancellationToken = default)
@@ -90,6 +107,21 @@ namespace SPI.Application.Alunos.Services
             aluno.Email = request.Email ?? aluno.Email;
             aluno.EmailResponsavel = request.EmailResponsavel ?? aluno.EmailResponsavel;
             aluno.ValorAula = request.ValorAula;
+            aluno.Cep = request.Cep ?? aluno.Cep;
+            aluno.Rua = request.Rua ?? aluno.Rua;
+            aluno.Numero = request.Numero ?? aluno.Numero;
+            aluno.Complemento = request.Complemento ?? aluno.Complemento;
+            aluno.Bairro = request.Bairro ?? aluno.Bairro;
+            aluno.Cidade = request.Cidade ?? aluno.Cidade;
+            aluno.Estado = request.Estado ?? aluno.Estado;
+            aluno.ResponsavelMesmoEndereco = request.ResponsavelMesmoEndereco;
+            aluno.ResponsavelCep = request.ResponsavelMesmoEndereco ? null : (request.ResponsavelCep ?? aluno.ResponsavelCep);
+            aluno.ResponsavelRua = request.ResponsavelMesmoEndereco ? null : (request.ResponsavelRua ?? aluno.ResponsavelRua);
+            aluno.ResponsavelNumero = request.ResponsavelMesmoEndereco ? null : (request.ResponsavelNumero ?? aluno.ResponsavelNumero);
+            aluno.ResponsavelComplemento = request.ResponsavelMesmoEndereco ? null : (request.ResponsavelComplemento ?? aluno.ResponsavelComplemento);
+            aluno.ResponsavelBairro = request.ResponsavelMesmoEndereco ? null : (request.ResponsavelBairro ?? aluno.ResponsavelBairro);
+            aluno.ResponsavelCidade = request.ResponsavelMesmoEndereco ? null : (request.ResponsavelCidade ?? aluno.ResponsavelCidade);
+            aluno.ResponsavelEstado = request.ResponsavelMesmoEndereco ? null : (request.ResponsavelEstado ?? aluno.ResponsavelEstado);
 
             await _alunoRepository.SalvarAlteracoesAsync(cancellationToken);
 
@@ -133,7 +165,26 @@ namespace SPI.Application.Alunos.Services
             {
                 Id = at.Turma.Id,
                 Nome = at.Turma.Nome
-            }).ToList()
+            }).ToList(),
+            Cep = aluno.Cep,
+            Rua = aluno.Rua,
+            Numero = aluno.Numero,
+            Complemento = aluno.Complemento,
+            Bairro = aluno.Bairro,
+            Cidade = aluno.Cidade,
+            Estado = aluno.Estado,
+            ResponsavelMesmoEndereco = aluno.ResponsavelMesmoEndereco,
+            // Quando o endereco do responsavel e "o mesmo do aluno", o espelho e
+            // calculado aqui na leitura -- as colunas responsavel_* no banco ficam
+            // sem uso nesse estado, entao nunca ficam desatualizadas em relacao ao
+            // endereco do aluno (ver research.md Decisao 2).
+            ResponsavelCep = aluno.ResponsavelMesmoEndereco ? aluno.Cep : aluno.ResponsavelCep,
+            ResponsavelRua = aluno.ResponsavelMesmoEndereco ? aluno.Rua : aluno.ResponsavelRua,
+            ResponsavelNumero = aluno.ResponsavelMesmoEndereco ? aluno.Numero : aluno.ResponsavelNumero,
+            ResponsavelComplemento = aluno.ResponsavelMesmoEndereco ? aluno.Complemento : aluno.ResponsavelComplemento,
+            ResponsavelBairro = aluno.ResponsavelMesmoEndereco ? aluno.Bairro : aluno.ResponsavelBairro,
+            ResponsavelCidade = aluno.ResponsavelMesmoEndereco ? aluno.Cidade : aluno.ResponsavelCidade,
+            ResponsavelEstado = aluno.ResponsavelMesmoEndereco ? aluno.Estado : aluno.ResponsavelEstado
         };
     }
 }
