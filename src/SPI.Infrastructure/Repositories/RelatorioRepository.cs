@@ -24,12 +24,52 @@ namespace SPI.Infrastructure.Repositories
         public Task<int> ContarTurmasAtivasAsync(CancellationToken cancellationToken = default) =>
             _dbContext.Turmas.CountAsync(t => t.Ativo, cancellationToken);
 
-        public async Task<decimal> ObterValorPendenteAsync(CancellationToken cancellationToken = default)
+        public async Task<decimal> ObterValorPendenteAsync(
+            CancellationToken cancellationToken = default,
+            int? alunoId = null,
+            string? status = null,
+            DateOnly? vencimentoInicio = null,
+            DateOnly? vencimentoFim = null)
         {
+            // Qualquer status concreto diferente de "Pendente"/"Atrasado" (ex.:
+            // "Pago", "Cancelado") nunca pode ser um pagamento em aberto --
+            // retorna 0 sem consultar o banco (specs/032, mesmo comportamento
+            // ja existente em RelatorioService.ObterPagamentosAsync hoje).
+            if (status is not (null or "Pendente" or "Atrasado"))
+            {
+                return 0m;
+            }
+
+            var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
+
             // "Atrasado" nao e persistido (e um Pendente vencido); somar por
-            // status "Pendente" ja cobre os dois casos do relatorio.
-            var pagamentos = await _dbContext.Pagamentos
-                .Where(p => p.Status == "Pendente")
+            // status "Pendente" ja cobre os dois casos do relatorio. Quando
+            // status == "Atrasado" e informado explicitamente, restringe a
+            // soma so a fatia vencida (mesmo corte usado em
+            // PagamentoService.Mapear).
+            var query = _dbContext.Pagamentos.Where(p => p.Status == "Pendente");
+
+            if (status == "Atrasado")
+            {
+                query = query.Where(p => p.DataVencimento < hoje);
+            }
+
+            if (alunoId.HasValue)
+            {
+                query = query.Where(p => p.AlunoId == alunoId.Value);
+            }
+
+            if (vencimentoInicio.HasValue)
+            {
+                query = query.Where(p => p.DataVencimento >= vencimentoInicio.Value);
+            }
+
+            if (vencimentoFim.HasValue)
+            {
+                query = query.Where(p => p.DataVencimento <= vencimentoFim.Value);
+            }
+
+            var pagamentos = await query
                 .Select(p => p.ValorFinal)
                 .ToListAsync(cancellationToken);
 
@@ -225,6 +265,7 @@ namespace SPI.Infrastructure.Repositories
             var query = _dbContext.Pagamentos
                 .Include(p => p.Aluno).ThenInclude(a => a.AlunosTurma).ThenInclude(at => at.Turma)
                 .Include(p => p.FormaPagamento)
+                .Include(p => p.PagamentosAula).ThenInclude(pa => pa.Aula).ThenInclude(a => a.Turma)
                 .Where(p => p.Status == "Pago");
 
             if (inicio.HasValue)

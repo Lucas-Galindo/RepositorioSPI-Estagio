@@ -21,14 +21,8 @@ namespace SPI.Application.Dashboard.Dtos
         /// <summary>Media de dias entre vencimento e pagamento, so para contas pagas com atraso no periodo. Nulo se nao houve nenhuma.</summary>
         public decimal? PrazoMedioAtrasoDias { get; set; }
 
-        /// <summary>Percentual (0-100) de folga do caixa apos as despesas do periodo, sobre o recebido.</summary>
-        public decimal MargemSegurancaPercentual { get; set; }
-
         /// <summary>Recebido menos pago no periodo (mesma base do Saldo Realizado da Visao Geral/Relatorio Financeiro).</summary>
         public decimal FluxoCaixaOperacional { get; set; }
-
-        /// <summary>Recebido dividido por pago no periodo. Nulo se nao houve despesas pagas (sem base de comparacao); menor que 1 indica prejuizo operacional.</summary>
-        public decimal? IndiceCoberturaCustosFixos { get; set; }
 
         public GargaloCaixaResponse GargaloCaixa { get; set; } = new();
     }

@@ -15,8 +15,20 @@ namespace SPI.Domain.Repositories
         Task<int> ContarTurmasAtivasAsync(CancellationToken cancellationToken = default);
 
         // Soma de pagamentos "em aberto": status Pendente ou Atrasado
-        // (Atrasado e calculado, ver PagamentoService.Mapear).
-        Task<decimal> ObterValorPendenteAsync(CancellationToken cancellationToken = default);
+        // (Atrasado e calculado, ver PagamentoService.Mapear). Implementacao
+        // unica compartilhada por Dashboard (sem filtro) e Relatorio de
+        // Pagamentos (com filtros) -- specs/032. Sem filtro (todos os
+        // parametros null), soma todo Pagamento com Status == "Pendente"
+        // (inclui os efetivamente "Atrasado"). Com alunoId/vencimentoInicio/
+        // vencimentoFim, restringe a soma. Com status: null ou "Pendente" nao
+        // restringe (mesmo resultado de sem filtro); "Atrasado" restringe so
+        // a fatia vencida; qualquer outro status (ex.: "Pago") retorna 0.
+        Task<decimal> ObterValorPendenteAsync(
+            CancellationToken cancellationToken = default,
+            int? alunoId = null,
+            string? status = null,
+            DateOnly? vencimentoInicio = null,
+            DateOnly? vencimentoFim = null);
 
         // Soma de pagamentos com status Pago, pela DataPagamento no periodo.
         // turmaId/materiaId/alunoId (Sprint 3 da evolucao do Financeiro) filtram

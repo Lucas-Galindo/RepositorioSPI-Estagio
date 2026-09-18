@@ -1,6 +1,7 @@
 using SPI.Application.Dashboard.Dtos;
 using SPI.Application.Pagamentos.Services;
 using SPI.Application.Relatorios.Dtos;
+using SPI.Domain.Entities;
 using SPI.Domain.Exceptions;
 using SPI.Domain.Repositories;
 
@@ -85,7 +86,10 @@ namespace SPI.Application.Relatorios.Services
                 Status = p.Status
             }).ToList();
 
-            var totalPendente = itens.Where(i => i.Status is "Pendente" or "Atrasado").Sum(i => i.Valor);
+            // specs/032: implementacao unica compartilhada com o Dashboard
+            // (RelatorioRepository.ObterValorPendenteAsync), em vez de somar
+            // em memoria sobre a lista de itens ja mapeada.
+            var totalPendente = await _relatorioRepository.ObterValorPendenteAsync(cancellationToken, alunoId, status, inicio, fim);
 
             return new RelatorioPagamentosResponse
             {
@@ -132,14 +136,45 @@ namespace SPI.Application.Relatorios.Services
                     .Select(g => new RelatorioFinanceiroItem { Chave = g.Key, Total = g.Sum(p => p.ValorFinal) })
                     .OrderByDescending(i => i.Total)
                     .ToList(),
-                // Turma do aluno no momento do pagamento (primeira, se vinculado
-                // a mais de uma); "Atendimento particular" se nao tiver turma.
+                // specs/029: turma da(s) Aula(s) efetivamente cobertas pelo
+                // pagamento (via PagamentoAula), nao mais a lista generica de
+                // turmas do Aluno -- ver DeterminarChaveTurma.
                 PorTurma = pagos
-                    .GroupBy(p => p.Aluno.AlunosTurma.Select(at => at.Turma.Nome).FirstOrDefault() ?? "Atendimento particular")
+                    .GroupBy(DeterminarChaveTurma)
                     .Select(g => new RelatorioFinanceiroItem { Chave = g.Key, Total = g.Sum(p => p.ValorFinal) })
                     .OrderByDescending(i => i.Total)
                     .ToList()
             };
+        }
+
+        // specs/029: determina o grupo "Por Turma" de um pagamento a partir das
+        // turmas das aulas que ele efetivamente cobre (Pagamento -> PagamentoAula
+        // -> Aula.TurmaId), nao da lista geral de turmas do aluno. "Atendimento
+        // particular" quando nenhuma aula vinculada tem turma (ou nao ha aula
+        // vinculada); "Multiplas turmas" quando as aulas cobertas pertencem a
+        // mais de uma turma distinta, ou combinam turma com aula sem turma
+        // (ver spec.md FR-002/FR-003/FR-004).
+        private static string DeterminarChaveTurma(Pagamento pagamento)
+        {
+            var aulas = pagamento.PagamentosAula.Select(pa => pa.Aula).ToList();
+            var turmasDistintas = aulas
+                .Where(a => a.TurmaId.HasValue)
+                .Select(a => a.TurmaId!.Value)
+                .Distinct()
+                .ToList();
+            var temAulaSemTurma = aulas.Any(a => !a.TurmaId.HasValue);
+
+            if (turmasDistintas.Count == 0)
+            {
+                return "Atendimento particular";
+            }
+
+            if (turmasDistintas.Count == 1 && !temAulaSemTurma)
+            {
+                return aulas.First(a => a.TurmaId == turmasDistintas[0]).Turma!.Nome;
+            }
+
+            return "Múltiplas turmas";
         }
 
         // Sprint 3 da evolucao do Financeiro: mesmos indicadores do Dashboard
@@ -171,8 +206,6 @@ namespace SPI.Application.Relatorios.Services
             // Despesa nunca e filtrada (ver comentario acima da assinatura).
             var valorPago = await _relatorioRepository.ObterValorPagoNoPeriodoAsync(periodoInicio, periodoFim, cancellationToken);
             var fluxoCaixaOperacional = valorFaturado - valorPago;
-            var margemSeguranca = valorFaturado == 0 ? 0m : Math.Round(fluxoCaixaOperacional / valorFaturado * 100, 1);
-            decimal? indiceCobertura = valorPago == 0 ? null : Math.Round(valorFaturado / valorPago, 2);
 
             var entradas = await _relatorioRepository.ObterEntradasPorDiaDoMesAsync(
                 periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
@@ -184,9 +217,7 @@ namespace SPI.Application.Relatorios.Services
             {
                 TaxaInadimplenciaPercentual = taxaInadimplencia,
                 PrazoMedioAtrasoDias = prazoMedioAtraso,
-                MargemSegurancaPercentual = margemSeguranca,
                 FluxoCaixaOperacional = fluxoCaixaOperacional,
-                IndiceCoberturaCustosFixos = indiceCobertura,
                 GargaloCaixa = new GargaloCaixaResponse
                 {
                     DiaMaiorEntrada = maiorEntrada?.Dia,

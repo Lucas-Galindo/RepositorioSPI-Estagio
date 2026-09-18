@@ -12,9 +12,7 @@ export interface GargaloCaixa {
 export interface IndicadoresFinanceiros {
   taxaInadimplenciaPercentual: number;
   prazoMedioAtrasoDias: number | null;
-  margemSegurancaPercentual: number;
   fluxoCaixaOperacional: number;
-  indiceCoberturaCustosFixos: number | null;
   gargaloCaixa: GargaloCaixa;
 }
 

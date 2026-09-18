@@ -110,7 +110,12 @@ namespace SPI.Application.Tests.Relatorios
             public Task<int> ContarAulasAgendadasNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default) => Task.FromResult(0);
             public Task<int> ContarAlunosAtivosAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
             public Task<int> ContarTurmasAtivasAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
-            public Task<decimal> ObterValorPendenteAsync(CancellationToken cancellationToken = default) => Task.FromResult(0m);
+            public Task<decimal> ObterValorPendenteAsync(
+                CancellationToken cancellationToken = default,
+                int? alunoId = null,
+                string? status = null,
+                DateOnly? vencimentoInicio = null,
+                DateOnly? vencimentoFim = null) => Task.FromResult(0m);
             public Task<decimal> ObterValorFaturadoNoPeriodoAsync(
                 DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
                 int? turmaId = null, int? materiaId = null, int? alunoId = null,

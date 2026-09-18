@@ -72,8 +72,6 @@ namespace SPI.Application.Dashboard.Services
 
             var valorPago = await _relatorioRepository.ObterValorPagoNoPeriodoAsync(inicio, fim, cancellationToken);
             var fluxoCaixaOperacional = valorFaturado - valorPago;
-            var margemSeguranca = valorFaturado == 0 ? 0m : Math.Round(fluxoCaixaOperacional / valorFaturado * 100, 1);
-            decimal? indiceCobertura = valorPago == 0 ? null : Math.Round(valorFaturado / valorPago, 2);
 
             var entradas = await _relatorioRepository.ObterEntradasPorDiaDoMesAsync(inicio, fim, cancellationToken);
             var saidas = await _relatorioRepository.ObterSaidasPorDiaDoMesAsync(inicio, fim, cancellationToken);
@@ -84,9 +82,7 @@ namespace SPI.Application.Dashboard.Services
             {
                 TaxaInadimplenciaPercentual = taxaInadimplencia,
                 PrazoMedioAtrasoDias = prazoMedioAtraso,
-                MargemSegurancaPercentual = margemSeguranca,
                 FluxoCaixaOperacional = fluxoCaixaOperacional,
-                IndiceCoberturaCustosFixos = indiceCobertura,
                 GargaloCaixa = new GargaloCaixaResponse
                 {
                     DiaMaiorEntrada = maiorEntrada?.Dia,

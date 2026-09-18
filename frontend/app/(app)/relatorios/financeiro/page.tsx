@@ -347,7 +347,7 @@ export default function RelatorioFinanceiroPage() {
 
       {aba === "indicadores" && indicadoresDados && (
         <>
-          <div className="kpi-row kpi-row-3">
+          <div className="kpi-row kpi-row-2">
             <div className="kpi">
               <div className="label">
                 <Icon name="warn" size={12} /> Inadimplência
@@ -365,15 +365,6 @@ export default function RelatorioFinanceiroPage() {
                 {indicadoresDados.indicadores.prazoMedioAtrasoDias !== null ? `${indicadoresDados.indicadores.prazoMedioAtrasoDias} dias` : "—"}
               </div>
               <div className="delta">Contas pagas com atraso</div>
-            </div>
-            <div className="kpi">
-              <div className="label">
-                <Icon name="wallet" size={12} /> Margem de segurança
-              </div>
-              <div className={`value ${indicadoresDados.indicadores.margemSegurancaPercentual >= 0 ? "turq" : "danger"}`}>
-                {indicadoresDados.indicadores.margemSegurancaPercentual}%
-              </div>
-              <div className="delta">Folga do caixa após despesas</div>
             </div>
           </div>
 
