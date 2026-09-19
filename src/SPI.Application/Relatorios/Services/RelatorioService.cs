@@ -34,17 +34,19 @@ namespace SPI.Application.Relatorios.Services
         {
             var aulas = await _aulaRepository.ListarAsync(status, turmaId, alunoId, inicio, fim, cancellationToken);
 
-            return aulas.Select(a => new RelatorioAgendaItem
-            {
-                AulaId = a.Id,
-                Data = a.DataInicio,
-                HoraInicio = a.HoraInicio,
-                HoraFim = a.HoraFim,
-                Materia = a.Materia.Nome,
-                TurmaOuAluno = a.Turma?.Nome ?? $"Individual - {a.AulaAlunos.FirstOrDefault()?.Aluno.Nome ?? "?"}",
-                Status = a.Status
-            }).ToList();
+            return aulas.Select(MapearAgendaItem).ToList();
         }
+
+        private static RelatorioAgendaItem MapearAgendaItem(Aula a) => new()
+        {
+            AulaId = a.Id,
+            Data = a.DataInicio,
+            HoraInicio = a.HoraInicio,
+            HoraFim = a.HoraFim,
+            Materia = a.Materia.Nome,
+            TurmaOuAluno = a.Turma?.Nome ?? $"Individual - {a.AulaAlunos.FirstOrDefault()?.Aluno.Nome ?? "?"}",
+            Status = a.Status
+        };
 
         public async Task<RelatorioHistoricoAlunoResponse> ObterHistoricoAlunoAsync(
             int alunoId, DateOnly? inicio, DateOnly? fim, string? status, int? turmaId, CancellationToken cancellationToken = default)
@@ -52,13 +54,21 @@ namespace SPI.Application.Relatorios.Services
             var aluno = await _alunoRepository.ObterPorIdAsync(alunoId, cancellationToken)
                 ?? throw new NaoEncontradoException("Aluno nao encontrado.");
 
-            var aulas = await ObterAgendaAsync(inicio, fim, status, turmaId, alunoId, cancellationToken);
+            var aulasBrutas = await _aulaRepository.ListarAsync(status, turmaId, alunoId, inicio, fim, cancellationToken);
+            var aulas = aulasBrutas.Select(MapearAgendaItem).ToList();
 
-            // Formula da Estoria 13: FREQUENCIA (contador vitalicio do aluno,
-            // ver Aluno.Frequencia) dividida pelo total de aulas Realizadas
-            // em que ele esteve vinculado dentro do periodo/filtros informados.
-            var totalRealizadasNoFiltro = aulas.Count(a => a.Status == "Realizada");
-            var percentual = totalRealizadasNoFiltro == 0 ? 0m : Math.Round((decimal)aluno.Frequencia / totalRealizadasNoFiltro * 100, 1);
+            // Formula da Estoria 13, corrigida pela Estoria 033: com qualquer filtro
+            // restritivo (periodo, status ou turma), o numerador e a contagem real de
+            // presencas do aluno dentro do mesmo filtro que ja compoe o denominador -
+            // nunca o contador vitalicio (Aluno.Frequencia), que poderia gerar percentuais
+            // acima de 100%. Sem nenhum filtro restritivo, o contador vitalicio e mantido
+            // (comportamento inalterado, pois nesse caso os dois coincidem).
+            var totalRealizadasNoFiltro = aulasBrutas.Count(a => a.Status == "Realizada");
+            var temFiltroRestritivo = inicio.HasValue || fim.HasValue || turmaId.HasValue || !string.IsNullOrWhiteSpace(status);
+            var numerador = temFiltroRestritivo
+                ? aulasBrutas.Count(a => a.Status == "Realizada" && a.AulaAlunos.Any(aa => aa.AlunoId == alunoId && aa.Presente == true))
+                : aluno.Frequencia;
+            var percentual = totalRealizadasNoFiltro == 0 ? 0m : Math.Round((decimal)numerador / totalRealizadasNoFiltro * 100, 1);
 
             return new RelatorioHistoricoAlunoResponse
             {
