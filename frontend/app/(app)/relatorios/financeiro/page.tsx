@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
@@ -211,18 +212,21 @@ export default function RelatorioFinanceiroPage() {
             <div className="kpi">
               <div className="label">
                 <Icon name="wallet" size={12} /> Recebido
+                <InfoTooltip text="Total efetivamente recebido dos alunos dentro do período filtrado." />
               </div>
               <div className="value turq">{currency(dados.totalRecebido)}</div>
             </div>
             <div className="kpi">
               <div className="label">
                 <Icon name="money" size={12} /> Pago
+                <InfoTooltip text="Total efetivamente pago em despesas dentro do período filtrado." />
               </div>
               <div className="value">{currency(dados.totalPago)}</div>
             </div>
             <div className="kpi">
               <div className="label">
                 <Icon name="cal" size={12} /> Saldo realizado
+                <InfoTooltip text="Diferença entre o que já entrou e o que já saiu no período — o saldo que de fato aconteceu." />
               </div>
               <div className={`value ${dados.saldoRealizado >= 0 ? "turq" : "danger"}`}>{currency(dados.saldoRealizado)}</div>
             </div>
@@ -232,18 +236,21 @@ export default function RelatorioFinanceiroPage() {
             <div className="kpi">
               <div className="label">
                 <Icon name="warn" size={12} /> Receita pendente
+                <InfoTooltip text="Total que ainda falta receber dos alunos, incluindo o que já está atrasado." />
               </div>
               <div className="value gold">{currency(dados.receitaPendente)}</div>
             </div>
             <div className="kpi">
               <div className="label">
                 <Icon name="warn" size={12} /> Despesa pendente
+                <InfoTooltip text="Total que ainda falta pagar em despesas, incluindo o que já está atrasado." />
               </div>
               <div className="value gold">{currency(dados.despesaPendente)}</div>
             </div>
             <div className="kpi">
               <div className="label">
                 <Icon name="fwd" size={12} /> Saldo previsto
+                <InfoTooltip text="O saldo que você teria se tudo que está em aberto (a receber e a pagar) fosse recebido e pago." />
               </div>
               <div className={`value ${dados.saldoPrevisto >= 0 ? "turq" : "danger"}`}>{currency(dados.saldoPrevisto)}</div>
             </div>
@@ -351,6 +358,7 @@ export default function RelatorioFinanceiroPage() {
             <div className="kpi">
               <div className="label">
                 <Icon name="warn" size={12} /> Inadimplência
+                <InfoTooltip text="Percentual do valor total vencido no período que ainda não foi recebido." />
               </div>
               <div className={`value ${indicadoresDados.indicadores.taxaInadimplenciaPercentual > 0 ? "danger" : "turq"}`}>
                 {indicadoresDados.indicadores.taxaInadimplenciaPercentual}%
@@ -360,6 +368,7 @@ export default function RelatorioFinanceiroPage() {
             <div className="kpi">
               <div className="label">
                 <Icon name="cal" size={12} /> Prazo médio de atraso
+                <InfoTooltip text="Quantos dias, em média, os pagamentos atrasados demoram para ser recebidos após o vencimento." />
               </div>
               <div className="value">
                 {indicadoresDados.indicadores.prazoMedioAtrasoDias !== null ? `${indicadoresDados.indicadores.prazoMedioAtrasoDias} dias` : "—"}
@@ -441,6 +450,7 @@ export default function RelatorioFinanceiroPage() {
             <div className="mini-panel">
               <h4>
                 <Icon name="wallet" size={15} /> Fluxo de caixa (últimos 6 meses)
+                <InfoTooltip text="Quanto entrou, quanto saiu e qual foi o saldo do seu caixa em cada um dos últimos 6 meses." />
               </h4>
               <div className="table-wrap" style={{ boxShadow: "none", margin: 0 }}>
                 <table>

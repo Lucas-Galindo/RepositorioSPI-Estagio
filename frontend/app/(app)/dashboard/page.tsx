@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
@@ -95,7 +96,10 @@ export default function DashboardPage() {
           <div className="icon-chip chip-gold">
             <Icon name="wallet" size={16} />
           </div>
-          <div className="card-eyebrow">Recebido este mês</div>
+          <div className="card-eyebrow">
+            Recebido este mês
+            <InfoTooltip text="Total de contas a receber que já foram pagas dentro do mês atual." />
+          </div>
           <div className="big-value">{recebidoMes !== null ? currency(recebidoMes) : "—"}</div>
           <div className="big-label">Contas a receber pagas no mês</div>
         </div>

@@ -401,6 +401,57 @@ nav.nav-group {
   margin-top: 4px;
 }
 
+/* ===== Info tooltip ===== */
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.info-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  cursor: help;
+  opacity: 0.65;
+}
+.info-tooltip-trigger:hover,
+.info-tooltip-trigger:focus-visible {
+  opacity: 1;
+}
+.info-tooltip-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 220px;
+  background: var(--c-sidebar);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.4;
+  padding: 9px 12px;
+  border-radius: 10px;
+  box-shadow: 0 10px 26px #0000004d;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s, visibility 0.12s;
+  z-index: 20;
+  pointer-events: none;
+}
+.info-tooltip:hover .info-tooltip-bubble,
+.info-tooltip:focus-within .info-tooltip-bubble {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* ===== Home cards ===== */
 .stat-row {
   display: grid;

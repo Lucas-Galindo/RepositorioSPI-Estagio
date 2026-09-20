@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
@@ -158,6 +159,7 @@ export default function DashboardTurmasPage() {
         <div className="kpi">
           <div className="label">
             <Icon name="book" size={12} /> Ocupação média
+            <InfoTooltip text="Número médio de alunos matriculados em cada turma ativa." />
           </div>
           <div className="value">{ocupacaoMedia.toFixed(1)}</div>
           <div className="delta">aluno(s) por turma</div>

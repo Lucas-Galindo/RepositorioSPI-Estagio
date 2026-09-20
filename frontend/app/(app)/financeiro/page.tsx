@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
@@ -97,6 +98,7 @@ export default function FinanceiroPage() {
             <div className="kpi">
               <div className="label">
                 <Icon name="wallet" size={12} /> Saldo realizado (mês)
+                <InfoTooltip text="Diferença entre o que já entrou e o que já saiu no período — o saldo que de fato aconteceu." />
               </div>
               <div className={`value ${dados.resultado.saldoRealizado >= 0 ? "turq" : "danger"}`}>
                 {currency(dados.resultado.saldoRealizado)}
@@ -106,6 +108,7 @@ export default function FinanceiroPage() {
             <div className="kpi">
               <div className="label">
                 <Icon name="money" size={12} /> Saldo previsto
+                <InfoTooltip text="O saldo que você teria se tudo que está em aberto (a receber e a pagar) fosse recebido e pago." />
               </div>
               <div className={`value ${dados.resultado.saldoPrevisto >= 0 ? "turq" : "danger"}`}>
                 {currency(dados.resultado.saldoPrevisto)}

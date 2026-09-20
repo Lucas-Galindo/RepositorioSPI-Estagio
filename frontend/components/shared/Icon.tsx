@@ -86,6 +86,13 @@ const PATHS: Record<string, React.ReactNode> = {
     </>
   ),
   paperclip: <path d="M21.44 11.05 12.25 20.24a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L9.94 18.36a2 2 0 0 1-2.83-2.83l8.49-8.48" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <circle cx="12" cy="8" r=".5" fill="currentColor" />
+    </>
+  ),
 };
 
 interface IconProps {

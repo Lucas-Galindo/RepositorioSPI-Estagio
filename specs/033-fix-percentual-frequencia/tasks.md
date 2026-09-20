@@ -72,7 +72,7 @@ Não aplicável — não há infraestrutura compartilhada bloqueante a criar ant
 
 - [X] T012 [P] Atualizar `specs/013-relatorio-historico-aluno/spec.md` (Acceptance Scenario 2, FR-002, Edge Cases, Assumptions) para refletir o novo cálculo por presenças reais quando há filtro restritivo, referenciando esta spec (033) como a correção aplicada — conforme Princípio V da constituição e plan.md — Constitution Check.
 - [X] T013 Rodar a suíte de testes completa (`dotnet test`) para confirmar que nenhum outro fluxo foi afetado, em especial o Relatório de Agenda (Estória 12), que compartilha `MapearAgendaItem` (T006) via `ObterAgendaAsync` (quickstart.md — Regressão).
-- [ ] T014 Validação manual complementar contra dados reais, seguindo os 5 passos de quickstart.md — Validação manual (requer credencial temporária de teste conforme a regra de trabalho combinada; não criar usuário de teste persistente sem perguntar antes).
+- [X] T014 Validação manual complementar contra dados reais, seguindo os 5 passos de quickstart.md — Validação manual (requer credencial temporária de teste conforme a regra de trabalho combinada; não criar usuário de teste persistente sem perguntar antes).
 
 ---
 
