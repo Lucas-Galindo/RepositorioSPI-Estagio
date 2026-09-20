@@ -40,12 +40,9 @@ namespace SPI.Domain.Repositories
             int? turmaId = null, int? materiaId = null, int? alunoId = null,
             string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null);
 
-        // Contrapartida das duas consultas acima, para Contas a Pagar (Sprint 4
-        // da evolucao do Financeiro). Usadas pela Visao Geral (Sprint 7) e pelo
-        // Dashboard (Sprint 9) -- adicionadas aqui para nao duplicar a mesma
-        // consulta agregada em mais de um lugar.
-        Task<decimal> ObterValorAPagarAsync(CancellationToken cancellationToken = default);
-
+        // Contrapartida das consultas acima, para Contas a Pagar (Sprint 4 da
+        // evolucao do Financeiro). Usada pela Visao Geral (Sprint 7), pelo
+        // Dashboard (Sprint 9) e por RelatorioService.ObterIndicadoresFinanceirosAsync.
         Task<decimal> ObterValorPagoNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);
 
         // Sprint 7 (Visao Geral Financeira): separa o valor "Pendente" em duas
@@ -55,8 +52,13 @@ namespace SPI.Domain.Repositories
         // "Pendente" para a Application camada so para separar em dois grupos.
         // turmaNome/materiaNome/alunoBusca (Sprint 4.2): filtram pelo lado da
         // receita, por texto (nome/RA) -- Visao Geral.
+        // turmaId/materiaId/alunoId (specs/035): mesmo filtro pelo lado da
+        // receita, por id -- Relatorio Financeiro, mesma semantica ja usada
+        // por ListarPagosNoPeriodoAsync/ObterValorFaturadoNoPeriodoAsync.
         Task<(decimal AVencer, decimal Atrasado)> ObterReceitasPendentesSegregadasAsync(
-            CancellationToken cancellationToken = default, string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null);
+            CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null,
+            string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null);
 
         Task<(decimal AVencer, decimal Atrasado)> ObterDespesasPendentesSegregadasAsync(CancellationToken cancellationToken = default);
 

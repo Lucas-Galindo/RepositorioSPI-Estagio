@@ -23,6 +23,7 @@ namespace SPI.Infrastructure.Persistence
         public DbSet<CategoriaDespesa> CategoriasDespesa => Set<CategoriaDespesa>();
         public DbSet<ContaPagar> ContasPagar => Set<ContaPagar>();
         public DbSet<AulaAluno> AulaAlunos => Set<AulaAluno>();
+        public DbSet<VinculoCobranca> VinculosCobranca => Set<VinculoCobranca>();
         public DbSet<RaControle> RaControles => Set<RaControle>();
         public DbSet<Admin> Admins => Set<Admin>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

@@ -93,19 +93,6 @@ namespace SPI.Infrastructure.Repositories
             return pagamentos.Sum();
         }
 
-        public async Task<decimal> ObterValorAPagarAsync(CancellationToken cancellationToken = default)
-        {
-            // Mesma convencao de ObterValorPendenteAsync: "Atrasado" nao e
-            // persistido (e um Pendente vencido), entao somar por status
-            // "Pendente" ja cobre os dois casos.
-            var contas = await _dbContext.ContasPagar
-                .Where(c => c.Status == "Pendente")
-                .Select(c => c.Valor)
-                .ToListAsync(cancellationToken);
-
-            return contas.Sum();
-        }
-
         public async Task<decimal> ObterValorPagoNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default)
         {
             var contas = await _dbContext.ContasPagar
@@ -117,11 +104,16 @@ namespace SPI.Infrastructure.Repositories
         }
 
         public async Task<(decimal AVencer, decimal Atrasado)> ObterReceitasPendentesSegregadasAsync(
-            CancellationToken cancellationToken = default, string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null)
+            CancellationToken cancellationToken = default,
+            int? turmaId = null, int? materiaId = null, int? alunoId = null,
+            string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null)
         {
             var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
             var query = AplicarFiltroReceitaPorNome(
-                _dbContext.Pagamentos.Where(p => p.Status == "Pendente"), turmaNome, materiaNome, alunoBusca);
+                AplicarFiltroReceita(
+                    _dbContext.Pagamentos.Where(p => p.Status == "Pendente"),
+                    turmaId, materiaId, alunoId),
+                turmaNome, materiaNome, alunoBusca);
             var pendentes = await query
                 .Select(p => new { p.ValorFinal, p.DataVencimento })
                 .ToListAsync(cancellationToken);

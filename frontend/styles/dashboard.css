@@ -843,6 +843,22 @@ nav.nav-group {
   margin-top: 6px;
 }
 
+/* Modal do formulario de Vinculo de Cobranca (tela de detalhe do Aluno):
+   mesmo tratamento do popup de aula -- o cartao visivel e o proprio .modal. */
+.modal.modal-vinculo {
+  max-width: 560px;
+  padding: 32px;
+}
+.modal-vinculo h3 {
+  margin-bottom: 18px;
+}
+.modal-vinculo .form-wrap {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 /* ===== panels / lists ===== */
 .panel {
   padding: 24px;

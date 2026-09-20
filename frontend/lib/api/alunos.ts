@@ -4,6 +4,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 export interface TurmaResumo {
   id: number;
   nome: string;
+  ativo: boolean;
 }
 
 /** Espelha SPI.Application.Alunos.Dtos.AlunoResponse. */

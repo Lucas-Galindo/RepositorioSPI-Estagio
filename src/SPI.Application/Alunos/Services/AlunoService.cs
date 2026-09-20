@@ -164,7 +164,8 @@ namespace SPI.Application.Alunos.Services
             Turmas = aluno.AlunosTurma.Select(at => new TurmaResumoResponse
             {
                 Id = at.Turma.Id,
-                Nome = at.Turma.Nome
+                Nome = at.Turma.Nome,
+                Ativo = at.Turma.Ativo
             }).ToList(),
             Cep = aluno.Cep,
             Rua = aluno.Rua,

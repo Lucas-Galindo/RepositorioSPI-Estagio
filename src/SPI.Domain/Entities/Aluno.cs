@@ -34,5 +34,6 @@ namespace SPI.Domain.Entities
         public ICollection<AlunoTurma> AlunosTurma { get; set; } = new List<AlunoTurma>();
         public ICollection<Pagamento> Pagamentos { get; set; } = new List<Pagamento>();
         public ICollection<AulaAluno> AulaAlunos { get; set; } = new List<AulaAluno>();
+        public ICollection<VinculoCobranca> VinculosCobranca { get; set; } = new List<VinculoCobranca>();
     }
 }

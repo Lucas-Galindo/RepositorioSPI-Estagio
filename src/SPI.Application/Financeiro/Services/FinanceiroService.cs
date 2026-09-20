@@ -36,7 +36,7 @@ namespace SPI.Application.Financeiro.Services
                 inicio, fim, cancellationToken, turmaNome: turmaNome, materiaNome: materiaNome, alunoBusca: alunoBusca);
             var pagoNoPeriodo = await _relatorioRepository.ObterValorPagoNoPeriodoAsync(inicio, fim, cancellationToken);
             var (aReceber, receitaAtrasada) = await _relatorioRepository.ObterReceitasPendentesSegregadasAsync(
-                cancellationToken, turmaNome, materiaNome, alunoBusca);
+                cancellationToken, turmaNome: turmaNome, materiaNome: materiaNome, alunoBusca: alunoBusca);
             var (aPagar, despesaAtrasada) = await _relatorioRepository.ObterDespesasPendentesSegregadasAsync(cancellationToken);
 
             var proximasReceber = await _relatorioRepository.ObterProximasContasAReceberAsync(

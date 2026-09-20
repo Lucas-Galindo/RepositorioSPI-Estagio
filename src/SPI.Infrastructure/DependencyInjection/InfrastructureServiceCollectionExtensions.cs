@@ -40,6 +40,7 @@ namespace SPI.Infrastructure.DependencyInjection
             services.AddScoped<ISenhaResetTokenRepository, SenhaResetTokenRepository>();
             services.AddScoped<IMateriaRepository, MateriaRepository>();
             services.AddScoped<ITurmaRepository, TurmaRepository>();
+            services.AddScoped<IVinculoCobrancaRepository, VinculoCobrancaRepository>();
             services.AddScoped<IAulaRepository, AulaRepository>();
             services.AddScoped<IPagamentoRepository, PagamentoRepository>();
             services.AddScoped<IFormaPagamentoRepository, FormaPagamentoRepository>();

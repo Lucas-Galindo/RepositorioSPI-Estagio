@@ -13,6 +13,7 @@ using SPI.Application.Pagamentos.Services;
 using SPI.Application.Professores.Services;
 using SPI.Application.Relatorios.Services;
 using SPI.Application.Turmas.Services;
+using SPI.Application.VinculosCobranca.Services;
 
 namespace SPI.Application.DependencyInjection
 {
@@ -30,6 +31,7 @@ namespace SPI.Application.DependencyInjection
             services.AddScoped<IProfessorService, ProfessorService>();
             services.AddScoped<IMateriaService, MateriaService>();
             services.AddScoped<ITurmaService, TurmaService>();
+            services.AddScoped<IVinculoCobrancaService, VinculoCobrancaService>();
             services.AddScoped<IAlunoService, AlunoService>();
             services.AddScoped<IAulaService, AulaService>();
             services.AddScoped<IPagamentoService, PagamentoService>();

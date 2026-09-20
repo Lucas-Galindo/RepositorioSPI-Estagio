@@ -11,5 +11,6 @@ namespace SPI.Domain.Entities
         public ICollection<AlunoTurma> AlunosTurma { get; set; } = new List<AlunoTurma>();
         public ICollection<Aula> Aulas { get; set; } = new List<Aula>();
         public ICollection<Lembrete> Lembretes { get; set; } = new List<Lembrete>();
+        public ICollection<VinculoCobranca> VinculosCobranca { get; set; } = new List<VinculoCobranca>();
     }
 }

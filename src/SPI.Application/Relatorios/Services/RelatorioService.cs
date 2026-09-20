@@ -121,7 +121,11 @@ namespace SPI.Application.Relatorios.Services
             var despFim = fim ?? DateOnly.MaxValue;
             var totalPago = await _relatorioRepository.ObterValorPagoNoPeriodoAsync(despIni, despFim, cancellationToken);
 
-            var (receitaAVencer, receitaAtrasada) = await _relatorioRepository.ObterReceitasPendentesSegregadasAsync(cancellationToken);
+            // specs/035: ReceitaPendente respeita os mesmos filtros de alunoId/turmaId/
+            // materiaId ja usados acima para TotalRecebido -- DespesaPendente permanece
+            // sempre global (Contas a Pagar nao tem vinculo com aluno/turma/materia).
+            var (receitaAVencer, receitaAtrasada) = await _relatorioRepository.ObterReceitasPendentesSegregadasAsync(
+                cancellationToken, turmaId, materiaId, alunoId);
             var (despesaAVencer, despesaAtrasada) = await _relatorioRepository.ObterDespesasPendentesSegregadasAsync(cancellationToken);
             var receitaPendente = receitaAVencer + receitaAtrasada;
             var despesaPendente = despesaAVencer + despesaAtrasada;

@@ -266,10 +266,11 @@ namespace SPI.Application.Tests.Relatorios
                 DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default,
                 int? turmaId = null, int? materiaId = null, int? alunoId = null,
                 string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null) => Task.FromResult(0m);
-            public Task<decimal> ObterValorAPagarAsync(CancellationToken cancellationToken = default) => Task.FromResult(0m);
             public Task<decimal> ObterValorPagoNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default) => Task.FromResult(0m);
             public Task<(decimal AVencer, decimal Atrasado)> ObterReceitasPendentesSegregadasAsync(
-                CancellationToken cancellationToken = default, string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null) =>
+                CancellationToken cancellationToken = default,
+                int? turmaId = null, int? materiaId = null, int? alunoId = null,
+                string? turmaNome = null, string? materiaNome = null, string? alunoBusca = null) =>
                 Task.FromResult((0m, 0m));
             public Task<(decimal AVencer, decimal Atrasado)> ObterDespesasPendentesSegregadasAsync(CancellationToken cancellationToken = default) =>
                 Task.FromResult((0m, 0m));

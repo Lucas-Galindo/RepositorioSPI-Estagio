@@ -7,6 +7,7 @@ import { Icon } from "@/components/shared/Icon";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
+import { VinculosCobrancaSection } from "@/components/alunos/VinculosCobrancaSection";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
@@ -237,6 +238,10 @@ export default function AlunoDetailPage({ params }: { params: Promise<{ id: stri
             <EmptyState title="Nenhuma conta a receber" desc="Ainda não há contas a receber registradas para este aluno." />
           )}
         </div>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <VinculosCobrancaSection aluno={aluno} />
       </div>
 
       <div className="grid-2b" style={{ marginTop: 18 }}>
