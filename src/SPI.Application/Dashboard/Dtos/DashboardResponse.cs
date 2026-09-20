@@ -12,7 +12,5 @@ namespace SPI.Application.Dashboard.Dtos
         public decimal ValorFaturadoNoPeriodo { get; set; }
         public List<AulaResumoResponse> ProximasAulasHoje { get; set; } = new();
         public int LembretesPendentes { get; set; }
-        public IndicadoresFinanceirosResponse Indicadores { get; set; } = new();
-        public List<FluxoCaixaMensalItem> FluxoCaixaMensal { get; set; } = new();
     }
 }

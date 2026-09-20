@@ -56,8 +56,6 @@ export interface Dashboard {
   valorFaturadoNoPeriodo: number;
   proximasAulasHoje: AulaResumo[];
   lembretesPendentes: number;
-  indicadores: IndicadoresFinanceiros;
-  fluxoCaixaMensal: FluxoCaixaMensalItem[];
 }
 
 export function obterDashboard(
