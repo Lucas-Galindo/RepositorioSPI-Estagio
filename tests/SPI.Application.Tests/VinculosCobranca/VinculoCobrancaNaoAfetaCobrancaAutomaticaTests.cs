@@ -8,14 +8,19 @@ using Xunit;
 
 namespace SPI.Application.Tests.VinculosCobranca
 {
-    // specs/037, FR-012 (MUST NOT): VinculoCobranca existe apenas como cadastro e
-    // NAO pode alterar a geracao automatica de cobranca
+    // specs/037, FR-012 original (MUST NOT): VinculoCobranca existia apenas como
+    // cadastro e NAO podia alterar a geracao automatica de cobranca
     // (AulaService.GerarContasAReceberAsync) nem o uso de Aluno.ValorAula.
     //
-    // Estes testes guardam esse limite estruturalmente: se alguem ligar o vinculo
-    // a cobranca automatica, eles falham -- o que so deve acontecer de forma
-    // consciente, na proxima fatia (EX-001 em specs/037-vinculo-cobranca/plan.md,
-    // Complexity Tracking), removendo/ajustando esta guarda no mesmo momento.
+    // ATUALIZACAO (specs/038, EX-001): essa restricao foi resolvida de forma
+    // CONSCIENTE para AulaService -- e agora a "proxima fatia" prevista em
+    // specs/037-vinculo-cobranca/plan.md, que liga a modalidade do vinculo ao
+    // efeito financeiro de cada presenca (Avulsa usa o Valor do vinculo, Pacote
+    // decrementa SaldoAulas, Mensalidade nao gera cobranca). Por isso AulaService
+    // SAIU da lista abaixo -- o acoplamento dela com VinculoCobranca e esperado e
+    // testado por si (tests/SPI.Application.Tests/Aulas/). Este arquivo continua
+    // guardando os demais servicos (AlunoService, PagamentoService), que specs/038
+    // NAO tocou e que continuam sem nenhuma relacao com VinculoCobranca.
     public class VinculoCobrancaNaoAfetaCobrancaAutomaticaTests
     {
         private const BindingFlags Tudo = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
@@ -27,7 +32,6 @@ namespace SPI.Application.Tests.VinculosCobranca
 
         public static IEnumerable<object[]> ServicosDeCobranca() => new[]
         {
-            new object[] { typeof(AulaService) },
             new object[] { typeof(AlunoService) },
             new object[] { typeof(PagamentoService) },
         };
@@ -70,8 +74,14 @@ namespace SPI.Application.Tests.VinculosCobranca
             Assert.DoesNotContain(tipos, MencionaVinculoCobranca);
         }
 
+        // specs/038: GerarContasAReceberAsync continua existindo com a mesma
+        // assinatura publica-privada (Aula, CancellationToken) -- o acoplamento com
+        // VinculoCobranca acontece por dependencia injetada e consulta interna, nao
+        // por mudanca de assinatura. Isso NAO e mais uma guarda contra acoplamento
+        // (que agora e esperado), so uma confirmacao de que o metodo nao foi
+        // renomeado/removido nem passou a expor VinculoCobranca na sua assinatura.
         [Fact]
-        public void GerarContasAReceberAsync_continua_existindo_sem_referenciar_VinculoCobranca()
+        public void GerarContasAReceberAsync_continua_existindo_com_a_mesma_assinatura()
         {
             var metodo = typeof(AulaService).GetMethod("GerarContasAReceberAsync", Tudo);
 

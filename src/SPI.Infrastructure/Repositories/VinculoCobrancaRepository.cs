@@ -44,6 +44,11 @@ namespace SPI.Infrastructure.Repositories
                     && (ignorarId == null || v.Id != ignorarId),
                 cancellationToken);
 
+        public Task<VinculoCobranca?> ObterAtivoPorAlunoEContextoAsync(int alunoId, int? turmaId, CancellationToken cancellationToken = default) =>
+            _dbContext.VinculosCobranca.FirstOrDefaultAsync(
+                v => v.AlunoId == alunoId && v.TurmaId == turmaId && v.Ativo,
+                cancellationToken);
+
         public async Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default) =>
             await _dbContext.VinculosCobranca.AddAsync(vinculo, cancellationToken);
 

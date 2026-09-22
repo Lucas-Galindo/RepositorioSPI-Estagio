@@ -64,6 +64,10 @@ namespace SPI.Application.Tests.VinculosCobranca
             Task.FromResult(Vinculos.Any(v =>
                 v.AlunoId == alunoId && v.TurmaId == turmaId && v.Ativo && (ignorarId is null || v.Id != ignorarId)));
 
+        // specs/038
+        public Task<VinculoCobranca?> ObterAtivoPorAlunoEContextoAsync(int alunoId, int? turmaId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Vinculos.FirstOrDefault(v => v.AlunoId == alunoId && v.TurmaId == turmaId && v.Ativo));
+
         public Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default)
         {
             vinculo.Id = _proximoId++;

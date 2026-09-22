@@ -1,6 +1,7 @@
 using SPI.Application.Aulas.Dtos;
 using SPI.Application.Lembretes.Services;
 using SPI.Domain.Entities;
+using SPI.Domain.Enums;
 using SPI.Domain.Exceptions;
 using SPI.Domain.Repositories;
 
@@ -15,6 +16,7 @@ namespace SPI.Application.Aulas.Services
         private readonly ILembreteService _lembreteService;
         private readonly IPagamentoRepository _pagamentoRepository;
         private readonly ICategoriaReceitaRepository _categoriaReceitaRepository;
+        private readonly IVinculoCobrancaRepository _vinculoCobrancaRepository;
 
         public AulaService(
             IAulaRepository aulaRepository,
@@ -23,7 +25,8 @@ namespace SPI.Application.Aulas.Services
             IMateriaRepository materiaRepository,
             ILembreteService lembreteService,
             IPagamentoRepository pagamentoRepository,
-            ICategoriaReceitaRepository categoriaReceitaRepository)
+            ICategoriaReceitaRepository categoriaReceitaRepository,
+            IVinculoCobrancaRepository vinculoCobrancaRepository)
         {
             _aulaRepository = aulaRepository;
             _alunoRepository = alunoRepository;
@@ -32,6 +35,7 @@ namespace SPI.Application.Aulas.Services
             _lembreteService = lembreteService;
             _pagamentoRepository = pagamentoRepository;
             _categoriaReceitaRepository = categoriaReceitaRepository;
+            _vinculoCobrancaRepository = vinculoCobrancaRepository;
         }
 
         public async Task<List<AulaResponse>> ListarAsync(
@@ -197,22 +201,52 @@ namespace SPI.Application.Aulas.Services
             var categoria = await _categoriaReceitaRepository.ObterPorNomeAsync(categoriaNome, cancellationToken);
             var competencia = new DateOnly(aula.DataInicio.Year, aula.DataInicio.Month, 1);
 
-            foreach (var vinculo in aula.AulaAlunos.Where(v => v.Presente == true))
+            foreach (var aulaAluno in aula.AulaAlunos.Where(v => v.Presente == true))
             {
-                var pagamento = new Pagamento
-                {
-                    AlunoId = vinculo.AlunoId,
-                    Descricao = $"{aula.Materia.Nome} - {aula.DataInicio:dd/MM/yyyy}",
-                    CategoriaReceitaId = categoria?.Id,
-                    DataVencimento = aula.DataInicio.AddDays(5),
-                    Competencia = competencia,
-                    ValorFinal = vinculo.Aluno.ValorAula,
-                    Status = "Pendente"
-                };
+                // specs/038: a modalidade do VinculoCobranca correspondente ao
+                // contexto da aula (mesma Turma, ou nenhuma para atendimento
+                // individual) decide o efeito financeiro desta presenca.
+                var vinculoCobranca = await _vinculoCobrancaRepository.ObterAtivoPorAlunoEContextoAsync(
+                    aulaAluno.AlunoId, aula.TurmaId, cancellationToken);
 
-                await _pagamentoRepository.AdicionarAsync(pagamento, cancellationToken);
-                await _pagamentoRepository.SalvarAlteracoesAsync(cancellationToken);
-                await _pagamentoRepository.VincularAulaAsync(pagamento.Id, aula.Id, cancellationToken);
+                switch (vinculoCobranca?.Modalidade)
+                {
+                    case null:
+                    case ModalidadeCobranca.Avulsa:
+                        // FR-002 (sem vinculo) e FR-003 (Avulsa) geram a cobranca do
+                        // mesmo jeito -- so a fonte do valor muda.
+                        var pagamento = new Pagamento
+                        {
+                            AlunoId = aulaAluno.AlunoId,
+                            Descricao = $"{aula.Materia.Nome} - {aula.DataInicio:dd/MM/yyyy}",
+                            CategoriaReceitaId = categoria?.Id,
+                            DataVencimento = aula.DataInicio.AddDays(5),
+                            Competencia = competencia,
+                            ValorFinal = vinculoCobranca?.Valor ?? aulaAluno.Aluno.ValorAula,
+                            Status = "Pendente"
+                        };
+
+                        await _pagamentoRepository.AdicionarAsync(pagamento, cancellationToken);
+                        await _pagamentoRepository.SalvarAlteracoesAsync(cancellationToken);
+                        await _pagamentoRepository.VincularAulaAsync(pagamento.Id, aula.Id, cancellationToken);
+                        break;
+
+                    case ModalidadeCobranca.Mensalidade:
+                        // FR-004/FR-009: nenhuma cobranca avulsa; a mensalidade em si
+                        // fica para um job futuro, fora do escopo desta fatia.
+                        break;
+
+                    case ModalidadeCobranca.Pacote:
+                        // FR-005/FR-006/FR-010: consome uma aula do saldo em vez de
+                        // gerar cobranca; nunca decrementa abaixo de zero nem altera
+                        // um saldo nunca informado (null).
+                        if (vinculoCobranca.SaldoAulas is > 0)
+                        {
+                            vinculoCobranca.SaldoAulas -= 1;
+                            await _vinculoCobrancaRepository.SalvarAlteracoesAsync(cancellationToken);
+                        }
+                        break;
+                }
             }
 
             await _pagamentoRepository.SalvarAlteracoesAsync(cancellationToken);
