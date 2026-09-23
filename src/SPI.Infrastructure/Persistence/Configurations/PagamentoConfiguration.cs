@@ -27,6 +27,7 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(p => p.ArquivoTipoMime).HasColumnName("arquivo_tipo_mime").HasMaxLength(100);
             builder.Property(p => p.ArquivoTamanhoBytes).HasColumnName("arquivo_tamanho_bytes");
             builder.Property(p => p.ArquivoDataUpload).HasColumnName("arquivo_data_upload");
+            builder.Property(p => p.VinculoCobrancaId).HasColumnName("vinculo_cobranca_id");
 
             builder.HasOne(p => p.Aluno)
                 .WithMany(a => a.Pagamentos)
@@ -42,6 +43,11 @@ namespace SPI.Infrastructure.Persistence.Configurations
                 .WithMany(c => c.Pagamentos)
                 .HasForeignKey(p => p.CategoriaReceitaId)
                 .HasConstraintName("fk_pagamento_categoria_receita");
+
+            builder.HasOne(p => p.VinculoCobranca)
+                .WithMany()
+                .HasForeignKey(p => p.VinculoCobrancaId)
+                .HasConstraintName("fk_pagamento_vinculo_cobranca");
         }
     }
 }

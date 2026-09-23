@@ -22,9 +22,14 @@ namespace SPI.Domain.Entities
         public int? ArquivoTamanhoBytes { get; set; }
         public DateTime? ArquivoDataUpload { get; set; }
 
+        // specs/039: vinculo de cobranca que originou esta cobranca automatica de
+        // mensalidade; NULL para pagamentos manuais ou gerados por presenca (specs/038).
+        public int? VinculoCobrancaId { get; set; }
+
         public Aluno Aluno { get; set; } = null!;
         public FormaPagamento? FormaPagamento { get; set; }
         public CategoriaReceita? CategoriaReceita { get; set; }
+        public VinculoCobranca? VinculoCobranca { get; set; }
         public ICollection<PagamentoAula> PagamentosAula { get; set; } = new List<PagamentoAula>();
     }
 }

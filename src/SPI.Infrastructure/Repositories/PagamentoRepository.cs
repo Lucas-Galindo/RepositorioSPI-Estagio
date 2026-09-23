@@ -88,6 +88,11 @@ namespace SPI.Infrastructure.Repositories
         public async Task AdicionarAsync(Pagamento pagamento, CancellationToken cancellationToken = default) =>
             await _dbContext.Pagamentos.AddAsync(pagamento, cancellationToken);
 
+        public Task<bool> ExisteMensalidadeGeradaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
+            _dbContext.Pagamentos.AnyAsync(
+                p => p.VinculoCobrancaId == vinculoCobrancaId && p.Competencia == competencia,
+                cancellationToken);
+
         public async Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) =>
             await _dbContext.PagamentosAula.AddAsync(new PagamentoAula { PagamentoId = pagamentoId, AulaId = aulaId }, cancellationToken);
 

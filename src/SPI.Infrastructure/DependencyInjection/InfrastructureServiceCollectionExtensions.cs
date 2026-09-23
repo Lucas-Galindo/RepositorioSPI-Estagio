@@ -59,6 +59,7 @@ namespace SPI.Infrastructure.DependencyInjection
             services.AddScoped<IEmailSender, BrevoEmailSender>();
 
             services.AddHostedService<LembreteDispatcherService>();
+            services.AddHostedService<MensalidadeDispatcherService>();
 
             return services;
         }

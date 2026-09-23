@@ -11,6 +11,10 @@ src/SPI.Api/logs/
 src/SPI.Api/appsettings.Development.json
 **/appsettings.*.local.json
 
+## Trello sync hooks (specs/040-trello-sync-hooks) - credenciais e logs locais
+.specify/hooks/trello/.env
+.specify/hooks/trello/*.log
+
 ## IDE
 .vs/
 .idea/

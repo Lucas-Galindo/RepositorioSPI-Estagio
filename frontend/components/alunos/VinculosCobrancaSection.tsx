@@ -107,11 +107,6 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
         </div>
       </div>
 
-      {/* EX-001: remover este aviso quando a cobranca automatica passar a usar o vinculo (proxima fatia). */}
-      <div style={{ fontSize: 12, color: "var(--c-text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
-        Este vínculo é apenas um cadastro. Ele ainda não altera a cobrança automática das aulas.
-      </div>
-
       {carregando ? (
         <p className="count-text">Carregando...</p>
       ) : erro ? (

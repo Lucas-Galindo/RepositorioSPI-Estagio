@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 using SPI.Domain.Entities;
+using SPI.Domain.Enums;
 using SPI.Domain.Exceptions;
 using SPI.Domain.Repositories;
 using SPI.Infrastructure.Persistence;
@@ -48,6 +49,9 @@ namespace SPI.Infrastructure.Repositories
             _dbContext.VinculosCobranca.FirstOrDefaultAsync(
                 v => v.AlunoId == alunoId && v.TurmaId == turmaId && v.Ativo,
                 cancellationToken);
+
+        public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
+            _dbContext.VinculosCobranca.Include(v => v.Turma).Where(v => v.Ativo && v.Modalidade == modalidade).ToListAsync(cancellationToken);
 
         public async Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default) =>
             await _dbContext.VinculosCobranca.AddAsync(vinculo, cancellationToken);

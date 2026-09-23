@@ -1,0 +1,35 @@
+hooks:
+  after_specify:
+    - extension: "trello"
+      command: "trello.sync-card"
+      description: "Cria o card da feature no Backlog do quadro Estágio SPI."
+      prompt: "backlog"
+      optional: false
+
+  after_plan:
+    - extension: "trello"
+      command: "trello.sync-card"
+      description: "Move o card da feature para Design."
+      prompt: "design"
+      optional: false
+
+  after_tasks:
+    - extension: "trello"
+      command: "trello.sync-card"
+      description: "Move o card da feature para A Fazer."
+      prompt: "a-fazer"
+      optional: false
+
+  before_implement:
+    - extension: "trello"
+      command: "trello.sync-card"
+      description: "Move o card da feature para Em andamento."
+      prompt: "em-andamento"
+      optional: false
+
+  after_implement:
+    - extension: "trello"
+      command: "trello.sync-card"
+      description: "Move o card da feature para Revisão de código, se tudo (não-manual) estiver concluído e os testes passarem; comenta um resumo."
+      prompt: "revisao-codigo"
+      optional: false

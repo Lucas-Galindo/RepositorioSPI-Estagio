@@ -1,4 +1,5 @@
 using SPI.Domain.Entities;
+using SPI.Domain.Enums;
 
 namespace SPI.Domain.Repositories
 {
@@ -17,6 +18,10 @@ namespace SPI.Domain.Repositories
         // ambiguo -- a unicidade "no maximo um vinculo ativo por combinacao" ja e
         // garantida em specs/037 (validacao + indice unico no banco).
         Task<VinculoCobranca?> ObterAtivoPorAlunoEContextoAsync(int alunoId, int? turmaId, CancellationToken cancellationToken = default);
+
+        // specs/039: todo vinculo Ativo com a modalidade informada (usado pelo job
+        // de cobranca de mensalidade, para listar os candidatos a gerar cobranca).
+        Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(ModalidadeCobranca modalidade, CancellationToken cancellationToken = default);
 
         Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default);
 

@@ -91,6 +91,9 @@ namespace SPI.Application.Tests.Aulas
         public Task<List<Pagamento>> ListarAsync(int? alunoId, string? status, DateOnly? vencimentoInicio, DateOnly? vencimentoFim, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
+        public Task<bool> ExisteMensalidadeGeradaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
         public Task AtualizarStatusViaProcedureAsync(int pagamentoId, string novoStatus, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
     }
@@ -102,6 +105,9 @@ namespace SPI.Application.Tests.Aulas
 
         public Task<VinculoCobranca?> ObterAtivoPorAlunoEContextoAsync(int alunoId, int? turmaId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos.FirstOrDefault(v => v.AlunoId == alunoId && v.TurmaId == turmaId && v.Ativo));
+
+        public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(SPI.Domain.Enums.ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
 
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
         {
