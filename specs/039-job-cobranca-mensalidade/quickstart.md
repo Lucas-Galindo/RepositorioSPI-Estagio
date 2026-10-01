@@ -36,7 +36,7 @@ Depois de aplicar a migração, confirmar diretamente no MySQL:
 | 1 | Com dois Vínculos Mensalidade ativos do mesmo aluno (turma X, e atendimento individual), acionar a geração do mês corrente | `GET /api/pagamentos?alunoId=` mostra **duas** novas contas pendentes, uma por vínculo, cada uma com `valorFinal` igual ao Valor do respectivo vínculo, `categoriaReceitaNome == "Mensalidade"`, `aulaIds: []` (US1) |
 | 2 | Acionar a geração do mesmo mês uma segunda vez | Nenhuma conta nova é criada para nenhum dos dois vínculos (US2, FR-004) |
 | 3 | Excluir (desativar) um dos dois Vínculos Mensalidade antes de acionar a geração do mês seguinte | Só o vínculo que continua ativo recebe uma nova cobrança nesse mês; o excluído, nenhuma (US3, FR-005) |
-| 4 | Conferir `dataVencimento` da conta gerada no passo 1 | É o dia 1º do mês seguinte ao mês de competência da conta (FR-007) |
+| 4 | Conferir `dataVencimento` da conta gerada no passo 1 | É o dia 10 do mês seguinte ao mês de competência da conta (FR-007) |
 | 5 | Conferir `descricao` da conta gerada para o vínculo de turma vs. o de atendimento individual | Cada uma identifica claramente "Mensalidade" e o contexto certo (nome da turma, ou "Atendimento individual") (FR-006) |
 
 ## 4. Não-regressão explícita

@@ -14,6 +14,7 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(aa => aa.AulaId).HasColumnName("aula_id");
             builder.Property(aa => aa.AlunoId).HasColumnName("aluno_id");
             builder.Property(aa => aa.Presente).HasColumnName("presente");
+            builder.Property(aa => aa.MotivoNaoRegistro).HasColumnName("motivo_nao_registro").HasMaxLength(30);
 
             builder.HasOne(aa => aa.Aula)
                 .WithMany(a => a.AulaAlunos)

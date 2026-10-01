@@ -169,17 +169,36 @@ namespace SPI.Application.Aulas.Services
                 throw new ConflitoException("Somente aulas com status 'Agendada' podem ter a sessao registrada.");
             }
 
-            foreach (var vinculo in aula.AulaAlunos)
+            var avisos = new List<string>();
+
+            foreach (var aulaAluno in aula.AulaAlunos)
             {
-                if (!request.Presencas.TryGetValue(vinculo.AlunoId, out var presente))
+                if (!request.Presencas.TryGetValue(aulaAluno.AlunoId, out var presente))
                 {
-                    throw new ConflitoException($"Presenca do aluno {vinculo.AlunoId} nao foi informada.");
+                    throw new ConflitoException($"Presenca do aluno {aulaAluno.AlunoId} nao foi informada.");
                 }
 
-                vinculo.Presente = presente;
+                // specs/041 (US2/FR-005/FR-006/FR-012): pacote esgotado (saldo 0) no
+                // contexto desta aula barra so este aluno -- a aula continua Realizada
+                // normalmente para os demais (clarificacao 2026-09-23, opcao A). O
+                // motivo e' persistido (MotivoNaoRegistro) para distinguir de falta
+                // comum no historico; nunca lanca excecao (FR-005 nao recusa a aula).
                 if (presente)
                 {
-                    vinculo.Aluno.Frequencia += 1;
+                    var vinculoCobranca = await _vinculoCobrancaRepository.ObterAtivoPorAlunoEContextoAsync(aulaAluno.AlunoId, aula.TurmaId, cancellationToken);
+                    if (vinculoCobranca is { Modalidade: ModalidadeCobranca.Pacote, SaldoAulas: 0 })
+                    {
+                        aulaAluno.Presente = false;
+                        aulaAluno.MotivoNaoRegistro = AulaAluno.MotivoPacoteEsgotado;
+                        avisos.Add($"Pacote esgotado: {aulaAluno.Aluno.Nome} não teve a presença registrada. Renove o pacote (edite o Vínculo de Cobrança) para liberar novos registros.");
+                        continue;
+                    }
+                }
+
+                aulaAluno.Presente = presente;
+                if (presente)
+                {
+                    aulaAluno.Aluno.Frequencia += 1;
                 }
             }
 
@@ -192,7 +211,9 @@ namespace SPI.Application.Aulas.Services
             // Forma de pagamento fica em aberto ate o recebimento efetivo.
             await GerarContasAReceberAsync(aula, cancellationToken);
 
-            return Mapear(aula);
+            var resposta = Mapear(aula);
+            resposta.Avisos = avisos;
+            return resposta;
         }
 
         private async Task GerarContasAReceberAsync(Aula aula, CancellationToken cancellationToken)
@@ -323,7 +344,8 @@ namespace SPI.Application.Aulas.Services
                 AlunoId = aa.AlunoId,
                 Nome = aa.Aluno.Nome,
                 Ra = aa.Aluno.Ra,
-                Presente = aa.Presente
+                Presente = aa.Presente,
+                MotivoNaoRegistro = aa.MotivoNaoRegistro
             }).ToList()
         };
     }

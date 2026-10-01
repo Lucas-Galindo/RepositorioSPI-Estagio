@@ -33,3 +33,17 @@ hooks:
       description: "Move o card da feature para Revisão de código, se tudo (não-manual) estiver concluído e os testes passarem; comenta um resumo."
       prompt: "revisao-codigo"
       optional: false
+
+  after_analyze:
+    - extension: "trello"
+      command: "trello.sync-card"
+      description: "Atualiza o STATUS do card com o resultado do /speckit-analyze (nao move de lista)."
+      prompt: "analyze"
+      optional: false
+
+  after_clarify:
+    - extension: "trello"
+      command: "trello.sync-card"
+      description: "Atualiza o STATUS do card com o resultado do /speckit-clarify (nao move de lista)."
+      prompt: "clarify"
+      optional: false

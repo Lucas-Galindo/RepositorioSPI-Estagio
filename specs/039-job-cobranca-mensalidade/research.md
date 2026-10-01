@@ -22,8 +22,8 @@ Todas as decisões abaixo foram tomadas lendo o código atual; nenhum `NEEDS CLA
 
 ## R4. Data de vencimento (FR-007)
 
-- **Decision**: `DataVencimento = new DateOnly(competencia.Year, competencia.Month, 1).AddMonths(1)` — sempre o 1º dia do mês seguinte ao mês de competência.
-- **Rationale**: Regra simples, previsível e sem necessidade de campo configurável adicional (a spec já resolveu isso como requisito, FR-007) — corresponde ao costume comum de mensalidade vencer no início do mês seguinte ao período cursado. Reaproveita `DateOnly`, já usado em todo o domínio financeiro (`Pagamento.DataVencimento`, `Competencia`).
+- **Decision**: `DataVencimento = new DateOnly(competencia.Year, competencia.Month, 10).AddMonths(1)` — sempre o dia 10 do mês seguinte ao mês de competência.
+- **Rationale**: Regra simples, previsível e sem necessidade de campo configurável adicional (a spec já resolveu isso como requisito, FR-007) — dia 10 confirmado com o usuário (dá margem de dias entre a geração e o vencimento). Reaproveita `DateOnly`, já usado em todo o domínio financeiro (`Pagamento.DataVencimento`, `Competencia`).
 - **Alternatives considered**: vencimento no mesmo dia do disparo (ex.: último dia do mês corrente) — descartado, daria à professora e ao aluno zero dias de margem entre a geração e o vencimento; dia configurável por vínculo — fora de escopo (spec já resolveu com uma regra fixa).
 
 ## R5. Descrição da cobrança e contexto (FR-006)

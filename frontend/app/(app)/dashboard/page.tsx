@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { obterDashboard, type Dashboard } from "@/lib/api/dashboard";
+import { PacotesEmAtencaoPanel } from "@/components/dashboard/PacotesEmAtencaoPanel";
 import { currency, fmtData, fmtHora } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
@@ -123,6 +124,18 @@ export default function DashboardPage() {
             <Icon name="warn" size={20} />
           </div>
           <p>{erro}</p>
+        </div>
+      )}
+
+      {dashboard && (
+        <div style={{ marginTop: 18 }}>
+          <div className="section-title">Pacotes em atenção</div>
+          <div className="section-sub" style={{ marginBottom: 0 }}>
+            Alunos com pacote de aulas acabando ou esgotado
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <PacotesEmAtencaoPanel pacotes={dashboard.pacotesEmAtencao} />
+          </div>
         </div>
       )}
 

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { AnexoComprovante } from "@/components/financeiro/AnexoComprovante";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -22,6 +23,21 @@ import { ApiError } from "@/lib/api/client";
 
 const STATUS_OPCOES = ["Pendente", "Pago", "Atrasado", "Cancelado"] as const;
 
+const STATUS_ROTULO_ACAO: Record<(typeof STATUS_OPCOES)[number], string> = {
+  Pendente: "Marcar como Pendente",
+  Pago: "Marcar como Pago",
+  Atrasado: "Marcar como Atrasado",
+  Cancelado: "Cancelar conta",
+};
+
+const STATUS_DESCRICAO_CONFIRMACAO: Record<(typeof STATUS_OPCOES)[number], string> = {
+  Pendente: "Marcar esta conta como Pendente novamente?",
+  Pago: "Marcar esta conta como Pago? A data de pagamento será preenchida automaticamente com a data de hoje.",
+  Atrasado: "Marcar esta conta como Atrasado?",
+  Cancelado:
+    "Cancelar esta conta? O registro não será excluído, só encerrado — você pode ver o histórico depois, mas ele deixa de contar como pendente ou pago.",
+};
+
 export default function ContaAReceberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   usePageHeader("Financeiro", "Detalhes da conta a receber");
@@ -33,6 +49,7 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
   const [erro, setErro] = useState("");
   const [processando, setProcessando] = useState(false);
   const [ofertaAnexoVisivel, setOfertaAnexoVisivel] = useState(searchParams.get("anexar") === "1");
+  const [statusEmConfirmacao, setStatusEmConfirmacao] = useState<(typeof STATUS_OPCOES)[number] | null>(null);
 
   useEffect(() => {
     if (!sessao) return;
@@ -162,16 +179,19 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
           <h4>
             <Icon name="edit" size={15} /> Alterar status
           </h4>
+          <div className="meta" style={{ marginBottom: 12 }}>
+            Status atual: <StatusPill status={pagamento.status} />
+          </div>
           <div className="checkbox-list">
-            {STATUS_OPCOES.map((s) => (
+            {STATUS_OPCOES.filter((s) => s !== pagamento.status).map((s) => (
               <button
                 key={s}
                 type="button"
-                className={`btn btn-sm ${pagamento.status === s ? "btn-primary" : "btn-ghost"}`}
-                disabled={processando || pagamento.status === s}
-                onClick={() => handleStatus(s)}
+                className="btn btn-sm btn-ghost"
+                disabled={processando}
+                onClick={() => setStatusEmConfirmacao(s)}
               >
-                {s}
+                {STATUS_ROTULO_ACAO[s]}
               </button>
             ))}
           </div>
@@ -180,6 +200,22 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
           </p>
         </div>
       </div>
+
+      {statusEmConfirmacao && (
+        <ConfirmModal
+          titulo={STATUS_ROTULO_ACAO[statusEmConfirmacao]}
+          descricao={STATUS_DESCRICAO_CONFIRMACAO[statusEmConfirmacao]}
+          confirmando={processando}
+          confirmLabel={STATUS_ROTULO_ACAO[statusEmConfirmacao]}
+          confirmandoLabel="Atualizando..."
+          confirmVariant={statusEmConfirmacao === "Cancelado" ? "btn-danger" : "btn-primary"}
+          onCancelar={() => setStatusEmConfirmacao(null)}
+          onConfirmar={async () => {
+            await handleStatus(statusEmConfirmacao);
+            setStatusEmConfirmacao(null);
+          }}
+        />
+      )}
     </>
   );
 }

@@ -20,6 +20,8 @@ export function LoginForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (carregando) return;
+
     if (!identificador.trim() || !senha.trim()) {
       setErro("Preencha e-mail/RA e senha para continuar.");
       return;

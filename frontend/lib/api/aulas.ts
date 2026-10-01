@@ -7,6 +7,8 @@ export interface AlunoPresenca {
   ra: string;
   /** null enquanto a aula nao foi registrada (Estoria 8). */
   presente: boolean | null;
+  /** null = presente ou falta comum; "PacoteEsgotado" = presenca barrada por pacote esgotado (specs/041). */
+  motivoNaoRegistro: string | null;
 }
 
 /** Espelha SPI.Application.Aulas.Dtos.AulaResponse. Datas/horas como string ISO (DateOnly/TimeOnly do backend). */
@@ -24,6 +26,8 @@ export interface Aula {
   status: "Agendada" | "Realizada" | "Cancelada";
   ativo: boolean;
   alunos: AlunoPresenca[];
+  /** Avisos imediatos do registro da sessao (ex.: pacote esgotado); vazio na maioria das respostas. */
+  avisos: string[];
 }
 
 /** Espelha SPI.Application.Aulas.Dtos.AulaRequest. */

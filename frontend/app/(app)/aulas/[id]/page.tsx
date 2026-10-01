@@ -74,7 +74,11 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
     try {
       const atualizada = await registrarSessao(aula.id, presencas, sessao.accessToken);
       setAula(atualizada);
-      mostrarToast("Sessão registrada. Frequência dos alunos presentes atualizada.");
+      mostrarToast(
+        atualizada.avisos.length > 0
+          ? `Sessão registrada. ${atualizada.avisos.join(" ")}`
+          : "Sessão registrada. Frequência dos alunos presentes atualizada."
+      );
     } catch (excecao) {
       mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível registrar a sessão.");
     } finally {
@@ -151,6 +155,10 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
                 </label>
               ) : al.presente === null ? (
                 <span className="status-pill status-inativo">—</span>
+              ) : al.motivoNaoRegistro === "PacoteEsgotado" ? (
+                <span className="status-pill status-atrasado" title="Presença não registrada: pacote de aulas esgotado">
+                  Pacote esgotado
+                </span>
               ) : (
                 <span className={`status-pill ${al.presente ? "status-ativo" : "status-atrasado"}`}>
                   {al.presente ? "Presente" : "Faltou"}

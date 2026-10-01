@@ -9,6 +9,11 @@ namespace SPI.Domain.Entities
     /// </summary>
     public class VinculoCobranca
     {
+        // Limite de alerta do painel de Pacotes em Atencao (specs/041): saldo
+        // informado <= este valor entra no painel. Fixo, nao configuravel
+        // (Principio III).
+        public const int LimiteAlertaPacote = 2;
+
         public int Id { get; set; }
         public int AlunoId { get; set; }
         public int? TurmaId { get; set; }

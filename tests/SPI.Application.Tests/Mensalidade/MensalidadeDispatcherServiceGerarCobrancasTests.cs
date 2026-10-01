@@ -69,7 +69,7 @@ namespace SPI.Application.Tests.Mensalidade
         }
 
         [Fact]
-        public async Task DataVencimento_e_o_dia_1_do_mes_seguinte_a_competencia()
+        public async Task DataVencimento_e_o_dia_10_do_mes_seguinte_a_competencia()
         {
             var (vinculos, pagamentos, categorias) = CriarFakes();
             vinculos.Vinculos.Add(NovoVinculo(3, alunoId: 1, turmaId: null, valor: 100m));
@@ -77,7 +77,7 @@ namespace SPI.Application.Tests.Mensalidade
             await MensalidadeDispatcherService.GerarCobrancasDoMesAsync(vinculos, pagamentos, categorias, Competencia, logger: null, CancellationToken.None);
 
             var gerado = Assert.Single(pagamentos.Gerados);
-            Assert.Equal(new DateOnly(2026, 10, 1), gerado.DataVencimento);
+            Assert.Equal(new DateOnly(2026, 10, 10), gerado.DataVencimento);
         }
 
         [Fact]

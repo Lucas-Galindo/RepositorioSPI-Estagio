@@ -105,7 +105,7 @@ namespace SPI.Infrastructure.BackgroundServices
                         VinculoCobrancaId = vinculo.Id,
                         Descricao = $"Mensalidade - {contexto} - {competencia:MM/yyyy}",
                         CategoriaReceitaId = categoria?.Id,
-                        DataVencimento = competencia.AddMonths(1),
+                        DataVencimento = new DateOnly(competencia.Year, competencia.Month, 10).AddMonths(1),
                         Competencia = competencia,
                         ValorFinal = vinculo.Valor,
                         Status = "Pendente"

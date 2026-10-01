@@ -79,6 +79,12 @@ namespace SPI.Application.Tests.Aulas
         [Fact]
         public async Task Pacote_com_saldo_zero_nao_gera_conta_e_nao_fica_negativo()
         {
+            // specs/041 supera este cenario: a presenca com saldo 0 deixou de ser
+            // aceita silenciosamente e passou a ser BARRADA (bloqueio por pacote
+            // esgotado, com motivo persistido) -- ver nota de superacao em
+            // specs/038-vinculo-cobranca-gerar-contas/spec.md. As garantias
+            // "nunca fica negativo" e "nenhuma conta gerada" continuam valendo,
+            // agora como consequencia do bloqueio, nao de uma presenca aceita.
             var aluno = NovoAluno();
             var materia = NovaMateria();
             var aula = NovaAula(1, aluno, materia);
@@ -89,13 +95,14 @@ namespace SPI.Application.Tests.Aulas
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);
 
-            var excecao = await Record.ExceptionAsync(() =>
-                servico.RegistrarSessaoAsync(aula.Id, new RegistrarSessaoRequest { Presencas = { [AlunoId] = true } }));
+            var resposta = await servico.RegistrarSessaoAsync(aula.Id, new RegistrarSessaoRequest { Presencas = { [AlunoId] = true } });
 
-            Assert.Null(excecao);
             Assert.Empty(pagamentos.Gerados);
             Assert.Equal(0, vinculo.SaldoAulas);
             Assert.Equal(500m, vinculo.Valor);
+            var alunoResp = Assert.Single(resposta.Alunos);
+            Assert.False(alunoResp.Presente);
+            Assert.Equal(AulaAluno.MotivoPacoteEsgotado, alunoResp.MotivoNaoRegistro);
         }
 
         [Fact]
@@ -137,10 +144,16 @@ namespace SPI.Application.Tests.Aulas
                 .RegistrarSessaoAsync(aula2.Id, new RegistrarSessaoRequest { Presencas = { [AlunoId] = true } });
             Assert.Equal(0, vinculo.SaldoAulas);
 
+            // specs/041 supera este passo: a 3a presenca (saldo ja em 0) deixou de
+            // ser aceita silenciosamente e passou a ser BARRADA -- ver nota de
+            // superacao em specs/038-vinculo-cobranca-gerar-contas/spec.md.
             var aula3 = NovaAula(3, aluno, materia);
-            await CriarServico(new FakeAulaRepositoryParaAula { AulaSemeada = aula3 }, pagamentos, vinculos)
+            var resposta3 = await CriarServico(new FakeAulaRepositoryParaAula { AulaSemeada = aula3 }, pagamentos, vinculos)
                 .RegistrarSessaoAsync(aula3.Id, new RegistrarSessaoRequest { Presencas = { [AlunoId] = true } });
             Assert.Equal(0, vinculo.SaldoAulas);
+            var alunoResp3 = Assert.Single(resposta3.Alunos);
+            Assert.False(alunoResp3.Presente);
+            Assert.Equal(AulaAluno.MotivoPacoteEsgotado, alunoResp3.MotivoNaoRegistro);
 
             Assert.Empty(pagamentos.Gerados);
         }

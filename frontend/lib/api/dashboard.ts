@@ -46,6 +46,16 @@ export interface AulaResumo {
   status: string;
 }
 
+/** Espelha SPI.Application.Dashboard.Dtos.PacoteEmAtencaoResponse. */
+export interface PacoteEmAtencao {
+  vinculoId: number;
+  alunoId: number;
+  alunoNome: string;
+  contexto: string;
+  saldoAulas: number;
+  estado: "Esgotado" | "Atencao";
+}
+
 /** Espelha SPI.Application.Dashboard.Dtos.DashboardResponse. */
 export interface Dashboard {
   totalAulasAgendadasNoPeriodo: number;
@@ -56,6 +66,7 @@ export interface Dashboard {
   valorFaturadoNoPeriodo: number;
   proximasAulasHoje: AulaResumo[];
   lembretesPendentes: number;
+  pacotesEmAtencao: PacoteEmAtencao[];
 }
 
 export function obterDashboard(

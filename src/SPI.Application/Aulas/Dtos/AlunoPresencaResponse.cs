@@ -10,5 +10,11 @@ namespace SPI.Application.Aulas.Dtos
         /// NULL enquanto a aula nao foi registrada (Estoria 8); TRUE/FALSE apos o registro da sessao.
         /// </summary>
         public bool? Presente { get; set; }
+
+        /// <summary>
+        /// NULL = presente ou falta comum. "PacoteEsgotado" = presenca barrada
+        /// por pacote de aulas esgotado (specs/041); nunca indica bloqueio quando NULL.
+        /// </summary>
+        public string? MotivoNaoRegistro { get; set; }
     }
 }

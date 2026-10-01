@@ -1,5 +1,7 @@
 using SPI.Application.Common.Dtos;
 using SPI.Application.Dashboard.Dtos;
+using SPI.Domain.Entities;
+using SPI.Domain.Enums;
 using SPI.Domain.Repositories;
 
 namespace SPI.Application.Dashboard.Services
@@ -7,10 +9,12 @@ namespace SPI.Application.Dashboard.Services
     public class DashboardService : IDashboardService
     {
         private readonly IRelatorioRepository _relatorioRepository;
+        private readonly IVinculoCobrancaRepository _vinculoCobrancaRepository;
 
-        public DashboardService(IRelatorioRepository relatorioRepository)
+        public DashboardService(IRelatorioRepository relatorioRepository, IVinculoCobrancaRepository vinculoCobrancaRepository)
         {
             _relatorioRepository = relatorioRepository;
+            _vinculoCobrancaRepository = vinculoCobrancaRepository;
         }
 
         public async Task<DashboardResponse> ObterAsync(DateOnly? periodoInicio, DateOnly? periodoFim, CancellationToken cancellationToken = default)
@@ -29,6 +33,7 @@ namespace SPI.Application.Dashboard.Services
             var valorFaturado = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(inicio, fim, cancellationToken);
             var proximasAulas = await _relatorioRepository.ObterProximasAulasHojeAsync(cancellationToken);
             var lembretesPendentes = await _relatorioRepository.ContarLembretesPendentesAsync(cancellationToken);
+            var vinculosPacote = await _vinculoCobrancaRepository.ListarAtivosPorModalidadeAsync(ModalidadeCobranca.Pacote, cancellationToken);
 
             return new DashboardResponse
             {
@@ -48,8 +53,30 @@ namespace SPI.Application.Dashboard.Services
                     HoraInicio = a.HoraInicio,
                     HoraFim = a.HoraFim,
                     Status = a.Status
-                }).ToList()
+                }).ToList(),
+                PacotesEmAtencao = MontarPacotesEmAtencao(vinculosPacote)
             };
         }
+
+        // specs/041 (US1): unica dona da regra de elegibilidade do painel --
+        // estatica e pura, testavel sem banco (DashboardPacotesEmAtencaoTests).
+        // Nao confia no filtro do chamador: repete Ativo && Pacote aqui mesmo,
+        // para que a regra inteira tenha um dono so (Principio II).
+        public static List<PacoteEmAtencaoResponse> MontarPacotesEmAtencao(IEnumerable<VinculoCobranca> vinculos) =>
+            vinculos
+                .Where(v => v.Ativo && v.Modalidade == ModalidadeCobranca.Pacote && v.SaldoAulas is >= 0 and <= VinculoCobranca.LimiteAlertaPacote && v.Aluno.Ativo)
+                .Select(v => new PacoteEmAtencaoResponse
+                {
+                    VinculoId = v.Id,
+                    AlunoId = v.AlunoId,
+                    AlunoNome = v.Aluno.Nome,
+                    Contexto = v.TurmaId.HasValue ? v.Turma!.Nome : "Atendimento individual",
+                    SaldoAulas = v.SaldoAulas!.Value,
+                    Estado = v.SaldoAulas == 0 ? "Esgotado" : "Atencao"
+                })
+                .OrderBy(p => p.Estado == "Esgotado" ? 0 : 1)
+                .ThenBy(p => p.SaldoAulas)
+                .ThenBy(p => p.AlunoNome)
+                .ToList();
     }
 }

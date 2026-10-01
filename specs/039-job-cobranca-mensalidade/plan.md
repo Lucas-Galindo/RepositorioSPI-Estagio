@@ -6,7 +6,7 @@
 
 ## Summary
 
-Criar `MensalidadeDispatcherService`, um `BackgroundService` no mesmo padrão de `LembreteDispatcherService`: verifica periodicamente (intervalo configurável) se o momento atual é o último dia do mês às 23h ou depois; quando sim, para cada `VinculoCobranca` ativo de Modalidade Mensalidade, gera uma `Pagamento` (Status "Pendente", Valor do vínculo, Competência do mês, vencimento no 1º dia do mês seguinte, categoria "Mensalidade" nova), sem vínculo a nenhuma `Aula`. Idempotência garantida por uma FK nova `Pagamento.VinculoCobrancaId` + índice único `(vinculo_cobranca_id, competencia)`, que também fecha totalmente a exceção EX-001 (`specs/037-vinculo-cobranca/plan.md`) — depois desta feature, todas as três modalidades (Avulsa, Pacote via specs/038; Mensalidade aqui) têm efeito automático real.
+Criar `MensalidadeDispatcherService`, um `BackgroundService` no mesmo padrão de `LembreteDispatcherService`: verifica periodicamente (intervalo configurável) se o momento atual é o último dia do mês às 23h ou depois; quando sim, para cada `VinculoCobranca` ativo de Modalidade Mensalidade, gera uma `Pagamento` (Status "Pendente", Valor do vínculo, Competência do mês, vencimento no dia 10 do mês seguinte, categoria "Mensalidade" nova), sem vínculo a nenhuma `Aula`. Idempotência garantida por uma FK nova `Pagamento.VinculoCobrancaId` + índice único `(vinculo_cobranca_id, competencia)`, que também fecha totalmente a exceção EX-001 (`specs/037-vinculo-cobranca/plan.md`) — depois desta feature, todas as três modalidades (Avulsa, Pacote via specs/038; Mensalidade aqui) têm efeito automático real.
 
 ## Technical Context
 

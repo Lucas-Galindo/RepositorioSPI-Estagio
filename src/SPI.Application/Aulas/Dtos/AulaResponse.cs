@@ -15,5 +15,12 @@ namespace SPI.Application.Aulas.Dtos
         public string Status { get; set; } = string.Empty;
         public bool Ativo { get; set; }
         public List<AlunoPresencaResponse> Alunos { get; set; } = new();
+
+        /// <summary>
+        /// Avisos imediatos (nao persistidos) sobre o registro desta sessao --
+        /// hoje, um por aluno barrado por pacote esgotado (specs/041). Vazio
+        /// em toda resposta que nao envolveu bloqueio.
+        /// </summary>
+        public List<string> Avisos { get; set; } = new();
     }
 }

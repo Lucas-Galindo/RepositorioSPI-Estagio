@@ -7,8 +7,10 @@ Nunca propaga falha: qualquer erro e' capturado, logado em sync.log, e o script 
 
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('backlog', 'design', 'a-fazer', 'em-andamento', 'revisao-codigo')]
+    [ValidateSet('backlog', 'design', 'a-fazer', 'em-andamento', 'revisao-codigo', 'analyze', 'clarify', 'retroativo')]
     [string]$Fase,
+
+    [string]$Detalhe = '',
 
     [switch]$DryRun
 )
@@ -75,6 +77,21 @@ function Get-TrelloCards {
     return Invoke-RestMethod -Uri $uri -Method Get -TimeoutSec 15
 }
 
+function Extrair-CorpoSemStatus {
+    param([string]$DescAtual)
+    if ([string]::IsNullOrEmpty($DescAtual)) { return $DescAtual }
+    if ($DescAtual -match '(?s)^STATUS:[^\r\n]*\r?\n\r?\n(.*)$') { return $Matches[1] }
+    if ($DescAtual -match '(?s)^STATUS:[^\r\n]*\r?\n(.*)$') { return $Matches[1] }
+    if ($DescAtual -match '^STATUS:[^\r\n]*$') { return '' }
+    return $DescAtual
+}
+
+function Montar-DescricaoComStatus {
+    param([string]$Detalhe, [string]$Corpo)
+    if ([string]::IsNullOrWhiteSpace($Corpo)) { return "STATUS: $Detalhe" }
+    return "STATUS: $Detalhe`n`n$Corpo"
+}
+
 function Find-FeatureCard {
     param($Cards, [string]$FeatureId)
     $marker = "Feature: $FeatureId"
@@ -92,6 +109,16 @@ function Move-TrelloCard {
     # Invoke-RestMethod -Method Put com -Body hashtable nao e' aplicado pela API do Trello
     # (retorna 200 sem mover o card) -- idList precisa ir na query string tambem no PUT.
     $uri = "https://api.trello.com/1/cards/${CardId}?key=$($Cred.Key)&token=$($Cred.Token)&idList=$ListId"
+    Invoke-RestMethod -Uri $uri -Method Put -TimeoutSec 15 | Out-Null
+}
+
+function Update-TrelloCardDescription {
+    param($Cred, [string]$CardId, [string]$Desc)
+    # Mesmo padrao de Move-TrelloCard (PUT com -Body hashtable nao e' aplicado
+    # pela API do Trello) -- mas $Desc pode ter espacos/acentos/quebras de
+    # linha/&/=, entao precisa de URL-encoding explicito (idList era so hex).
+    $descCodificada = [System.Uri]::EscapeDataString($Desc)
+    $uri = "https://api.trello.com/1/cards/${CardId}?key=$($Cred.Key)&token=$($Cred.Token)&desc=$descCodificada"
     Invoke-RestMethod -Uri $uri -Method Put -TimeoutSec 15 | Out-Null
 }
 
@@ -130,11 +157,58 @@ function Get-TarefasBloqueantes {
     return @($pending).Count
 }
 
+function Obter-ContadorTarefas {
+    param([string]$FeatureId)
+    $tasksPath = Join-Path $repoRoot "specs/$FeatureId/tasks.md"
+    if (-not (Test-Path $tasksPath)) { return @{ Total = 0; Concluidas = 0 } }
+    $linhas = Get-Content $tasksPath -Encoding UTF8 | Where-Object { $_ -match '^\s*-\s\[[ xX]\]\s*T\d+' }
+    $concluidas = $linhas | Where-Object { $_ -match '^\s*-\s\[[xX]\]' }
+    return @{ Total = @($linhas).Count; Concluidas = @($concluidas).Count }
+}
+
+function Obter-TarefasManuaisPendentes {
+    param([string]$FeatureId)
+    $tasksPath = Join-Path $repoRoot "specs/$FeatureId/tasks.md"
+    if (-not (Test-Path $tasksPath)) { return @() }
+    $linhas = Get-Content $tasksPath -Encoding UTF8 | Where-Object { $_ -match '^\s*-\s\[\s\]\s*(T\d+)' -and ($_ -match '(?i)\(parte manual\)') }
+    return $linhas | ForEach-Object { if ($_ -match '(T\d+)') { $Matches[1] } }
+}
+
 function Test-AutomatedTestsPass {
     $testsProject = Join-Path $repoRoot 'tests/SPI.Application.Tests'
     if (-not (Test-Path $testsProject)) { return $false }
     & dotnet test $testsProject | Out-Null
     return ($LASTEXITCODE -eq 0)
+}
+
+function Obter-StatusDetalhePadrao {
+    param([string]$Fase, [string]$FeatureId, [int]$Pendentes = 0, [bool]$TestesOk = $false, [bool]$Movido = $false)
+    switch ($Fase) {
+        'backlog' { return '/speckit-specify concluído' }
+        'design' { return '/speckit-plan concluído' }
+        'a-fazer' {
+            $contador = Obter-ContadorTarefas -FeatureId $FeatureId
+            return "/speckit-tasks concluído, $($contador.Total) tarefas geradas"
+        }
+        'em-andamento' {
+            $contador = Obter-ContadorTarefas -FeatureId $FeatureId
+            return "/speckit-implement rodando, $($contador.Concluidas)/$($contador.Total) tarefas concluídas"
+        }
+        'revisao-codigo' {
+            if ($Movido) {
+                $manuaisPendentes = Obter-TarefasManuaisPendentes -FeatureId $FeatureId
+                if (@($manuaisPendentes).Count -gt 0) {
+                    return "/speckit-implement concluído, aguardando validação manual ($($manuaisPendentes -join '/'))"
+                }
+                return '/speckit-implement concluído'
+            }
+            $motivoTestes = if ($TestesOk) { 'ok' } else { 'falharam' }
+            return "/speckit-implement rodando, $Pendentes tarefa(s) pendente(s), testes $motivoTestes"
+        }
+        'analyze' { return '/speckit-analyze concluído' }
+        'clarify' { return '/speckit-clarify concluído' }
+        default { return "$Fase concluído" }
+    }
 }
 
 function Get-ImplementationSummary {
@@ -169,7 +243,9 @@ try {
                 $lists = Get-TrelloLists -Cred $cred
                 if (-not $lists.ContainsKey('Backlog')) { throw "Lista 'Backlog' nao encontrada no quadro" }
                 $title = Get-FeatureTitle -FeatureId $featureId
-                $desc = Get-SpecSummary -FeatureId $featureId
+                $corpo = Get-SpecSummary -FeatureId $featureId
+                $statusDetalhe = if ($Detalhe) { $Detalhe } else { Obter-StatusDetalhePadrao -Fase 'backlog' -FeatureId $featureId }
+                $desc = Montar-DescricaoComStatus -Detalhe $statusDetalhe -Corpo $corpo
                 if (-not $DryRun) { New-TrelloCard -Cred $cred -ListId $lists['Backlog'] -Name $title -Desc $desc | Out-Null }
                 $resultado = if ($DryRun) { 'dry-run' } else { 'ok' }
                 $detalhe = if ($DryRun) { "criaria card '$title' ($featureId)" } else { "card criado ($featureId)" }
@@ -193,7 +269,13 @@ try {
             else {
                 $lists = Get-TrelloLists -Cred $cred
                 if (-not $lists.ContainsKey($targetListName)) { throw "Lista '$targetListName' nao encontrada no quadro" }
-                if (-not $DryRun) { Move-TrelloCard -Cred $cred -CardId $card.id -ListId $lists[$targetListName] }
+                $corpoAtual = Extrair-CorpoSemStatus -DescAtual $card.desc
+                $statusDetalhe = if ($Detalhe) { $Detalhe } else { Obter-StatusDetalhePadrao -Fase $Fase -FeatureId $featureId }
+                $novaDesc = Montar-DescricaoComStatus -Detalhe $statusDetalhe -Corpo $corpoAtual
+                if (-not $DryRun) {
+                    Move-TrelloCard -Cred $cred -CardId $card.id -ListId $lists[$targetListName]
+                    Update-TrelloCardDescription -Cred $cred -CardId $card.id -Desc $novaDesc
+                }
                 $resultado = if ($DryRun) { 'dry-run' } else { 'ok' }
                 $detalhe = if ($DryRun) { "moveria card para '$targetListName' ($featureId)" } else { "card movido para '$targetListName' ($featureId)" }
                 Write-SyncLog -Fase $Fase -Result $resultado -Detail $detalhe
@@ -214,13 +296,17 @@ try {
             else {
                 $pendentes = Get-TarefasBloqueantes -FeatureId $featureId
                 $testesOk = Test-AutomatedTestsPass
+                $corpoAtual = Extrair-CorpoSemStatus -DescAtual $card.desc
                 if ($pendentes -eq 0 -and $testesOk) {
                     $lists = Get-TrelloLists -Cred $cred
                     if (-not $lists.ContainsKey('Revisão de código')) { throw "Lista 'Revisão de código' nao encontrada no quadro" }
                     $summary = Get-ImplementationSummary -FeatureId $featureId
+                    $statusDetalhe = if ($Detalhe) { $Detalhe } else { Obter-StatusDetalhePadrao -Fase 'revisao-codigo' -FeatureId $featureId -Movido $true }
+                    $novaDesc = Montar-DescricaoComStatus -Detalhe $statusDetalhe -Corpo $corpoAtual
                     if (-not $DryRun) {
                         Move-TrelloCard -Cred $cred -CardId $card.id -ListId $lists['Revisão de código']
                         Add-TrelloComment -Cred $cred -CardId $card.id -Text $summary
+                        Update-TrelloCardDescription -Cred $cred -CardId $card.id -Desc $novaDesc
                     }
                     $resultado = if ($DryRun) { 'dry-run' } else { 'ok' }
                     $detalhe = if ($DryRun) { "moveria para 'Revisão de código' + comentario ($featureId)" } else { "card movido para 'Revisão de código' + comentario ($featureId)" }
@@ -230,10 +316,59 @@ try {
                 else {
                     $motivoTestes = if ($testesOk) { 'ok' } else { 'falharam' }
                     $motivo = "$pendentes tarefa(s) nao-manual pendente(s), testes $motivoTestes"
+                    $statusDetalhe = if ($Detalhe) { $Detalhe } else { Obter-StatusDetalhePadrao -Fase 'revisao-codigo' -FeatureId $featureId -Pendentes $pendentes -TestesOk $testesOk -Movido $false }
+                    $novaDesc = Montar-DescricaoComStatus -Detalhe $statusDetalhe -Corpo $corpoAtual
+                    if (-not $DryRun) { Update-TrelloCardDescription -Cred $cred -CardId $card.id -Desc $novaDesc }
                     Write-SyncLog -Fase $Fase -Result 'nao-movido' -Detail "$motivo ($featureId)"
                     Write-Output "[trello-sync] revisao-codigo: NAO movido -- $motivo ($featureId)"
                 }
             }
+        }
+
+        { $_ -in @('analyze', 'clarify') } {
+            $cred = Get-TrelloCredentials
+            $featureId = Get-FeatureId
+            $cards = Get-TrelloCards -Cred $cred
+            $card = Find-FeatureCard -Cards $cards -FeatureId $featureId
+
+            if (-not $card) {
+                Write-SyncLog -Fase $Fase -Result 'skip' -Detail "card nao encontrado ($featureId)"
+                Write-Output "[trello-sync] ${Fase}: card nao encontrado, nada a fazer ($featureId)"
+            }
+            else {
+                # FR-004: nunca move de lista -- so reescreve o STATUS. Nunca
+                # chama Get-TrelloLists nem Move-TrelloCard neste branch.
+                $corpoAtual = Extrair-CorpoSemStatus -DescAtual $card.desc
+                $statusDetalhe = if ($Detalhe) { $Detalhe } else { Obter-StatusDetalhePadrao -Fase $Fase -FeatureId $featureId }
+                $novaDesc = Montar-DescricaoComStatus -Detalhe $statusDetalhe -Corpo $corpoAtual
+                if (-not $DryRun) { Update-TrelloCardDescription -Cred $cred -CardId $card.id -Desc $novaDesc }
+                $resultado = if ($DryRun) { 'dry-run' } else { 'ok' }
+                $detalhe = if ($DryRun) { "atualizaria STATUS ($featureId)" } else { "STATUS atualizado ($featureId)" }
+                Write-SyncLog -Fase $Fase -Result $resultado -Detail $detalhe
+                Write-Output "[trello-sync] ${Fase}: $detalhe"
+            }
+        }
+
+        'retroativo' {
+            $cred = Get-TrelloCredentials
+            $cards = Get-TrelloCards -Cred $cred
+            $atualizados = 0
+            $jaTinhaStatus = 0
+            foreach ($c in $cards) {
+                $ehCardDeFeature = $c.desc -and ($c.desc.TrimEnd() -match 'Feature:\s*\S+\s*$')
+                $jaTemStatus = $c.desc -and ($c.desc -match '^STATUS:')
+                if ($ehCardDeFeature -or $jaTemStatus) {
+                    if ($jaTemStatus) { $jaTinhaStatus++ }
+                    continue
+                }
+                $novaDesc = Montar-DescricaoComStatus -Detalhe 'card criado manualmente, sem spec formal ainda' -Corpo $c.desc
+                if (-not $DryRun) { Update-TrelloCardDescription -Cred $cred -CardId $c.id -Desc $novaDesc }
+                $atualizados++
+            }
+            $resultado = if ($DryRun) { 'dry-run' } else { 'ok' }
+            $detalhe = "$atualizados cards atualizados, $jaTinhaStatus ja tinham STATUS"
+            Write-SyncLog -Fase $Fase -Result $resultado -Detail $detalhe
+            Write-Output "[trello-sync] retroativo: $detalhe"
         }
 
         default {

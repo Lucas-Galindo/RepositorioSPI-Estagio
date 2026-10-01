@@ -32,7 +32,7 @@ Para cada VinculoCobranca em ListarAtivosPorModalidadeAsync(Mensalidade):
             VinculoCobrancaId = vinculo.Id,
             Descricao = "Mensalidade - {contexto} - {competencia:MM/yyyy}",   (R5)
             CategoriaReceitaId = categoria "Mensalidade".Id,                  (R6)
-            DataVencimento = primeiro dia do mês seguinte à competencia,      (R4)
+            DataVencimento = dia 10 do mês seguinte à competencia,      (R4)
             Competencia = competencia,
             ValorFinal = vinculo.Valor,
             Status = "Pendente"
