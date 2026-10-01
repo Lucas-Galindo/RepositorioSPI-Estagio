@@ -38,6 +38,7 @@ namespace SPI.Infrastructure.DependencyInjection
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<ISenhaResetTokenRepository, SenhaResetTokenRepository>();
+            services.AddScoped<IExclusaoProfessorTokenRepository, ExclusaoProfessorTokenRepository>();
             services.AddScoped<IMateriaRepository, MateriaRepository>();
             services.AddScoped<ITurmaRepository, TurmaRepository>();
             services.AddScoped<IVinculoCobrancaRepository, VinculoCobrancaRepository>();

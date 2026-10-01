@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from "./client";
+import { apiGet, apiPatch, apiPost, apiPut } from "./client";
 
 /** Espelha SPI.Application.Professores.Dtos.ProfessorResponse. */
 export interface Professor {
@@ -60,4 +60,24 @@ export function atualizarMeuPerfil(request: AtualizarProfessorRequest, accessTok
 
 export function alterarMinhaSenha(request: AlterarSenhaProfessorRequest, accessToken: string): Promise<void> {
   return apiPut<void>("/api/professor/me/senha", request, accessToken);
+}
+
+/** Espelha SPI.Application.Professores.Dtos.ConfirmarExclusaoProfessorRequest. */
+export interface ConfirmarExclusaoProfessorRequest {
+  codigo: string;
+}
+
+/** Executado pelo Admin. Envia o codigo de verificacao (2FA) para o proprio e-mail do Admin autenticado. */
+export function solicitarExclusaoProfessor(accessToken: string): Promise<void> {
+  return apiPost<void>("/api/professor/admin/excluir/solicitar-codigo", undefined, accessToken);
+}
+
+/** Executado pelo Admin. Confirma o codigo recebido por e-mail e efetiva a exclusao logica da professora. */
+export function confirmarExclusaoProfessor(request: ConfirmarExclusaoProfessorRequest, accessToken: string): Promise<void> {
+  return apiPost<void>("/api/professor/admin/excluir/confirmar", request, accessToken);
+}
+
+/** Executado pelo Admin. Reativa a professora previamente excluida, sem exigir 2FA. */
+export function reativarProfessor(accessToken: string): Promise<Professor> {
+  return apiPatch<Professor>("/api/professor/admin/reativar", accessToken);
 }

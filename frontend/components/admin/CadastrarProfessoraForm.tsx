@@ -9,6 +9,9 @@ import {
   cadastrarProfessorInicial,
   obterProfessorComoAdmin,
   atualizarProfessorComoAdmin,
+  solicitarExclusaoProfessor,
+  confirmarExclusaoProfessor,
+  reativarProfessor,
   type Professor,
 } from "@/lib/api/professor";
 
@@ -172,6 +175,8 @@ function CriarProfessoraForm({ onCriada }: { onCriada: (professor: Professor) =>
   );
 }
 
+type EtapaExclusao = "inicial" | "aviso" | "codigo";
+
 function EditarProfessoraForm({
   professor,
   onAtualizado,
@@ -187,6 +192,11 @@ function EditarProfessoraForm({
   const [telefone, setTelefone] = useState(professor.telefone ?? "");
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
+
+  const [etapaExclusao, setEtapaExclusao] = useState<EtapaExclusao>("inicial");
+  const [codigoExclusao, setCodigoExclusao] = useState("");
+  const [erroExclusao, setErroExclusao] = useState("");
+  const [processandoExclusao, setProcessandoExclusao] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -205,6 +215,57 @@ function EditarProfessoraForm({
       );
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleSolicitarExclusao = async () => {
+    if (!sessao) return;
+    setErroExclusao("");
+    setProcessandoExclusao(true);
+
+    try {
+      await solicitarExclusaoProfessor(sessao.accessToken);
+      setEtapaExclusao("codigo");
+    } catch (excecao) {
+      setErroExclusao(excecao instanceof ApiError ? excecao.message : "Não foi possível enviar o código de verificação.");
+    } finally {
+      setProcessandoExclusao(false);
+    }
+  };
+
+  const handleConfirmarExclusao = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!sessao || !codigoExclusao.trim()) return;
+
+    setErroExclusao("");
+    setProcessandoExclusao(true);
+
+    try {
+      await confirmarExclusaoProfessor({ codigo: codigoExclusao.trim() }, sessao.accessToken);
+      onAtualizado({ ...professor, ativo: false });
+      mostrarToast("Professora excluída. Reative-a a qualquer momento para restaurar o acesso.");
+      setEtapaExclusao("inicial");
+      setCodigoExclusao("");
+    } catch (excecao) {
+      setErroExclusao(excecao instanceof ApiError ? excecao.message : "Não foi possível confirmar a exclusão.");
+    } finally {
+      setProcessandoExclusao(false);
+    }
+  };
+
+  const handleReativar = async () => {
+    if (!sessao) return;
+    setErroExclusao("");
+    setProcessandoExclusao(true);
+
+    try {
+      const resultado = await reativarProfessor(sessao.accessToken);
+      onAtualizado(resultado);
+      mostrarToast("Professora reativada com sucesso.");
+    } catch (excecao) {
+      setErroExclusao(excecao instanceof ApiError ? excecao.message : "Não foi possível reativar a professora.");
+    } finally {
+      setProcessandoExclusao(false);
     }
   };
 
@@ -263,6 +324,102 @@ function EditarProfessoraForm({
           </button>
         </div>
       </form>
+
+      <div className="form-section" style={{ marginTop: 24, borderTop: "1px solid var(--border, #e5e5e5)", paddingTop: 20 }}>
+        <div className="fs-title">
+          <span className="fs-num">2</span> Zona de risco
+        </div>
+
+        {erroExclusao && (
+          <div className="err-banner show" style={{ marginBottom: 15 }}>
+            <Icon name="warn" size={15} />
+            <span>{erroExclusao}</span>
+          </div>
+        )}
+
+        {!professor.ativo && (
+          <>
+            <p className="hint" style={{ marginBottom: 15 }}>
+              Esta professora está <strong>inativa</strong> — ela não consegue logar no sistema. Reative para restaurar o
+              acesso normal (nenhum dado foi perdido).
+            </p>
+            <button type="button" className="btn btn-primary" onClick={handleReativar} disabled={processandoExclusao}>
+              {processandoExclusao ? "Reativando..." : "Reativar Professor"}
+            </button>
+          </>
+        )}
+
+        {professor.ativo && etapaExclusao === "inicial" && (
+          <>
+            <p className="hint" style={{ marginBottom: 15 }}>
+              Excluir a professora desativa o cadastro dela (ela deixa de conseguir logar), mas preserva todo o
+              histórico (turmas, alunos, aulas e pagamentos). A ação exige confirmação por um código enviado ao seu
+              próprio e-mail de Admin.
+            </p>
+            <button type="button" className="btn btn-danger" onClick={() => setEtapaExclusao("aviso")}>
+              Excluir Professor
+            </button>
+          </>
+        )}
+
+        {professor.ativo && etapaExclusao === "aviso" && (
+          <>
+            <div className="err-banner show" style={{ marginBottom: 15 }}>
+              <Icon name="warn" size={15} />
+              <span>
+                <strong>Atenção:</strong> este sistema hoje tem só esta professora cadastrada. Ao excluí-la, o sistema
+                fica inacessível para o uso normal (login da professora, alunos e aulas) até que o Admin cadastre uma
+                nova professora. Isso é diferente de um aviso comum de "ação irreversível" — aqui, todo mundo fica sem
+                acesso até você cadastrar alguém de novo.
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button type="button" className="btn btn-danger" onClick={handleSolicitarExclusao} disabled={processandoExclusao}>
+                {processandoExclusao ? "Enviando código..." : "Entendi, enviar código de confirmação"}
+              </button>
+              <button type="button" className="btn" onClick={() => setEtapaExclusao("inicial")} disabled={processandoExclusao}>
+                Cancelar
+              </button>
+            </div>
+          </>
+        )}
+
+        {professor.ativo && etapaExclusao === "codigo" && (
+          <form onSubmit={handleConfirmarExclusao}>
+            <p className="hint" style={{ marginBottom: 15 }}>
+              Enviamos um código de verificação para o seu e-mail de Admin. Ele expira em 15 minutos e só pode ser
+              usado uma vez.
+            </p>
+            <div className="field" style={{ marginBottom: 15 }}>
+              <label htmlFor="input-codigo-exclusao">Código recebido por e-mail</label>
+              <input
+                id="input-codigo-exclusao"
+                type="text"
+                placeholder="Cole o código aqui"
+                value={codigoExclusao}
+                onChange={(e) => setCodigoExclusao(e.target.value)}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button type="submit" className="btn btn-danger" disabled={processandoExclusao || !codigoExclusao.trim()}>
+                {processandoExclusao ? "Confirmando..." : "Confirmar exclusão"}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setEtapaExclusao("inicial");
+                  setCodigoExclusao("");
+                  setErroExclusao("");
+                }}
+                disabled={processandoExclusao}
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

@@ -28,6 +28,7 @@ namespace SPI.Infrastructure.Persistence
         public DbSet<Admin> Admins => Set<Admin>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<SenhaResetToken> SenhaResetTokens => Set<SenhaResetToken>();
+        public DbSet<ExclusaoProfessorToken> ExclusaoProfessorTokens => Set<ExclusaoProfessorToken>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

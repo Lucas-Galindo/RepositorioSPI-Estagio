@@ -17,5 +17,14 @@ namespace SPI.Application.Professores.Services
         Task<ProfessorResponse?> ObterUnicaAsync(CancellationToken cancellationToken = default);
 
         Task<ProfessorResponse> AtualizarComoAdminAsync(AtualizarProfessorRequest request, CancellationToken cancellationToken = default);
+
+        // Exclusao logica com 2FA por e-mail (spec 044): o codigo de
+        // verificacao e sempre enviado ao Admin autenticado que solicita,
+        // nunca a professora-alvo.
+        Task SolicitarExclusaoAsync(int adminId, CancellationToken cancellationToken = default);
+
+        Task ConfirmarExclusaoAsync(int adminId, string codigo, CancellationToken cancellationToken = default);
+
+        Task<ProfessorResponse> ReativarAsync(CancellationToken cancellationToken = default);
     }
 }

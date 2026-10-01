@@ -17,6 +17,7 @@ namespace SPI.Api.Controllers
         private readonly IValidator<CadastroInicialProfessorRequest> _cadastroValidator;
         private readonly IValidator<AtualizarProfessorRequest> _atualizarValidator;
         private readonly IValidator<AlterarSenhaProfessorRequest> _alterarSenhaValidator;
+        private readonly IValidator<ConfirmarExclusaoProfessorRequest> _confirmarExclusaoValidator;
         private readonly ILogger<ProfessorController> _logger;
 
         public ProfessorController(
@@ -24,12 +25,14 @@ namespace SPI.Api.Controllers
             IValidator<CadastroInicialProfessorRequest> cadastroValidator,
             IValidator<AtualizarProfessorRequest> atualizarValidator,
             IValidator<AlterarSenhaProfessorRequest> alterarSenhaValidator,
+            IValidator<ConfirmarExclusaoProfessorRequest> confirmarExclusaoValidator,
             ILogger<ProfessorController> logger)
         {
             _professorService = professorService;
             _cadastroValidator = cadastroValidator;
             _atualizarValidator = atualizarValidator;
             _alterarSenhaValidator = alterarSenhaValidator;
+            _confirmarExclusaoValidator = confirmarExclusaoValidator;
             _logger = logger;
         }
 
@@ -243,6 +246,117 @@ namespace SPI.Api.Controllers
                 await _professorService.AlterarSenhaAsync(User.ObterUsuarioId(), request);
                 _logger.LogInformation("Senha alterada pela propria professora {ProfessorId}", User.ObterUsuarioId());
                 return Ok();
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (ConflitoException e)
+            {
+                return Conflict(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(
+                    title: "Erro inesperado",
+                    detail: e.Message,
+                    statusCode: StatusCodes.Status500InternalServerError
+                );
+            }
+        }
+
+        [HttpPost("admin/excluir/solicitar-codigo")]
+        [Authorize(Roles = nameof(PerfilUsuario.Admin))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para o Admin solicitar o codigo de verificacao (2FA por e-mail) antes de excluir a professora
+        /// </summary>
+        /// <returns>Sem conteudo em caso de sucesso; o codigo e enviado ao e-mail do proprio Admin autenticado</returns>
+        public async Task<IActionResult> SolicitarExclusao()
+        {
+            try
+            {
+                await _professorService.SolicitarExclusaoAsync(User.ObterUsuarioId());
+                _logger.LogInformation("Codigo de exclusao da professora solicitado pelo Admin {AdminId}", User.ObterUsuarioId());
+                return Ok();
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(
+                    title: "Erro inesperado",
+                    detail: e.Message,
+                    statusCode: StatusCodes.Status500InternalServerError
+                );
+            }
+        }
+
+        [HttpPost("admin/excluir/confirmar")]
+        [Authorize(Roles = nameof(PerfilUsuario.Admin))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para o Admin confirmar o codigo recebido e efetivar a exclusao logica da professora
+        /// </summary>
+        /// <param name="request">Codigo de verificacao recebido por e-mail</param>
+        /// <returns>Sem conteudo em caso de sucesso</returns>
+        public async Task<IActionResult> ConfirmarExclusao([FromBody] ConfirmarExclusaoProfessorRequest request)
+        {
+            try
+            {
+                var validacao = await _confirmarExclusaoValidator.ValidateAsync(request);
+                if (!validacao.IsValid)
+                {
+                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+                }
+
+                await _professorService.ConfirmarExclusaoAsync(User.ObterUsuarioId(), request.Codigo);
+                _logger.LogInformation("Professora excluida (logicamente) pelo Admin {AdminId}", User.ObterUsuarioId());
+                return Ok();
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (ConflitoException e)
+            {
+                return Conflict(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(
+                    title: "Erro inesperado",
+                    detail: e.Message,
+                    statusCode: StatusCodes.Status500InternalServerError
+                );
+            }
+        }
+
+        [HttpPatch("admin/reativar")]
+        [Authorize(Roles = nameof(PerfilUsuario.Admin))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para o Admin reativar a professora previamente excluida (sem exigir 2FA)
+        /// </summary>
+        /// <returns>Retorna o perfil reativado</returns>
+        public async Task<IActionResult> Reativar()
+        {
+            try
+            {
+                var response = await _professorService.ReativarAsync();
+                _logger.LogInformation("Professora {ProfessorId} reativada pelo Admin {AdminId}", response.Id, User.ObterUsuarioId());
+                return Ok(response);
             }
             catch (NaoEncontradoException e)
             {
