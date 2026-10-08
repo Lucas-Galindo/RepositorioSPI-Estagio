@@ -377,7 +377,7 @@ function EditarProfessoraForm({
               <button type="button" className="btn btn-danger" onClick={handleSolicitarExclusao} disabled={processandoExclusao}>
                 {processandoExclusao ? "Enviando código..." : "Entendi, enviar código de confirmação"}
               </button>
-              <button type="button" className="btn" onClick={() => setEtapaExclusao("inicial")} disabled={processandoExclusao}>
+              <button type="button" className="btn btn-ghost" onClick={() => setEtapaExclusao("inicial")} disabled={processandoExclusao}>
                 Cancelar
               </button>
             </div>
@@ -406,7 +406,7 @@ function EditarProfessoraForm({
               </button>
               <button
                 type="button"
-                className="btn"
+                className="btn btn-ghost"
                 onClick={() => {
                   setEtapaExclusao("inicial");
                   setCodigoExclusao("");

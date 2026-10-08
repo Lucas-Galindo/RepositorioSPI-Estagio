@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -31,6 +32,7 @@ function periodoSemestre(semestre: "1" | "2"): { inicio: string; fim: string } {
 export default function RelatorioFinanceiroPage() {
   usePageHeader("Relatórios", "Relatório Financeiro Consolidado");
   const { sessao } = useAuth();
+  const router = useRouter();
 
   // Duas visoes dentro da mesma pagina (Sprint 3 da evolucao do Financeiro):
   // troca de estado local, sem navegacao de rota.
@@ -435,7 +437,17 @@ export default function RelatorioFinanceiroPage() {
                       </thead>
                       <tbody>
                         {lancamentosFiltrados.map((lancamento) => (
-                          <tr key={`${lancamento.tipo}-${lancamento.id}`}>
+                          <tr
+                            key={`${lancamento.tipo}-${lancamento.id}`}
+                            className="row-link"
+                            onClick={() =>
+                              router.push(
+                                lancamento.tipo === "Entrada"
+                                  ? `/financeiro/contas-a-receber/${lancamento.id}`
+                                  : `/financeiro/contas-a-pagar/${lancamento.id}`
+                              )
+                            }
+                          >
                             <td>{lancamento.descricao}</td>
                             <td>{fmtData(lancamento.dataVencimento)}</td>
                           </tr>

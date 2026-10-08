@@ -128,7 +128,7 @@ export default function DashboardPage() {
       )}
 
       {dashboard && (
-        <div style={{ marginTop: 18 }}>
+        <div style={{ marginTop: 18, marginBottom: 24 }}>
           <div className="section-title">Pacotes em atenção</div>
           <div className="section-sub" style={{ marginBottom: 0 }}>
             Alunos com pacote de aulas acabando ou esgotado
