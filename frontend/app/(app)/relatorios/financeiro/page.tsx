@@ -29,6 +29,23 @@ function periodoSemestre(semestre: "1" | "2"): { inicio: string; fim: string } {
   return semestre === "1" ? { inicio: `${ano}-01-01`, fim: `${ano}-06-30` } : { inicio: `${ano}-07-01`, fim: `${ano}-12-31` };
 }
 
+// specs/048: persiste os filtros da pagina (ida e volta do detalhe de
+// Entradas/Saidas, specs/045) so dentro da sessao da aba -- por isso
+// sessionStorage, nunca localStorage (que sobreviveria a fechar o navegador).
+const CHAVE_FILTROS = "spi:filtros-relatorio-financeiro";
+
+type FiltrosSalvos = {
+  aba?: "financeiro" | "indicadores";
+  inicio?: string;
+  fim?: string;
+  formaPagamentoId?: string;
+  alunoId?: string;
+  turmaId?: string;
+  materiaId?: string;
+  semestre?: string;
+  tipoLancamento?: "todos" | "Entrada" | "Saida";
+};
+
 export default function RelatorioFinanceiroPage() {
   usePageHeader("Relatórios", "Relatório Financeiro Consolidado");
   const { sessao } = useAuth();
@@ -59,6 +76,41 @@ export default function RelatorioFinanceiroPage() {
   // independente do estado de dados (indicadoresDados): trocar de período não
   // deve resetar esse filtro (FR-009).
   const [tipoLancamento, setTipoLancamento] = useState<"todos" | "Entrada" | "Saida">("todos");
+
+  // Le os filtros salvos so apos o mount, de proposito: sessionStorage nao
+  // existe no SSR, e usar isso num inicializador preguicoso do useState
+  // quebraria a hidratacao (server sem filtro salvo x client com filtro
+  // salvo) -- mesmo cuidado ja aplicado em ThemeContext.tsx para localStorage.
+  useEffect(() => {
+    try {
+      const salvo = sessionStorage.getItem(CHAVE_FILTROS);
+      if (!salvo) return;
+      const filtros: FiltrosSalvos = JSON.parse(salvo);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (filtros.aba !== undefined) setAba(filtros.aba);
+      if (filtros.inicio !== undefined) setInicio(filtros.inicio);
+      if (filtros.fim !== undefined) setFim(filtros.fim);
+      if (filtros.formaPagamentoId !== undefined) setFormaPagamentoId(filtros.formaPagamentoId);
+      if (filtros.alunoId !== undefined) setAlunoId(filtros.alunoId);
+      if (filtros.turmaId !== undefined) setTurmaId(filtros.turmaId);
+      if (filtros.materiaId !== undefined) setMateriaId(filtros.materiaId);
+      if (filtros.semestre !== undefined) setSemestre(filtros.semestre);
+      if (filtros.tipoLancamento !== undefined) setTipoLancamento(filtros.tipoLancamento);
+    } catch {
+      // ambiente sem sessionStorage (navegacao privada restrita): mantem o padrao
+    }
+  }, []);
+
+  // Grava a cada mudanca, para a proxima leitura (ida ao detalhe e volta,
+  // specs/045) encontrar o estado mais recente.
+  useEffect(() => {
+    try {
+      const filtros: FiltrosSalvos = { aba, inicio, fim, formaPagamentoId, alunoId, turmaId, materiaId, semestre, tipoLancamento };
+      sessionStorage.setItem(CHAVE_FILTROS, JSON.stringify(filtros));
+    } catch {
+      // ignora falha de persistencia (ex: sessionStorage indisponivel)
+    }
+  }, [aba, inicio, fim, formaPagamentoId, alunoId, turmaId, materiaId, semestre, tipoLancamento]);
 
   useEffect(() => {
     if (!sessao) return;
@@ -135,8 +187,9 @@ export default function RelatorioFinanceiroPage() {
     setTurmaId("");
     setMateriaId("");
     setSemestre("");
+    setTipoLancamento("todos");
   };
-  const temFiltro = Boolean(inicio || fim || formaPagamentoId || alunoId || turmaId || materiaId);
+  const temFiltro = Boolean(inicio || fim || formaPagamentoId || alunoId || turmaId || materiaId || tipoLancamento !== "todos");
   const maiorForma = Math.max(1, ...(dados?.porFormaPagamento.map((f) => f.total) ?? [1]));
   const maiorTurma = Math.max(1, ...(dados?.porTurma.map((t) => t.total) ?? [1]));
   const totalPorTurma = dados?.porTurma.reduce((s, t) => s + t.total, 0) ?? 0;
