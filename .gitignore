@@ -23,3 +23,8 @@ src/SPI.Api/appsettings.Development.json
 ## OS
 .DS_Store
 Thumbs.db
+
+## Backups do banco (specs/050-backup-automatico-banco) - contem dados reais,
+## nunca versionar; scripts/README continuam rastreados normalmente
+database/backup/*.sql
+database/backup/backup.log
