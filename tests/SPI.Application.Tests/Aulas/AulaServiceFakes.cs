@@ -97,6 +97,9 @@ namespace SPI.Application.Tests.Aulas
         public Task<bool> ExisteMensalidadeGeradaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
+        public Task<List<Pagamento>> ListarMensalidadesParaLembreteVencimentoAsync(DateOnly dataVencimentoAlvo, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
         public Task AtualizarStatusViaProcedureAsync(int pagamentoId, string novoStatus, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
     }

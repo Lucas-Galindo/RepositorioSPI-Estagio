@@ -26,6 +26,11 @@ namespace SPI.Domain.Entities
         // mensalidade; NULL para pagamentos manuais ou gerados por presenca (specs/038).
         public int? VinculoCobrancaId { get; set; }
 
+        // Lembrete de vencimento (5 dias antes) desta mensalidade ja foi
+        // enviado por e-mail? Fire-once: uma vez tentado (sucesso ou falha),
+        // nunca mais reenviado para este pagamento.
+        public bool LembreteVencimentoEnviado { get; set; }
+
         public Aluno Aluno { get; set; } = null!;
         public FormaPagamento? FormaPagamento { get; set; }
         public CategoriaReceita? CategoriaReceita { get; set; }

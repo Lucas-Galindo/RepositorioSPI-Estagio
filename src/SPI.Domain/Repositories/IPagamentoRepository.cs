@@ -20,6 +20,11 @@ namespace SPI.Domain.Repositories
         // unico uq_pagamento_vinculo_competencia, database/15_job_cobranca_mensalidade.sql).
         Task<bool> ExisteMensalidadeGeradaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default);
 
+        // Lembrete de vencimento de mensalidade: pagamentos gerados automaticamente
+        // pelo job de mensalidade (VinculoCobrancaId != null), ainda Pendentes, com
+        // DataVencimento igual a dataVencimentoAlvo e lembrete ainda nao tentado.
+        Task<List<Pagamento>> ListarMensalidadesParaLembreteVencimentoAsync(DateOnly dataVencimentoAlvo, CancellationToken cancellationToken = default);
+
         Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default);
 
         // Chama sp_atualizar_status_pagamento (04_procedures.sql): preenche

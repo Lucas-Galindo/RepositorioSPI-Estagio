@@ -28,6 +28,7 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(p => p.ArquivoTamanhoBytes).HasColumnName("arquivo_tamanho_bytes");
             builder.Property(p => p.ArquivoDataUpload).HasColumnName("arquivo_data_upload");
             builder.Property(p => p.VinculoCobrancaId).HasColumnName("vinculo_cobranca_id");
+            builder.Property(p => p.LembreteVencimentoEnviado).HasColumnName("lembrete_vencimento_enviado").HasDefaultValue(false);
 
             builder.HasOne(p => p.Aluno)
                 .WithMany(a => a.Pagamentos)

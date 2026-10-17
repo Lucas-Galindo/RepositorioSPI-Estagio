@@ -61,6 +61,7 @@ namespace SPI.Infrastructure.DependencyInjection
 
             services.AddHostedService<LembreteDispatcherService>();
             services.AddHostedService<MensalidadeDispatcherService>();
+            services.AddHostedService<MensalidadeLembreteDispatcherService>();
 
             return services;
         }

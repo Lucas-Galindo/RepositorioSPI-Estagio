@@ -93,6 +93,15 @@ namespace SPI.Infrastructure.Repositories
                 p => p.VinculoCobrancaId == vinculoCobrancaId && p.Competencia == competencia,
                 cancellationToken);
 
+        public Task<List<Pagamento>> ListarMensalidadesParaLembreteVencimentoAsync(DateOnly dataVencimentoAlvo, CancellationToken cancellationToken = default) =>
+            _dbContext.Pagamentos
+                .Include(p => p.Aluno)
+                .Where(p => p.VinculoCobrancaId != null
+                    && p.Status == "Pendente"
+                    && !p.LembreteVencimentoEnviado
+                    && p.DataVencimento == dataVencimentoAlvo)
+                .ToListAsync(cancellationToken);
+
         public async Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) =>
             await _dbContext.PagamentosAula.AddAsync(new PagamentoAula { PagamentoId = pagamentoId, AulaId = aulaId }, cancellationToken);
 
