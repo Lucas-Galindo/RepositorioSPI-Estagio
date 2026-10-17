@@ -1,6 +1,6 @@
 namespace SPI.Application.Common
 {
-    // Nunca acoplar um provedor especifico (Brevo, etc) aos servicos de
+    // Nunca acoplar um provedor especifico (Gmail, etc) aos servicos de
     // dominio -- so a implementacao em SPI.Infrastructure conhece o provedor.
     public interface IEmailSender
     {

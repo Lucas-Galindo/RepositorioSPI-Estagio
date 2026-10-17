@@ -30,7 +30,7 @@ hooks:
   after_implement:
     - extension: "trello"
       command: "trello.sync-card"
-      description: "Move o card da feature para Revisão de código, se tudo (não-manual) estiver concluído e os testes passarem; comenta um resumo."
+      description: "Move o card da feature para Revisão de Código/Conceito, se tudo (não-manual) estiver concluído e os testes passarem; comenta um resumo."
       prompt: "revisao-codigo"
       optional: false
 

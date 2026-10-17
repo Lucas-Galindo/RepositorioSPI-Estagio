@@ -19,6 +19,8 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(l => l.Canal).HasColumnName("canal").HasMaxLength(20).IsRequired();
             builder.Property(l => l.AntecedenciaHora).HasColumnName("antecedencia_hora");
             builder.Property(l => l.Ativo).HasColumnName("ativo").HasDefaultValue(true);
+            builder.Property(l => l.DestinatariosTentados).HasColumnName("destinatarios_tentados");
+            builder.Property(l => l.EnviosComSucesso).HasColumnName("envios_com_sucesso").HasDefaultValue(0);
 
             builder.HasOne(l => l.Turma)
                 .WithMany(t => t.Lembretes)

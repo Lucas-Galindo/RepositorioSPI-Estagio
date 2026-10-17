@@ -200,7 +200,7 @@ export default function RelatorioFinanceiroPage() {
         <Icon name="back" size={13} /> Relatórios
       </Link>
 
-      <div className="row-gap" style={{ marginBottom: 18, gap: 8 }}>
+      <div className="financeiro-tabs" style={{ marginBottom: 18 }}>
         <button type="button" className={`btn btn-sm ${aba === "financeiro" ? "btn-primary" : "btn-ghost"}`} onClick={() => setAba("financeiro")}>
           Visão Financeiro
         </button>

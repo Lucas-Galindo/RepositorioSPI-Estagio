@@ -299,17 +299,17 @@ try {
                 $corpoAtual = Extrair-CorpoSemStatus -DescAtual $card.desc
                 if ($pendentes -eq 0 -and $testesOk) {
                     $lists = Get-TrelloLists -Cred $cred
-                    if (-not $lists.ContainsKey('Revisão de código')) { throw "Lista 'Revisão de código' nao encontrada no quadro" }
+                    if (-not $lists.ContainsKey('Revisão de Código/Conceito')) { throw "Lista 'Revisão de Código/Conceito' nao encontrada no quadro" }
                     $summary = Get-ImplementationSummary -FeatureId $featureId
                     $statusDetalhe = if ($Detalhe) { $Detalhe } else { Obter-StatusDetalhePadrao -Fase 'revisao-codigo' -FeatureId $featureId -Movido $true }
                     $novaDesc = Montar-DescricaoComStatus -Detalhe $statusDetalhe -Corpo $corpoAtual
                     if (-not $DryRun) {
-                        Move-TrelloCard -Cred $cred -CardId $card.id -ListId $lists['Revisão de código']
+                        Move-TrelloCard -Cred $cred -CardId $card.id -ListId $lists['Revisão de Código/Conceito']
                         Add-TrelloComment -Cred $cred -CardId $card.id -Text $summary
                         Update-TrelloCardDescription -Cred $cred -CardId $card.id -Desc $novaDesc
                     }
                     $resultado = if ($DryRun) { 'dry-run' } else { 'ok' }
-                    $detalhe = if ($DryRun) { "moveria para 'Revisão de código' + comentario ($featureId)" } else { "card movido para 'Revisão de código' + comentario ($featureId)" }
+                    $detalhe = if ($DryRun) { "moveria para 'Revisão de Código/Conceito' + comentario ($featureId)" } else { "card movido para 'Revisão de Código/Conceito' + comentario ($featureId)" }
                     Write-SyncLog -Fase $Fase -Result $resultado -Detail $detalhe
                     Write-Output "[trello-sync] revisao-codigo: $detalhe"
                 }

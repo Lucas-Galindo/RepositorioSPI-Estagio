@@ -14,8 +14,35 @@ const COLOR_MODES: { id: ColorMode; nome: string; desc: string; swatches: string
 
 export default function ConfiguracoesPage() {
   usePageHeader("Configurações", "Aparência e acessibilidade do sistema");
-  const { dark, setDark, colorMode, setColorMode, accentColor, setAccentColor, resetAccentColor } = useTheme();
+  const {
+    dark,
+    setDark,
+    colorMode,
+    setColorMode,
+    accentColor,
+    setAccentColor,
+    resetAccentColor,
+    customAccent,
+    customAccent2,
+    customAccent3,
+    customDanger,
+    setCustomAccent,
+    setCustomAccent2,
+    setCustomAccent3,
+    setCustomDanger,
+    resetCustomColors,
+  } = useTheme();
   const { mostrarToast } = useToast();
+
+  // Calculada aqui (não em COLOR_MODES, const de módulo) porque as swatches
+  // precisam refletir a escolha atual do usuário, só disponível via useTheme().
+  const modoPersonalizado: (typeof COLOR_MODES)[number] = {
+    id: "personalizado",
+    nome: "Personalizado",
+    desc: "Escolha livremente as 4 cores da interface.",
+    swatches: [customAccent, customAccent2, customAccent3, customDanger],
+  };
+  const modosExibidos = [...COLOR_MODES, modoPersonalizado];
 
   return (
     <>
@@ -56,7 +83,7 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
         <div className="colormode-grid">
-          {COLOR_MODES.map((cm) => (
+          {modosExibidos.map((cm) => (
             <button
               type="button"
               key={cm.id}
@@ -88,38 +115,71 @@ export default function ConfiguracoesPage() {
             <p>Personalize a cor principal do sistema (só no modo de cores Padrão).</p>
           </div>
         </div>
-        <div className="accent-picker-row">
-          <label className="accent-swatch-label">
-            <input
-              type="color"
-              value={accentColor}
-              disabled={colorMode !== "normal"}
-              onChange={(e) => setAccentColor(e.target.value)}
-            />
-            <span>Escolher cor</span>
-          </label>
-          <div className="accent-picker-info">
-            <div className="accent-current">
-              Cor atual: <b>{accentColor}</b>
-            </div>
-            <div className="accent-hint">
-              {colorMode !== "normal"
-                ? "Desativada enquanto um modo de daltonismo estiver ativo, para não sobrepor a paleta de acessibilidade."
-                : "A cor escolhida se aplica a botões, links e destaques em todo o sistema."}
-            </div>
+        {colorMode === "personalizado" ? (
+          <>
+            {[
+              { rotulo: "Destaque principal", valor: customAccent, setValor: setCustomAccent },
+              { rotulo: "Destaque secundário", valor: customAccent2, setValor: setCustomAccent2 },
+              { rotulo: "Destaque terciário", valor: customAccent3, setValor: setCustomAccent3 },
+              { rotulo: "Alerta/perigo", valor: customDanger, setValor: setCustomDanger },
+            ].map((campo) => (
+              <div className="accent-picker-row" key={campo.rotulo} style={{ marginBottom: 10 }}>
+                <label className="accent-swatch-label">
+                  <input type="color" value={campo.valor} onChange={(e) => campo.setValor(e.target.value)} />
+                  <span>Escolher cor</span>
+                </label>
+                <div className="accent-picker-info">
+                  <div className="accent-current">
+                    {campo.rotulo}: <b>{campo.valor}</b>
+                  </div>
+                </div>
+              </div>
+            ))}
             <button
               type="button"
               className="btn btn-ghost btn-sm"
-              style={{ marginTop: 10 }}
               onClick={() => {
-                resetAccentColor();
-                mostrarToast("Cor de destaque restaurada para o padrão.");
+                resetCustomColors();
+                mostrarToast("Cores personalizadas restauradas para o padrão.");
               }}
             >
               Restaurar padrão
             </button>
+          </>
+        ) : (
+          <div className="accent-picker-row">
+            <label className="accent-swatch-label">
+              <input
+                type="color"
+                value={accentColor}
+                disabled={colorMode !== "normal"}
+                onChange={(e) => setAccentColor(e.target.value)}
+              />
+              <span>Escolher cor</span>
+            </label>
+            <div className="accent-picker-info">
+              <div className="accent-current">
+                Cor atual: <b>{accentColor}</b>
+              </div>
+              <div className="accent-hint">
+                {colorMode !== "normal"
+                  ? "Desativada enquanto um modo de daltonismo estiver ativo, para não sobrepor a paleta de acessibilidade."
+                  : "A cor escolhida se aplica a botões, links e destaques em todo o sistema."}
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                style={{ marginTop: 10 }}
+                onClick={() => {
+                  resetAccentColor();
+                  mostrarToast("Cor de destaque restaurada para o padrão.");
+                }}
+              >
+                Restaurar padrão
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </>
   );

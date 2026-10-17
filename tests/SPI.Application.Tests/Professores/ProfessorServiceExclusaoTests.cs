@@ -49,17 +49,21 @@ namespace SPI.Application.Tests.Professores
         };
 
         [Fact]
-        public async Task SolicitarExclusao_EnviaCodigoApenasParaOEmailDoAdminAutenticado()
+        public async Task SolicitarExclusao_EnviaCodigoParaOEmailDaProfessora()
         {
             var (service, professores, tokens, admins, _, emailSender) = CriarServico();
             var professora = professores.Semear(CriarProfessoraAtiva());
-            admins.Admins.Add(CriarAdmin(1, "admin1@spi.local"));
+            var admin = CriarAdmin(1, "admin1@spi.local");
+            admins.Admins.Add(admin);
 
             await service.SolicitarExclusaoAsync(adminId: 1);
 
             Assert.Single(emailSender.EnviosRealizados);
-            Assert.Equal("admin1@spi.local", emailSender.EnviosRealizados[0].Destinatario);
-            Assert.DoesNotContain(emailSender.EnviosRealizados, e => e.Destinatario == professora.Email);
+            Assert.Equal(professora.Email, emailSender.EnviosRealizados[0].Destinatario);
+            Assert.DoesNotContain(emailSender.EnviosRealizados, e => e.Destinatario == admin.Email);
+            // FR-002: o corpo passa a se dirigir a professora, citando o Admin solicitante.
+            Assert.Contains(professora.Nome, emailSender.EnviosRealizados[0].CorpoHtml);
+            Assert.Contains(admin.Nome, emailSender.EnviosRealizados[0].CorpoHtml);
             Assert.Single(tokens.Tokens);
             Assert.Equal(1, tokens.Tokens[0].AdminId);
             Assert.Equal(professora.Id, tokens.Tokens[0].ProfessorId);
@@ -67,10 +71,10 @@ namespace SPI.Application.Tests.Professores
         }
 
         [Fact]
-        public async Task SolicitarExclusao_DoisAdminsDiferentes_CadaUmRecebeSeuProprioCodigoNoProprioEmail()
+        public async Task SolicitarExclusao_DoisAdminsDiferentes_AmbosEnviamParaOEmailDaProfessora()
         {
             var (service, professores, tokens, admins, _, emailSender) = CriarServico();
-            professores.Semear(CriarProfessoraAtiva());
+            var professora = professores.Semear(CriarProfessoraAtiva());
             admins.Admins.Add(CriarAdmin(1, "admin1@spi.local"));
             admins.Admins.Add(CriarAdmin(2, "admin2@spi.local"));
 
@@ -78,10 +82,24 @@ namespace SPI.Application.Tests.Professores
             await service.SolicitarExclusaoAsync(adminId: 2);
 
             Assert.Equal(2, emailSender.EnviosRealizados.Count);
-            Assert.Contains(emailSender.EnviosRealizados, e => e.Destinatario == "admin1@spi.local");
-            Assert.Contains(emailSender.EnviosRealizados, e => e.Destinatario == "admin2@spi.local");
+            Assert.All(emailSender.EnviosRealizados, e => Assert.Equal(professora.Email, e.Destinatario));
             Assert.Equal(2, tokens.Tokens.Count);
             Assert.True(tokens.Tokens.All(t => !t.Usado));
+        }
+
+        [Fact]
+        public async Task SolicitarExclusao_ProfessoraSemEmail_RecusaSemCriarToken()
+        {
+            var (service, professores, tokens, admins, _, emailSender) = CriarServico();
+            var professoraSemEmail = CriarProfessoraAtiva();
+            professoraSemEmail.Email = "";
+            professores.Semear(professoraSemEmail);
+            admins.Admins.Add(CriarAdmin(1, "admin1@spi.local"));
+
+            await Assert.ThrowsAsync<ConflitoException>(() => service.SolicitarExclusaoAsync(adminId: 1));
+
+            Assert.Empty(tokens.Tokens);
+            Assert.Empty(emailSender.EnviosRealizados);
         }
 
         [Fact]

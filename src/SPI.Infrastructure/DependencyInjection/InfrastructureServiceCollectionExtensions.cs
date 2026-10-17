@@ -56,8 +56,8 @@ namespace SPI.Infrastructure.DependencyInjection
             services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
             services.AddSingleton<ITokenService, JwtTokenService>();
 
-            services.Configure<BrevoOptions>(configuration.GetSection(BrevoOptions.SectionName));
-            services.AddScoped<IEmailSender, BrevoEmailSender>();
+            services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
+            services.AddScoped<IEmailSender, SmtpEmailSender>();
 
             services.AddHostedService<LembreteDispatcherService>();
             services.AddHostedService<MensalidadeDispatcherService>();

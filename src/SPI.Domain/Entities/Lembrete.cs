@@ -14,6 +14,11 @@ namespace SPI.Domain.Entities
         public int AntecedenciaHora { get; set; }
         public bool Ativo { get; set; }
 
+        // specs/049: progresso de envio entre ciclos do LembreteDispatcherService,
+        // quando o lembrete tem mais destinatarios que o orcamento por ciclo.
+        public string? DestinatariosTentados { get; set; }
+        public int EnviosComSucesso { get; set; }
+
         public Turma Turma { get; set; } = null!;
     }
 }

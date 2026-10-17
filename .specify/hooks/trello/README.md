@@ -10,7 +10,7 @@ Uma falha do Trello (fora do ar, credencial inválida, card não encontrado) nun
 
 ## Pré-requisitos
 
-- Um quadro Trello chamado **"Estágio SPI"** com exatamente estas 7 listas: Backlog, Design, A Fazer, Em andamento, Revisão de código, Fase de teste, Concluído. Este script não cria o quadro nem as listas — só interage com eles.
+- Um quadro Trello chamado **"Estágio SPI"** com exatamente estas 7 listas: Backlog, Design, A Fazer, Em andamento, Revisão de Código/Conceito, Fase de teste, Concluído. Este script não cria o quadro nem as listas — só interage com eles.
 - PowerShell 5.1+ (já disponível neste ambiente).
 
 ## Como obter API Key e Token do Trello

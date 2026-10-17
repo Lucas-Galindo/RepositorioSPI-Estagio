@@ -6,11 +6,11 @@ using SPI.Application.Common;
 
 namespace SPI.Infrastructure.Email
 {
-    public class BrevoEmailSender : IEmailSender
+    public class SmtpEmailSender : IEmailSender
     {
-        private readonly BrevoOptions _options;
+        private readonly SmtpOptions _options;
 
-        public BrevoEmailSender(IOptions<BrevoOptions> options)
+        public SmtpEmailSender(IOptions<SmtpOptions> options)
         {
             _options = options.Value;
         }

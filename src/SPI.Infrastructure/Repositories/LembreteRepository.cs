@@ -46,6 +46,9 @@ namespace SPI.Infrastructure.Repositories
             _dbContext.Lembretes
                 .Include(l => l.Turma).ThenInclude(t => t.AlunosTurma).ThenInclude(at => at.Aluno)
                 .Where(l => l.Ativo && l.Status == "Pendente" && l.HoraProgramada <= agora)
+                // specs/049 (R3, FR-004): quem esta esperando ha mais tempo consome
+                // o orcamento do ciclo primeiro.
+                .OrderBy(l => l.HoraProgramada)
                 .ToListAsync(cancellationToken);
 
         public Task<Aula?> ObterProximaAulaDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default)

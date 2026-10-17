@@ -252,7 +252,8 @@ nav.nav-group {
   display: flex;
   align-items: stretch;
 }
-.financeiro-tabs > a {
+.financeiro-tabs > a,
+.financeiro-tabs > button {
   flex: 1 1 0;
   justify-content: center;
 }
@@ -1657,6 +1658,7 @@ tbody tr.row-link:hover {
   box-shadow: var(--shadow-out-sm);
   text-align: left;
   border: 2px solid transparent;
+  color: var(--c-text);
 }
 .colormode-card.active {
   border-color: var(--c-accent);
@@ -1696,6 +1698,7 @@ tbody tr.row-link:hover {
   box-shadow: var(--shadow-out-sm);
   text-align: center;
   border: 2px solid transparent;
+  color: var(--c-text);
 }
 .theme-opt.active {
   border-color: var(--c-accent);
@@ -1770,6 +1773,7 @@ input[type="color"]::-moz-color-swatch {
 .accent-current {
   font-size: 12.5px;
   font-weight: 600;
+  color: var(--c-text);
 }
 .accent-hint {
   font-size: 11px;

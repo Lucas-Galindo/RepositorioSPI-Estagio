@@ -1,12 +1,13 @@
 namespace SPI.Infrastructure.Email
 {
-    // Ligado a secao "Brevo" da configuracao. Host/Porta/Remetente vem do
+    // Ligado a secao "Smtp" da configuracao. Host/Porta/Remetente vem do
     // appsettings.json; SmtpUsuario/SmtpChave sao secretos (User Secrets).
-    public class BrevoOptions
+    // Padrao atual: Gmail SMTP (specs/049-migrar-email-gmail-smtp).
+    public class SmtpOptions
     {
-        public const string SectionName = "Brevo";
+        public const string SectionName = "Smtp";
 
-        public string SmtpHost { get; set; } = "smtp-relay.brevo.com";
+        public string SmtpHost { get; set; } = "smtp.gmail.com";
         public int SmtpPorta { get; set; } = 587;
         public string SmtpUsuario { get; set; } = string.Empty;
         public string SmtpChave { get; set; } = string.Empty;

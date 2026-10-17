@@ -148,6 +148,14 @@ namespace SPI.Application.Professores.Services
             var professor = await _professorRepository.ObterUnicaAsync(cancellationToken)
                 ?? throw new NaoEncontradoException("Nenhuma professora cadastrada ainda.");
 
+            // specs/054 (FR-004): sem e-mail cadastrado, nao ha como enviar o
+            // codigo - recusa antes de qualquer efeito colateral (nenhum token
+            // criado, nenhuma tentativa de envio).
+            if (string.IsNullOrWhiteSpace(professor.Email))
+            {
+                throw new ConflitoException("A professora nao tem e-mail cadastrado; nao e possivel enviar o codigo de confirmacao.");
+            }
+
             // R4: pedir um novo codigo invalida qualquer codigo pendente do
             // mesmo Admin (nunca dois codigos validos ao mesmo tempo para o
             // mesmo solicitante) - um codigo pendente de outro Admin nao e afetado.
@@ -176,14 +184,18 @@ namespace SPI.Application.Professores.Services
             // preocupacao de nao-enumeracao de e-mail - o Admin ja esta autenticado).
             await _exclusaoProfessorTokenRepository.SalvarAlteracoesAsync(cancellationToken);
 
+            // specs/054: o codigo vai para o e-mail da propria professora (nao
+            // mais do Admin) - o texto passa a se dirigir a ela, citando qual
+            // Admin solicitou. O Admin continua sendo quem digita o codigo na
+            // tela de confirmacao (ConfirmarExclusaoAsync, inalterado).
             var corpo = $"""
-                <p>Ol&aacute;, {admin.Nome}.</p>
-                <p>Voc&ecirc; solicitou a exclus&atilde;o do cadastro da professora {professor.Nome}. Use o c&oacute;digo abaixo para confirmar. Ele expira em 15 minutos e s&oacute; pode ser usado uma vez.</p>
+                <p>Ol&aacute;, {professor.Nome}.</p>
+                <p>O Admin {admin.Nome} solicitou a exclus&atilde;o do seu cadastro no SPI. Se voc&ecirc; concorda, informe o c&oacute;digo abaixo a ele para confirmar. Ele expira em 15 minutos e s&oacute; pode ser usado uma vez.</p>
                 <p style="font-size:20px;font-weight:bold;letter-spacing:1px;">{token}</p>
-                <p>Se voc&ecirc; n&atilde;o solicitou essa a&ccedil;&atilde;o, ignore este e-mail e considere revisar o acesso &agrave; sua conta de Admin.</p>
+                <p>Se voc&ecirc; n&atilde;o esperava este e-mail, n&atilde;o compartilhe o c&oacute;digo e entre em contato para entender o que est&aacute; havendo.</p>
                 """;
 
-            await _emailSender.EnviarAsync(admin.Email, "SPI - Código de confirmação para excluir professora", corpo, cancellationToken);
+            await _emailSender.EnviarAsync(professor.Email, "SPI - Código de confirmação para excluir professora", corpo, cancellationToken);
         }
 
         public async Task ConfirmarExclusaoAsync(int adminId, string codigo, CancellationToken cancellationToken = default)
