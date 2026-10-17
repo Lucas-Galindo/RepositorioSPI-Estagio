@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DateInput } from "@/components/shared/DateInput";
 import { useAuth } from "@/contexts/AuthContext";
@@ -198,6 +199,7 @@ export default function DashboardAlunosPage() {
         <div className="kpi">
           <div className="label">
             <Icon name="wallet" size={12} /> Ticket médio
+            <InfoTooltip text="Total faturado (pagamentos pagos) no período, dividido pela quantidade de alunos ativos." />
           </div>
           <div className="value">{currency(ticketMedio)}</div>
           <div className="delta">por aluno ativo, no período</div>

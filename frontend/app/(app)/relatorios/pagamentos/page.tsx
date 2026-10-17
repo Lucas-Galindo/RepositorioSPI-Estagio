@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DateInput } from "@/components/shared/DateInput";
@@ -202,7 +203,10 @@ export default function DashboardPagamentosPage() {
               <div className="value danger">{currency(atrasados)}</div>
             </div>
             <div className="kpi">
-              <div className="label">Total no período</div>
+              <div className="label">
+                Total no período
+                <InfoTooltip text="Soma de recebido, pendente e atrasado — o valor total de pagamentos filtrados, independente do status." />
+              </div>
               <div className="value">{currency(total)}</div>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,6 +57,7 @@ export default function AlunosPage() {
         <div className="kpi">
           <div className="label">
             <Icon name="wallet" size={12} /> Valor médio da aula
+            <InfoTooltip text="Soma do valor por aula de cada aluno listado, dividida pela quantidade de alunos listados." />
           </div>
           <div className="value">
             {alunos?.length ? `R$ ${(alunos.reduce((s, a) => s + a.valorAula, 0) / alunos.length).toFixed(2)}` : "—"}
@@ -65,6 +67,7 @@ export default function AlunosPage() {
         <div className="kpi">
           <div className="label">
             <Icon name="cal" size={12} /> Frequência média
+            <InfoTooltip text="Soma do total de presenças acumuladas de cada aluno listado, dividida pela quantidade de alunos listados." />
           </div>
           <div className="value gold">
             {alunos?.length ? Math.round(alunos.reduce((s, a) => s + a.frequencia, 0) / alunos.length) : 0}

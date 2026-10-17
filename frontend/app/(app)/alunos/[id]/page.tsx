@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
@@ -192,6 +193,7 @@ export default function AlunoDetailPage({ params }: { params: Promise<{ id: stri
         <div className="mini-panel">
           <h4>
             <Icon name="check" size={15} /> Frequência
+            <InfoTooltip text="Percentual de presenças confirmadas em relação às aulas já realizadas deste aluno (presenças ÷ aulas realizadas)." />
           </h4>
           <div className="big-value">{freqPct !== null ? `${freqPct}%` : "—"}</div>
           <div className="big-label">

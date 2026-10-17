@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DateInput } from "@/components/shared/DateInput";
@@ -103,6 +104,7 @@ export default function ContasAPagarPage() {
         <div className="kpi">
           <div className="label">
             <Icon name="warn" size={12} /> A pagar + atrasado
+            <InfoTooltip text="Soma dos valores de contas a pagar com status Pendente ou Atrasado, entre os registros filtrados." />
           </div>
           <div className="value danger">{currency(totalAPagar)}</div>
         </div>

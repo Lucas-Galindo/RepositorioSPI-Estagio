@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
+import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -113,18 +114,21 @@ export default function MateriaDetailPage({ params }: { params: Promise<{ id: st
         <div className="kpi">
           <div className="label">
             <Icon name="cal" size={12} /> Aulas cadastradas
+            <InfoTooltip text="Total de aulas desta matéria em qualquer status (agendadas, realizadas ou canceladas)." />
           </div>
           <div className="value turq">{aulas.length}</div>
         </div>
         <div className="kpi">
           <div className="label">
             <Icon name="users" size={12} /> Alunos atendidos
+            <InfoTooltip text="Quantidade de alunos diferentes que participaram de pelo menos uma aula desta matéria." />
           </div>
           <div className="value gold">{alunosUnicos.size}</div>
         </div>
         <div className="kpi">
           <div className="label">
             <Icon name="check" size={12} /> Aulas realizadas
+            <InfoTooltip text="Das aulas cadastradas, quantas já aconteceram de fato (status Realizada)." />
           </div>
           <div className="value">{aulas.filter((a) => a.status === "Realizada").length}</div>
         </div>
