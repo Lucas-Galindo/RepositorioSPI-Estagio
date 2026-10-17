@@ -157,6 +157,14 @@ namespace SPI.Application.Aulas.Services
 
             aula.Ativo = false;
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            if (aula.TurmaId.HasValue)
+            {
+                // Mesmo motivo de CancelarAsync (Estoria 5): uma aula excluida
+                // tambem sai da busca por "proxima aula" (ObterProximaAulaDaTurmaAsync
+                // filtra por Ativo), entao os lembretes da turma precisam recalcular.
+                await _lembreteService.RecalcularAsync(aula.TurmaId.Value, cancellationToken);
+            }
         }
 
         public async Task<AulaResponse> RegistrarSessaoAsync(int id, RegistrarSessaoRequest request, CancellationToken cancellationToken = default)
@@ -204,6 +212,16 @@ namespace SPI.Application.Aulas.Services
 
             aula.Status = "Realizada";
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            if (aula.TurmaId.HasValue)
+            {
+                // Mesmo motivo de CancelarAsync/ExcluirAsync (Estoria 5): uma aula
+                // Realizada tambem sai da busca por "proxima aula" -- se a turma
+                // ja tinha outra aula futura agendada, o lembrete precisa apontar
+                // para ela em vez de continuar "Enviado" para a aula que acabou de
+                // acontecer.
+                await _lembreteService.RecalcularAsync(aula.TurmaId.Value, cancellationToken);
+            }
 
             // Decisao de negocio aprovada (evolucao do Financeiro, Sprint 4):
             // toda aula Realizada gera automaticamente uma Conta a Receber

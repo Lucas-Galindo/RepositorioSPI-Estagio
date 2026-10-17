@@ -175,9 +175,16 @@ namespace SPI.Application.Tests.Aulas
 
     public class FakeLembreteServiceVazio : ILembreteService
     {
-        // Nao e chamado por RegistrarSessaoAsync (so por CadastrarAsync/AtualizarAsync/
-        // CancelarAsync), mas nao deve quebrar o teste se algo mudar.
-        public Task RecalcularAsync(int turmaId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        // Chamado por CadastrarAsync/AtualizarAsync/ExcluirAsync/CancelarAsync/
+        // RegistrarSessaoAsync (Estoria 5) -- fica registrado em Chamadas para os
+        // testes que querem afirmar sobre isso; os demais so ignoram a lista.
+        public List<int> Chamadas { get; } = new();
+
+        public Task RecalcularAsync(int turmaId, CancellationToken cancellationToken = default)
+        {
+            Chamadas.Add(turmaId);
+            return Task.CompletedTask;
+        }
 
         public Task<List<LembreteResponse>> ListarAsync(int? turmaId, string? status, bool? ativo, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();

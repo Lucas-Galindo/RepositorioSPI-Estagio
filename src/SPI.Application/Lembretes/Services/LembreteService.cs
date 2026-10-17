@@ -78,6 +78,15 @@ namespace SPI.Application.Lembretes.Services
                 ?? throw new NaoEncontradoException("Lembrete nao encontrado.");
 
             lembrete.Ativo = false;
+
+            // "Cancelado" ja era um status documentado no contrato da API
+            // (LembretesController, filtro de Status) e ja tinha suporte visual
+            // completo no frontend (badge, filtro, KPI "Cancelados") -- faltava
+            // so esta linha setar o valor quando um lembrete e excluido, unico
+            // outro ponto do ciclo de vida de um Lembrete alem de
+            // Pendente/Enviado/Falha.
+            lembrete.Status = "Cancelado";
+
             await _lembreteRepository.SalvarAlteracoesAsync(cancellationToken);
         }
 
