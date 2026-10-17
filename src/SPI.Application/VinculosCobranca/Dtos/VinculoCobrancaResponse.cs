@@ -13,6 +13,10 @@ namespace SPI.Application.VinculosCobranca.Dtos
         public decimal Valor { get; set; }
         public int? AulasIncluidas { get; set; }
         public int? SaldoAulas { get; set; }
+        public int? TotalAulasPacote { get; set; }
+        // Somente-leitura, calculados (specs/052) -- nunca aceitos em request.
+        public int? AulasDadas { get; set; }
+        public int? AulasDadasNoMes { get; set; }
         public bool Ativo { get; set; }
     }
 }

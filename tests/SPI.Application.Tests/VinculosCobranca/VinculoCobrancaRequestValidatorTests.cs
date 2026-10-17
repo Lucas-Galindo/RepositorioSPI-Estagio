@@ -183,5 +183,40 @@ namespace SPI.Application.Tests.VinculosCobranca
 
             result.ShouldNotHaveAnyValidationErrors();
         }
+
+        // specs/052 (FR-001)
+        [Theory]
+        [InlineData(ModalidadeCobranca.Avulsa)]
+        [InlineData(ModalidadeCobranca.Mensalidade)]
+        public void Deve_rejeitar_total_aulas_pacote_fora_da_modalidade_Pacote(ModalidadeCobranca modalidade)
+        {
+            var request = CriarRequestValido(modalidade) with { TotalAulasPacote = 10 };
+
+            var result = _validator.TestValidate(request);
+
+            result.ShouldHaveValidationErrorFor(x => x.TotalAulasPacote)
+                .WithErrorMessage("Total de aulas do pacote so se aplica a modalidade Pacote.");
+        }
+
+        [Fact]
+        public void Deve_rejeitar_total_aulas_pacote_menor_que_um()
+        {
+            var request = CriarRequestValido(ModalidadeCobranca.Pacote) with { TotalAulasPacote = 0 };
+
+            var result = _validator.TestValidate(request);
+
+            result.ShouldHaveValidationErrorFor(x => x.TotalAulasPacote)
+                .WithErrorMessage("Total de aulas do pacote deve ser no minimo 1.");
+        }
+
+        [Fact]
+        public void Deve_aceitar_total_aulas_pacote_com_Pacote_ou_nao_informado()
+        {
+            var comTotal = _validator.TestValidate(CriarRequestValido(ModalidadeCobranca.Pacote) with { TotalAulasPacote = 10 });
+            var semTotal = _validator.TestValidate(CriarRequestValido(ModalidadeCobranca.Pacote));
+
+            comTotal.ShouldNotHaveValidationErrorFor(x => x.TotalAulasPacote);
+            semTotal.ShouldNotHaveValidationErrorFor(x => x.TotalAulasPacote);
+        }
     }
 }

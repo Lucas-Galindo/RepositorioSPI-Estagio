@@ -15,6 +15,7 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(aa => aa.AlunoId).HasColumnName("aluno_id");
             builder.Property(aa => aa.Presente).HasColumnName("presente");
             builder.Property(aa => aa.MotivoNaoRegistro).HasColumnName("motivo_nao_registro").HasMaxLength(30);
+            builder.Property(aa => aa.VinculoCobrancaId).HasColumnName("vinculo_cobranca_id");
 
             builder.HasOne(aa => aa.Aula)
                 .WithMany(a => a.AulaAlunos)
@@ -25,6 +26,11 @@ namespace SPI.Infrastructure.Persistence.Configurations
                 .WithMany(a => a.AulaAlunos)
                 .HasForeignKey(aa => aa.AlunoId)
                 .HasConstraintName("fk_aulaaluno_aluno");
+
+            builder.HasOne(aa => aa.VinculoCobranca)
+                .WithMany()
+                .HasForeignKey(aa => aa.VinculoCobrancaId)
+                .HasConstraintName("fk_aulaaluno_vinculo_cobranca");
         }
     }
 }

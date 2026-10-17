@@ -148,4 +148,22 @@ namespace SPI.Application.Tests.VinculosCobranca
 
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
+
+    // specs/052: so o metodo de contagem tem logica -- prova estrutural de
+    // que VinculoCobrancaService nunca le/escreve Aula alem de contar presencas.
+    public class FakeAulaRepositoryParaVinculo : IAulaRepository
+    {
+        public List<(int VinculoCobrancaId, int Ano, int Mes)> Presencas { get; } = new();
+
+        public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Presencas.Count(p => p.VinculoCobrancaId == vinculoCobrancaId && p.Ano == competencia.Year && p.Mes == competencia.Month));
+
+        public Task<Aula?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<bool> ExisteConflitoAsync(int professorId, DateOnly data, TimeOnly horaInicio, TimeOnly horaFim, int? ignorarAulaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task AdicionarAsync(Aula aula, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task DefinirAlunosAsync(int aulaId, IEnumerable<int> alunoIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<int>> ObterAlunosAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    }
 }

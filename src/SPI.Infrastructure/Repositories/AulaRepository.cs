@@ -99,6 +99,13 @@ namespace SPI.Infrastructure.Repositories
                 .Select(at => at.AlunoId)
                 .ToListAsync(cancellationToken);
 
+        public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
+            _dbContext.AulaAlunos.CountAsync(
+                aa => aa.VinculoCobrancaId == vinculoCobrancaId
+                    && aa.Aula.DataInicio.Year == competencia.Year
+                    && aa.Aula.DataInicio.Month == competencia.Month,
+                cancellationToken);
+
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default) =>
             _dbContext.SaveChangesAsync(cancellationToken);
     }

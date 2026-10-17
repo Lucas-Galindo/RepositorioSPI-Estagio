@@ -18,6 +18,7 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(v => v.Valor).HasColumnName("valor").HasColumnType("decimal(10,2)");
             builder.Property(v => v.AulasIncluidas).HasColumnName("aulas_incluidas");
             builder.Property(v => v.SaldoAulas).HasColumnName("saldo_aulas");
+            builder.Property(v => v.TotalAulasPacote).HasColumnName("total_aulas_pacote");
             builder.Property(v => v.Ativo).HasColumnName("ativo").HasDefaultValue(true);
 
             // A coluna gerada chave_ativa (unicidade dos vinculos ativos) e gerida

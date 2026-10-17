@@ -37,6 +37,17 @@ namespace SPI.Application.VinculosCobranca.Validators
                 RuleFor(x => x.SaldoAulas)
                     .GreaterThanOrEqualTo(0).WithMessage("Saldo de aulas nao pode ser negativo.");
             });
+
+            // specs/052
+            When(x => x.TotalAulasPacote.HasValue, () =>
+            {
+                RuleFor(x => x.TotalAulasPacote)
+                    .Must((request, _) => request.Modalidade == ModalidadeCobranca.Pacote)
+                    .WithMessage("Total de aulas do pacote so se aplica a modalidade Pacote.");
+
+                RuleFor(x => x.TotalAulasPacote)
+                    .GreaterThanOrEqualTo(1).WithMessage("Total de aulas do pacote deve ser no minimo 1.");
+            });
         }
     }
 }

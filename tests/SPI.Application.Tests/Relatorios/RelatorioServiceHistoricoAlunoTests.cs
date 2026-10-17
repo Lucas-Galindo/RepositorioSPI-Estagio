@@ -169,6 +169,8 @@ namespace SPI.Application.Tests.Relatorios
             public Task DefinirAlunosAsync(int aulaId, IEnumerable<int> alunoIds, CancellationToken cancellationToken = default) => Task.CompletedTask;
             public Task<List<int>> ObterAlunosAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) =>
                 Task.FromResult(new List<int>());
+            public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
+                Task.FromResult(0);
             public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         }
 

@@ -12,5 +12,7 @@ namespace SPI.Application.VinculosCobranca.Dtos
         public int? AulasIncluidas { get; set; }
         // Somente com Modalidade = Pacote.
         public int? SaldoAulas { get; set; }
+        // Somente com Modalidade = Pacote.
+        public int? TotalAulasPacote { get; set; }
     }
 }

@@ -18,13 +18,14 @@ namespace SPI.Application.Tests.VinculosCobranca
         private readonly FakeVinculoCobrancaRepositoryParaTeste _vinculos = new();
         private readonly FakeTurmaRepositoryParaVinculo _turmas = new();
         private readonly FakeAlunoRepositoryParaVinculo _alunos = new();
+        private readonly FakeAulaRepositoryParaVinculo _aulas = new();
         private readonly VinculoCobrancaService _servico;
 
         public VinculoCobrancaServiceCadastrarTests()
         {
             _alunos.Alunos.Add(new Aluno { Id = AlunoId, Nome = "Ana", Ativo = true });
             AdicionarTurma(TurmaDoAlunoId, "Turma A", ativa: true, alunoParticipa: true);
-            _servico = new VinculoCobrancaService(_vinculos, _alunos, _turmas);
+            _servico = new VinculoCobrancaService(_vinculos, _alunos, _turmas, _aulas);
         }
 
         private Turma AdicionarTurma(int id, string nome, bool ativa, bool alunoParticipa)
@@ -45,13 +46,15 @@ namespace SPI.Application.Tests.VinculosCobranca
             ModalidadeCobranca modalidade = ModalidadeCobranca.Mensalidade,
             decimal valor = 350m,
             int? aulasIncluidas = null,
-            int? saldoAulas = null) => new()
+            int? saldoAulas = null,
+            int? totalAulasPacote = null) => new()
         {
             TurmaId = turmaId,
             Modalidade = modalidade,
             Valor = valor,
             AulasIncluidas = aulasIncluidas,
             SaldoAulas = saldoAulas,
+            TotalAulasPacote = totalAulasPacote,
         };
 
         private void AssertNenhumaEscritaEmAlunoTurma()
@@ -100,6 +103,17 @@ namespace SPI.Application.Tests.VinculosCobranca
             Assert.Equal(ModalidadeCobranca.Pacote, resposta.Modalidade);
             Assert.Equal(10, resposta.SaldoAulas);
             Assert.Null(resposta.AulasIncluidas);
+        }
+
+        // specs/052 (FR-001)
+        [Fact]
+        public async Task Cadastra_Pacote_com_total_aulas_pacote_e_aulas_dadas_zero()
+        {
+            var resposta = await _servico.CadastrarAsync(
+                AlunoId, Request(turmaId: null, modalidade: ModalidadeCobranca.Pacote, valor: 500m, saldoAulas: 10, totalAulasPacote: 10));
+
+            Assert.Equal(10, resposta.TotalAulasPacote);
+            Assert.Equal(0, resposta.AulasDadas);
         }
 
         [Fact]

@@ -230,6 +230,12 @@ namespace SPI.Application.Aulas.Services
                 var vinculoCobranca = await _vinculoCobrancaRepository.ObterAtivoPorAlunoEContextoAsync(
                     aulaAluno.AlunoId, aula.TurmaId, cancellationToken);
 
+                // specs/052: registra qual vinculo (se algum) estava ativo no
+                // momento desta presenca, para auditoria historica -- vale
+                // para todas as modalidades, nao so Pacote. Nunca altera o
+                // efeito financeiro abaixo (FR-012).
+                aulaAluno.VinculoCobrancaId = vinculoCobranca?.Id;
+
                 switch (vinculoCobranca?.Modalidade)
                 {
                     case null:

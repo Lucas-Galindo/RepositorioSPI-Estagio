@@ -114,7 +114,8 @@ namespace SPI.Application.Tests.VinculosCobranca
             var alunos = new FakeAlunoRepositoryParaVinculo();
             var aluno = new Aluno { Id = 1, Nome = "Ana", Ativo = true, ValorAula = 80m };
             alunos.Alunos.Add(aluno);
-            var servico = new SPI.Application.VinculosCobranca.Services.VinculoCobrancaService(vinculos, alunos, turmas);
+            var aulas = new FakeAulaRepositoryParaVinculo();
+            var servico = new SPI.Application.VinculosCobranca.Services.VinculoCobrancaService(vinculos, alunos, turmas, aulas);
 
             var criado = await servico.CadastrarAsync(1, new SPI.Application.VinculosCobranca.Dtos.VinculoCobrancaRequest
             {

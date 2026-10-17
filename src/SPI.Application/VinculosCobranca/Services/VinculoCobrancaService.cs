@@ -1,5 +1,6 @@
 using SPI.Application.VinculosCobranca.Dtos;
 using SPI.Domain.Entities;
+using SPI.Domain.Enums;
 using SPI.Domain.Exceptions;
 using SPI.Domain.Repositories;
 
@@ -10,15 +11,18 @@ namespace SPI.Application.VinculosCobranca.Services
         private readonly IVinculoCobrancaRepository _vinculoRepository;
         private readonly IAlunoRepository _alunoRepository;
         private readonly ITurmaRepository _turmaRepository;
+        private readonly IAulaRepository _aulaRepository;
 
         public VinculoCobrancaService(
             IVinculoCobrancaRepository vinculoRepository,
             IAlunoRepository alunoRepository,
-            ITurmaRepository turmaRepository)
+            ITurmaRepository turmaRepository,
+            IAulaRepository aulaRepository)
         {
             _vinculoRepository = vinculoRepository;
             _alunoRepository = alunoRepository;
             _turmaRepository = turmaRepository;
+            _aulaRepository = aulaRepository;
         }
 
         public async Task<List<VinculoCobrancaResponse>> ListarPorAlunoAsync(int alunoId, bool? ativo, CancellationToken cancellationToken = default)
@@ -26,7 +30,12 @@ namespace SPI.Application.VinculosCobranca.Services
             await GarantirAlunoExisteAsync(alunoId, cancellationToken);
 
             var vinculos = await _vinculoRepository.ListarPorAlunoAsync(alunoId, ativo, cancellationToken);
-            return vinculos.Select(Mapear).ToList();
+            var respostas = new List<VinculoCobrancaResponse>();
+            foreach (var vinculo in vinculos)
+            {
+                respostas.Add(await MapearAsync(vinculo, cancellationToken));
+            }
+            return respostas;
         }
 
         public async Task<VinculoCobrancaResponse> ObterPorIdAsync(int alunoId, int id, CancellationToken cancellationToken = default)
@@ -34,7 +43,7 @@ namespace SPI.Application.VinculosCobranca.Services
             await GarantirAlunoExisteAsync(alunoId, cancellationToken);
 
             var vinculo = await ObterDoAlunoAsync(alunoId, id, cancellationToken);
-            return Mapear(vinculo);
+            return await MapearAsync(vinculo, cancellationToken);
         }
 
         public async Task<VinculoCobrancaResponse> CadastrarAsync(int alunoId, VinculoCobrancaRequest request, CancellationToken cancellationToken = default)
@@ -56,6 +65,7 @@ namespace SPI.Application.VinculosCobranca.Services
                 Valor = request.Valor,
                 AulasIncluidas = request.AulasIncluidas,
                 SaldoAulas = request.SaldoAulas,
+                TotalAulasPacote = request.TotalAulasPacote,
                 Ativo = true
             };
 
@@ -64,7 +74,7 @@ namespace SPI.Application.VinculosCobranca.Services
 
             // Recarrega para trazer a navegacao Turma (nome) no response.
             var salvo = await _vinculoRepository.ObterPorIdAsync(vinculo.Id, cancellationToken);
-            return Mapear(salvo ?? vinculo);
+            return await MapearAsync(salvo ?? vinculo, cancellationToken);
         }
 
         public async Task<VinculoCobrancaResponse> AtualizarAsync(int alunoId, int id, VinculoCobrancaRequest request, CancellationToken cancellationToken = default)
@@ -90,16 +100,39 @@ namespace SPI.Application.VinculosCobranca.Services
                 await GarantirSemVinculoAtivoAsync(alunoId, request.TurmaId, vinculo.Id, cancellationToken);
             }
 
+            // specs/052 (FR-007/FR-010): nunca permitir que o novo total/teto
+            // fique menor que o que ja foi consumido. Nao recalcula SaldoAulas
+            // automaticamente em nenhum caso (/speckit-analyze achado F1) --
+            // SaldoAulas continua vindo so de request.SaldoAulas, como sempre.
+            if (vinculo.Modalidade == ModalidadeCobranca.Pacote && request.TotalAulasPacote.HasValue)
+            {
+                var dado = (vinculo.TotalAulasPacote ?? 0) - (vinculo.SaldoAulas ?? 0);
+                if (request.TotalAulasPacote.Value < dado)
+                {
+                    throw new ConflitoException($"O novo total de aulas do pacote nao pode ser menor que as aulas ja dadas ({dado}).");
+                }
+            }
+            else if (vinculo.Modalidade == ModalidadeCobranca.Mensalidade && request.AulasIncluidas.HasValue)
+            {
+                var competenciaAtual = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1);
+                var dadoNoMes = await _aulaRepository.ContarPresencasPorVinculoECompetenciaAsync(vinculo.Id, competenciaAtual, cancellationToken);
+                if (request.AulasIncluidas.Value < dadoNoMes)
+                {
+                    throw new ConflitoException($"O novo teto de aulas da mensalidade nao pode ser menor que as aulas ja dadas neste mes ({dadoNoMes}).");
+                }
+            }
+
             vinculo.TurmaId = request.TurmaId;
             vinculo.Modalidade = request.Modalidade;
             vinculo.Valor = request.Valor;
             vinculo.AulasIncluidas = request.AulasIncluidas;
             vinculo.SaldoAulas = request.SaldoAulas;
+            vinculo.TotalAulasPacote = request.TotalAulasPacote;
 
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
             var salvo = await _vinculoRepository.ObterPorIdAsync(vinculo.Id, cancellationToken);
-            return Mapear(salvo ?? vinculo);
+            return await MapearAsync(salvo ?? vinculo, cancellationToken);
         }
 
         // Exclusao logica (Constituicao I): nunca remove o registro fisicamente.
@@ -126,7 +159,7 @@ namespace SPI.Application.VinculosCobranca.Services
 
             if (vinculo.Ativo)
             {
-                return Mapear(vinculo);
+                return await MapearAsync(vinculo, cancellationToken);
             }
 
             // FR-014: em conflito rejeita sem desativar nem alterar o vinculo ativo existente.
@@ -136,7 +169,7 @@ namespace SPI.Application.VinculosCobranca.Services
             vinculo.Ativo = true;
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
-            return Mapear(vinculo);
+            return await MapearAsync(vinculo, cancellationToken);
         }
 
         private async Task GarantirAlunoExisteAsync(int alunoId, CancellationToken cancellationToken)
@@ -185,17 +218,38 @@ namespace SPI.Application.VinculosCobranca.Services
                 : "Ja existe um vinculo de cobranca ativo para este aluno em atendimento individual.");
         }
 
-        private static VinculoCobrancaResponse Mapear(VinculoCobranca vinculo) => new()
+        // specs/052: assincrono porque AulasDadasNoMes (Mensalidade) depende
+        // de uma contagem de presencas via IAulaRepository.
+        private async Task<VinculoCobrancaResponse> MapearAsync(VinculoCobranca vinculo, CancellationToken cancellationToken)
         {
-            Id = vinculo.Id,
-            AlunoId = vinculo.AlunoId,
-            TurmaId = vinculo.TurmaId,
-            TurmaNome = vinculo.Turma?.Nome,
-            Modalidade = vinculo.Modalidade,
-            Valor = vinculo.Valor,
-            AulasIncluidas = vinculo.AulasIncluidas,
-            SaldoAulas = vinculo.SaldoAulas,
-            Ativo = vinculo.Ativo
-        };
+            int? aulasDadas = null;
+            int? aulasDadasNoMes = null;
+
+            if (vinculo.Modalidade == ModalidadeCobranca.Pacote && vinculo.TotalAulasPacote.HasValue && vinculo.SaldoAulas.HasValue)
+            {
+                aulasDadas = vinculo.TotalAulasPacote - vinculo.SaldoAulas;
+            }
+            else if (vinculo.Modalidade == ModalidadeCobranca.Mensalidade)
+            {
+                var competenciaAtual = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1);
+                aulasDadasNoMes = await _aulaRepository.ContarPresencasPorVinculoECompetenciaAsync(vinculo.Id, competenciaAtual, cancellationToken);
+            }
+
+            return new VinculoCobrancaResponse
+            {
+                Id = vinculo.Id,
+                AlunoId = vinculo.AlunoId,
+                TurmaId = vinculo.TurmaId,
+                TurmaNome = vinculo.Turma?.Nome,
+                Modalidade = vinculo.Modalidade,
+                Valor = vinculo.Valor,
+                AulasIncluidas = vinculo.AulasIncluidas,
+                SaldoAulas = vinculo.SaldoAulas,
+                TotalAulasPacote = vinculo.TotalAulasPacote,
+                AulasDadas = aulasDadas,
+                AulasDadasNoMes = aulasDadasNoMes,
+                Ativo = vinculo.Ativo
+            };
+        }
     }
 }

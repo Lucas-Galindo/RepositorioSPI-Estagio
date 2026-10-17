@@ -13,6 +13,7 @@ namespace SPI.Application.Tests.VinculosCobranca
         private readonly FakeVinculoCobrancaRepositoryParaTeste _vinculos = new();
         private readonly FakeTurmaRepositoryParaVinculo _turmas = new();
         private readonly FakeAlunoRepositoryParaVinculo _alunos = new();
+        private readonly FakeAulaRepositoryParaVinculo _aulas = new();
         private readonly VinculoCobrancaService _servico;
 
         public VinculoCobrancaServiceListarTests()
@@ -20,7 +21,7 @@ namespace SPI.Application.Tests.VinculosCobranca
             _alunos.Alunos.Add(new Aluno { Id = 1, Nome = "Ana", Ativo = true });
             _alunos.Alunos.Add(new Aluno { Id = 2, Nome = "Bia", Ativo = true });
             _vinculos.TurmasConhecidas.Add(new Turma { Id = 10, Nome = "Turma A", Ativo = true });
-            _servico = new VinculoCobrancaService(_vinculos, _alunos, _turmas);
+            _servico = new VinculoCobrancaService(_vinculos, _alunos, _turmas, _aulas);
         }
 
         private VinculoCobranca Semear(int alunoId, int? turmaId, bool ativo, ModalidadeCobranca modalidade = ModalidadeCobranca.Avulsa) =>

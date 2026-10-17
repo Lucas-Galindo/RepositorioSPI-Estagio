@@ -30,6 +30,11 @@ namespace SPI.Domain.Repositories
 
         Task<List<int>> ObterAlunosAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default);
 
+        // specs/052: contagem de presencas confirmadas associadas a um
+        // Vinculo de Cobranca (AulaAluno.VinculoCobrancaId), filtrada pelo
+        // mes/ano da aula -- usado para "aulas dadas no mes" da Mensalidade.
+        Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default);
+
         Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default);
     }
 }

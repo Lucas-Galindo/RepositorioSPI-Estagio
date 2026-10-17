@@ -16,6 +16,12 @@ namespace SPI.Domain.Entities
 
         public const string MotivoPacoteEsgotado = "PacoteEsgotado";
 
+        // specs/052: vinculo de cobranca ativo no momento desta presenca
+        // confirmada, para auditoria historica -- NULL quando nao havia
+        // vinculo correspondente ao contexto, ou presenca nao confirmada.
+        public int? VinculoCobrancaId { get; set; }
+        public VinculoCobranca? VinculoCobranca { get; set; }
+
         public Aula Aula { get; set; } = null!;
         public Aluno Aluno { get; set; } = null!;
     }

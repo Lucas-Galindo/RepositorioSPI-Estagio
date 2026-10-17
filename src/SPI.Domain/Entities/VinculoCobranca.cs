@@ -21,6 +21,12 @@ namespace SPI.Domain.Entities
         public decimal Valor { get; set; }
         public int? AulasIncluidas { get; set; }
         public int? SaldoAulas { get; set; }
+
+        // specs/052: total original de aulas do Pacote, gravado na criacao,
+        // imutavel por consumo automatico (so SaldoAulas decresce). So se
+        // aplica a Modalidade Pacote. "Aulas dadas" = TotalAulasPacote - SaldoAulas.
+        public int? TotalAulasPacote { get; set; }
+
         public bool Ativo { get; set; }
 
         public Aluno Aluno { get; set; } = null!;
