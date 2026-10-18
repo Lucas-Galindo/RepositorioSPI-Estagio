@@ -99,6 +99,12 @@ namespace SPI.Infrastructure.Repositories
                 .Select(at => at.AlunoId)
                 .ToListAsync(cancellationToken);
 
+        // Nao filtra "Presente == true" aqui de proposito -- nao esta faltando,
+        // e redundante: AulaService.GerarContasAReceberAsync so preenche
+        // AulaAluno.VinculoCobrancaId dentro do loop que ja filtrou por
+        // "Presente == true" (specs/052). Ou seja, todo AulaAluno com
+        // VinculoCobrancaId preenchido ja É uma presenca, por construcao --
+        // contar essas linhas e o mesmo que contar presencas.
         public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
             _dbContext.AulaAlunos.CountAsync(
                 aa => aa.VinculoCobrancaId == vinculoCobrancaId

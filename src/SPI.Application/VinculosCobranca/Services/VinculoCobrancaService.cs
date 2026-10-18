@@ -31,6 +31,12 @@ namespace SPI.Application.VinculosCobranca.Services
 
             var vinculos = await _vinculoRepository.ListarPorAlunoAsync(alunoId, ativo, cancellationToken);
             var respostas = new List<VinculoCobrancaResponse>();
+            // MapearAsync faz 1 consulta extra por vinculo de Mensalidade (para
+            // contar as presencas do mes) -- tecnicamente um padrao "N+1", mas
+            // aceitavel aqui porque N e o numero de vinculos de UM aluno so
+            // (sempre pequeno, nunca uma listagem geral de todos os vinculos do
+            // sistema). Se este metodo um dia virar uma listagem ampla, valeria
+            // batchar essa contagem num unico IN (...) em vez de um loop.
             foreach (var vinculo in vinculos)
             {
                 respostas.Add(await MapearAsync(vinculo, cancellationToken));
