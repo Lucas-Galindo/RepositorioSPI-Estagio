@@ -126,15 +126,26 @@ export default function DashboardAlunosPage() {
   const materiasLista = [...distribuicaoMateria.entries()].sort((a, b) => b[1] - a[1]);
   const totalNaPizza = materiasLista.reduce((s, [, v]) => s + v, 0);
 
-  let acumulado = 0;
+  // Monta os "stops" do conic-gradient (ex.: "azul 0.00% 30.00%, verde 30.00%
+  // 100.00%") que desenham a pizza. Cada fatia precisa saber onde a fatia
+  // ANTERIOR terminou, pra saber onde ela mesma começa -- por isso usamos
+  // reduce (acumulador) em vez de map: map não tem como "lembrar" o total
+  // acumulado até agora de uma fatia pra outra sem uma variável mutável de
+  // fora, o que o React não recomenda dentro da renderização do componente.
   const stops = materiasLista
-    .map(([, valor], i) => {
-      const pct = totalNaPizza ? (valor / totalNaPizza) * 100 : 0;
-      const inicioFatia = acumulado;
-      acumulado += pct;
-      return `${CORES_MATERIA[i % CORES_MATERIA.length]} ${inicioFatia.toFixed(2)}% ${acumulado.toFixed(2)}%`;
-    })
-    .join(", ");
+    .reduce<{ fimAcumulado: number; fatias: string[] }>(
+      (estado, [, valor], i) => {
+        const percentualDaFatia = totalNaPizza ? (valor / totalNaPizza) * 100 : 0;
+        const inicioFatia = estado.fimAcumulado;
+        const fimFatia = inicioFatia + percentualDaFatia;
+        return {
+          fimAcumulado: fimFatia,
+          fatias: [...estado.fatias, `${CORES_MATERIA[i % CORES_MATERIA.length]} ${inicioFatia.toFixed(2)}% ${fimFatia.toFixed(2)}%`],
+        };
+      },
+      { fimAcumulado: 0, fatias: [] }
+    )
+    .fatias.join(", ");
 
   const porTurma = new Map<string, number>();
   let semTurma = 0;
