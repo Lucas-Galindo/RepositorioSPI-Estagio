@@ -134,6 +134,10 @@ namespace SPI.Api.Controllers
             {
                 return NotFound(e.Message);
             }
+            catch (ConflitoException e)
+            {
+                return Conflict(e.Message);
+            }
             catch (Exception e)
             {
                 return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);

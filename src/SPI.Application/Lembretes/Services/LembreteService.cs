@@ -60,6 +60,17 @@ namespace SPI.Application.Lembretes.Services
             var lembrete = await _lembreteRepository.ObterPorIdAsync(id, cancellationToken)
                 ?? throw new NaoEncontradoException("Lembrete nao encontrado.");
 
+            // Mesmo cuidado que AulaService tem com uma Aula "Realizada"
+            // (nao deixa editar algo que ja terminou seu ciclo de vida): um
+            // lembrete excluido (Ativo = false, Status = "Cancelado") nunca e
+            // reconsiderado por RecalcularAsync, entao editar um deles so
+            // mudaria a HoraProgramada guardada sem nenhum efeito real --
+            // o usuario veria "sucesso" numa edicao que nunca vai disparar.
+            if (!lembrete.Ativo)
+            {
+                throw new ConflitoException("Um lembrete excluido nao pode ser editado.");
+            }
+
             // A Turma do lembrete nao muda na edicao (Estoria 5 so lista
             // Canal/Antecedencia/Destinatarios como editaveis).
             lembrete.Canal = request.Canal;
