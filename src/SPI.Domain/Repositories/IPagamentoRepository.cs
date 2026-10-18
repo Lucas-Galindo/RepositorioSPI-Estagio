@@ -22,7 +22,12 @@ namespace SPI.Domain.Repositories
 
         // Lembrete de vencimento de mensalidade: pagamentos gerados automaticamente
         // pelo job de mensalidade (VinculoCobrancaId != null), ainda Pendentes, com
-        // DataVencimento igual a dataVencimentoAlvo e lembrete ainda nao tentado.
+        // DataVencimento dentro da janela de antecedencia (<=) e lembrete ainda nao
+        // tentado. Usa "<=", nao "==": se o servico ficar fora do ar exatamente no
+        // dia em que faltam N dias pro vencimento, ele ainda recupera e envia o
+        // lembrete (com um dia ou dois de atraso) no primeiro ciclo seguinte, em vez
+        // de perder o aviso pra sempre -- a flag LembreteVencimentoEnviado garante
+        // que nunca sera enviado duas vezes.
         Task<List<Pagamento>> ListarMensalidadesParaLembreteVencimentoAsync(DateOnly dataVencimentoAlvo, CancellationToken cancellationToken = default);
 
         Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default);

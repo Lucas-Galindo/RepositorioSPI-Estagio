@@ -17,7 +17,7 @@ namespace SPI.Application.Tests.MensalidadeLembrete
                 .Where(p => p.VinculoCobrancaId != null
                     && p.Status == "Pendente"
                     && !p.LembreteVencimentoEnviado
-                    && p.DataVencimento == dataVencimentoAlvo)
+                    && p.DataVencimento <= dataVencimentoAlvo)
                 .ToList());
 
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default)

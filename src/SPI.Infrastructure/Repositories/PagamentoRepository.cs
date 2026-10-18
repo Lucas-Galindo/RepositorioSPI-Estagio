@@ -99,7 +99,7 @@ namespace SPI.Infrastructure.Repositories
                 .Where(p => p.VinculoCobrancaId != null
                     && p.Status == "Pendente"
                     && !p.LembreteVencimentoEnviado
-                    && p.DataVencimento == dataVencimentoAlvo)
+                    && p.DataVencimento <= dataVencimentoAlvo)
                 .ToListAsync(cancellationToken);
 
         public async Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) =>

@@ -48,17 +48,37 @@ namespace SPI.Application.Tests.MensalidadeLembrete
         }
 
         [Fact]
-        public async Task Mensalidade_com_vencimento_fora_da_antecedencia_nao_e_considerada()
+        public async Task Mensalidade_que_ainda_nao_chegou_na_janela_de_antecedencia_nao_e_considerada()
         {
             var pagamentos = new FakePagamentoRepositoryParaLembreteVencimento();
             var emailSender = new FakeEmailSenderParaLembreteVencimento();
+            // Vence em 6 dias: ainda falta mais que a antecedencia configurada (5
+            // dias) -- cedo demais pra avisar.
             pagamentos.Pagamentos.Add(NovaMensalidadePendente(1, dataVencimento: Hoje.AddDays(6)));
-            pagamentos.Pagamentos.Add(NovaMensalidadePendente(2, dataVencimento: Hoje.AddDays(4)));
 
             await MensalidadeLembreteDispatcherService.ProcessarLembretesVencimentoAsync(
                 pagamentos, emailSender, AntecedenciaDias, logger: null, Hoje, CancellationToken.None);
 
             Assert.Empty(emailSender.Enviados);
+        }
+
+        // A consulta usa "<=", nao "==" (ver comentario em
+        // IPagamentoRepository.ListarMensalidadesParaLembreteVencimentoAsync):
+        // um pagamento que ja esta DENTRO da janela (vencendo em 4 dias, menos
+        // que a antecedencia de 5) tambem precisa ser avisado -- isso cobre o
+        // caso de o dispatcher ter ficado fora do ar exatamente no dia em que
+        // faltavam 5 dias, e so ter voltado a rodar depois.
+        [Fact]
+        public async Task Mensalidade_ja_dentro_da_janela_tambem_recebe_o_lembrete_atrasado()
+        {
+            var pagamentos = new FakePagamentoRepositoryParaLembreteVencimento();
+            var emailSender = new FakeEmailSenderParaLembreteVencimento();
+            pagamentos.Pagamentos.Add(NovaMensalidadePendente(1, emailResponsavel: null, dataVencimento: Hoje.AddDays(4)));
+
+            await MensalidadeLembreteDispatcherService.ProcessarLembretesVencimentoAsync(
+                pagamentos, emailSender, AntecedenciaDias, logger: null, Hoje, CancellationToken.None);
+
+            Assert.Contains("aluno@teste.com", emailSender.Enviados);
         }
 
         [Fact]
