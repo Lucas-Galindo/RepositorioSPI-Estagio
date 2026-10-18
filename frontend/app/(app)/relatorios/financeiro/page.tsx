@@ -190,9 +190,24 @@ export default function RelatorioFinanceiroPage() {
     setTipoLancamento("todos");
   };
   const temFiltro = Boolean(inicio || fim || formaPagamentoId || alunoId || turmaId || materiaId || tipoLancamento !== "todos");
+
+  // Math.max(1, ...) em vez de só Math.max(...): se não houver nenhum valor
+  // (array vazio) ou o maior total for 0, usamos 1 como "maior" só para não
+  // dividir por zero nas barras abaixo (`largura = total / maior * 100`).
   const maiorForma = Math.max(1, ...(dados?.porFormaPagamento.map((f) => f.total) ?? [1]));
   const maiorTurma = Math.max(1, ...(dados?.porTurma.map((t) => t.total) ?? [1]));
   const totalPorTurma = dados?.porTurma.reduce((s, t) => s + t.total, 0) ?? 0;
+
+  // Lista de lançamentos da Visão de Indicadores já filtrada pelo botão
+  // Entradas/Saídas (tipoLancamento) — calculada aqui fora do JSX pra não
+  // precisar de uma função anônima auto-executada ((() => {...})()) dentro
+  // do return só pra fazer essa conta (mesma ideia de maiorForma/maiorTurma
+  // acima: computar antes, só desenhar a tela depois).
+  const lancamentosFiltrados = indicadoresDados
+    ? tipoLancamento === "todos"
+      ? indicadoresDados.lancamentos
+      : indicadoresDados.lancamentos.filter((l) => l.tipo === tipoLancamento)
+    : [];
 
   return (
     <>
@@ -443,6 +458,10 @@ export default function RelatorioFinanceiroPage() {
                 <Icon name="money" size={15} /> Lançamentos do período
               </h4>
               <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                {/* Cada botão alterna o filtro: clicar de novo no que já está
+                    ativo volta para "todos" (por isso o valor novo depende do
+                    valor atual, "tipo => tipo === X ? todos : X", em vez de
+                    simplesmente fixar o botão clicado). */}
                 <button
                   type="button"
                   className={`btn btn-sm ${tipoLancamento === "Entrada" ? "btn-primary" : "btn-ghost"}`}
@@ -458,58 +477,47 @@ export default function RelatorioFinanceiroPage() {
                   Saídas
                 </button>
               </div>
-              {(() => {
-                const lancamentosFiltrados =
-                  tipoLancamento === "todos"
-                    ? indicadoresDados.lancamentos
-                    : indicadoresDados.lancamentos.filter((l) => l.tipo === tipoLancamento);
-
-                if (lancamentosFiltrados.length === 0) {
-                  return (
-                    <EmptyState
-                      title="Sem lançamentos"
-                      desc={
-                        tipoLancamento === "Entrada"
-                          ? "Nenhuma entrada no período."
-                          : tipoLancamento === "Saida"
-                            ? "Nenhuma saída no período."
-                            : "Nenhum lançamento no período."
-                      }
-                    />
-                  );
-                }
-
-                return (
-                  <div className="table-wrap" style={{ boxShadow: "none", margin: 0 }}>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Descrição</th>
-                          <th>Data</th>
+              {lancamentosFiltrados.length === 0 ? (
+                <EmptyState
+                  title="Sem lançamentos"
+                  desc={
+                    tipoLancamento === "Entrada"
+                      ? "Nenhuma entrada no período."
+                      : tipoLancamento === "Saida"
+                        ? "Nenhuma saída no período."
+                        : "Nenhum lançamento no período."
+                  }
+                />
+              ) : (
+                <div className="table-wrap" style={{ boxShadow: "none", margin: 0 }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Descrição</th>
+                        <th>Data</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lancamentosFiltrados.map((lancamento) => (
+                        <tr
+                          key={`${lancamento.tipo}-${lancamento.id}`}
+                          className="row-link"
+                          onClick={() =>
+                            router.push(
+                              lancamento.tipo === "Entrada"
+                                ? `/financeiro/contas-a-receber/${lancamento.id}`
+                                : `/financeiro/contas-a-pagar/${lancamento.id}`
+                            )
+                          }
+                        >
+                          <td>{lancamento.descricao}</td>
+                          <td>{fmtData(lancamento.dataVencimento)}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {lancamentosFiltrados.map((lancamento) => (
-                          <tr
-                            key={`${lancamento.tipo}-${lancamento.id}`}
-                            className="row-link"
-                            onClick={() =>
-                              router.push(
-                                lancamento.tipo === "Entrada"
-                                  ? `/financeiro/contas-a-receber/${lancamento.id}`
-                                  : `/financeiro/contas-a-pagar/${lancamento.id}`
-                              )
-                            }
-                          >
-                            <td>{lancamento.descricao}</td>
-                            <td>{fmtData(lancamento.dataVencimento)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             <div className="mini-panel">
