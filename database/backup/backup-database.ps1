@@ -66,6 +66,12 @@ try {
     $dbServer = $null; $dbPort = '3306'; $dbName = $null; $dbUser = $null; $dbPassword = $null
     foreach ($par in $connectionString.Split(';')) {
         if ([string]::IsNullOrWhiteSpace($par)) { continue }
+        # A connection string e "Server=...;Port=...;Database=...;...", pares
+        # separados por ";". Split('=', 2) corta cada par em no maximo 2
+        # partes (chave e valor) -- o "2" importa porque a senha em si pode
+        # conter um "=" (ex.: base64), que sem o limite quebraria o valor.
+        # PowerShell permite atribuir os 2 itens do array direto a 2
+        # variaveis de uma vez (desestruturacao), por isso $chave, $valor =.
         $chave, $valor = $par.Split('=', 2)
         switch ($chave.Trim().ToLowerInvariant()) {
             'server'   { $dbServer = $valor.Trim() }
