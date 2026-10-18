@@ -254,6 +254,10 @@ nav.nav-group {
 }
 .financeiro-tabs > a,
 .financeiro-tabs > button {
+  /* flex: 1 1 0 = cresce (1), encolhe (1) e começa de largura 0 -- ou seja,
+     ignora o tamanho do texto e divide o espaço do pai igualmente entre os
+     botões/links, inclusive em telas estreitas (nenhum vira maior que o
+     outro por ter texto mais longo). */
   flex: 1 1 0;
   justify-content: center;
 }
