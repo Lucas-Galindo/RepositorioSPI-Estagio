@@ -49,6 +49,7 @@ A professora quer conseguir anotar ou corrigir o que foi efetivamente lecionado 
 - Turma sem nenhum aluno ativo no momento da criação retroativa: a lista de presença aparece vazia, e a aula é criada normalmente como "Realizada" sem nenhuma presença para marcar.
 - Presença de algum aluno não informada ao salvar uma aula retroativa: o sistema rejeita o envio, exigindo que todos os alunos da lista tenham uma presença marcada (mesma exigência já aplicada hoje por "Registrar Sessão").
 - Depois que uma aula é criada "Realizada" por este fluxo, uma correção de presença (por exemplo, a professora marcou errado) segue a mesma regra já existente: presença não é editável depois que a aula está "Realizada" — essa limitação não muda nesta feature.
+- Divergência de relógio entre o navegador e o servidor perto da virada do dia (ex.: o navegador ainda mostra a data de ontem, mas o servidor já considera hoje uma data posterior): o backend é a autoridade final sobre se a aula é retroativa (FR-001/FR-004), então a submissão pode ser rejeitada exigindo presença mesmo que a lista não tenha aparecido na tela — nesse caso a professora vê a mensagem de erro do servidor e pode recarregar a página para que o formulário reavalie a data corretamente.
 
 ## Requirements *(mandatory)*
 
