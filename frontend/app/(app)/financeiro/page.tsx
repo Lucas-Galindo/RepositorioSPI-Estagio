@@ -133,7 +133,7 @@ export default function FinanceiroPage() {
                 </div>
                 <div className="bar-row">
                   <div className="lb">Atrasado</div>
-                  <div className="val" style={{ color: "var(--c-danger)" }}>{currency(dados.receitas.atrasado)}</div>
+                  <div className="val" style={{ color: "var(--c-danger-text)" }}>{currency(dados.receitas.atrasado)}</div>
                 </div>
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function FinanceiroPage() {
                 </div>
                 <div className="bar-row">
                   <div className="lb">Atrasado</div>
-                  <div className="val" style={{ color: "var(--c-danger)" }}>{currency(dados.despesas.atrasado)}</div>
+                  <div className="val" style={{ color: "var(--c-danger-text)" }}>{currency(dados.despesas.atrasado)}</div>
                 </div>
               </div>
             </div>

@@ -14,7 +14,8 @@ export function initials(nome: string): string {
     .toUpperCase();
 }
 
-const AV_COLORS = ["var(--c-accent-deep)", "var(--c-accent2)", "var(--c-sidebar)"];
+// specs/057: fundos "fortes" (contraste garantido com o texto branco do avatar).
+const AV_COLORS = ["var(--c-accent-strong)", "var(--c-accent2-strong)", "var(--c-sidebar)"];
 
 export function avatarColor(id: string | number): string {
   let hash = 0;

@@ -1,5 +1,7 @@
 # Feature Specification: Modo de Cores Personalizado
 
+> **Regra substituída pela [spec 057](../057-cores-de-texto/spec.md) (2026-10-19).** O modo de cores "Personalizado" (4 cores livres) e a cor de destaque livre foram removidos: a cor de destaque agora é escolhida só entre amostras nomeadas da paleta oficial (`frontend/lib/paleta.ts`), com cor de texto derivada para manter contraste WCAG AA. Preferências antigas são migradas para a amostra mais próxima.
+
 **Feature Branch**: `051-cores-personalizadas`
 
 **Created**: 2026-10-13

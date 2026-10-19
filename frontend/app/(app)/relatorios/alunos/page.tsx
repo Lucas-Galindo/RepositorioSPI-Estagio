@@ -275,7 +275,7 @@ export default function DashboardAlunosPage() {
               <div className="bar-track">
                 <div
                   className="bar-fill"
-                  style={{ width: `${total ? (emTurma / total) * 100 : 0}%`, background: "linear-gradient(90deg,var(--c-accent2),#8f6f3d)" }}
+                  style={{ width: `${total ? (emTurma / total) * 100 : 0}%`, background: "linear-gradient(90deg,var(--c-accent2),var(--c-accent2-deep))" }}
                 />
               </div>
               <div className="val">{emTurma}</div>

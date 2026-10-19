@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation";
 import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
-  const { dark } = useTheme();
   const { sessao, carregando } = useAuth();
   const router = useRouter();
 
@@ -25,7 +23,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={dark ? "spi-login dark-mode" : "spi-login"}>
+    <div className="spi-login">
       <ThemeToggle className="theme-toggle" />
 
       <div className="auth-shell">

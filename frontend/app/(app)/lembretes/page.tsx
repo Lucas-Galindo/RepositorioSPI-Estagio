@@ -297,7 +297,7 @@ export default function LembretesPage() {
                     <button
                       type="button"
                       className="icon-round"
-                      style={{ width: 28, height: 28, borderRadius: 9, color: "var(--c-danger)" }}
+                      style={{ width: 28, height: 28, borderRadius: 9, color: "var(--c-danger-text)" }}
                       title="Excluir lembrete"
                       onClick={(e) => {
                         e.stopPropagation();

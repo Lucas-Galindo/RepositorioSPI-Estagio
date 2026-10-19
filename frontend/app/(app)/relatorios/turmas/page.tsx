@@ -195,7 +195,7 @@ export default function DashboardTurmasPage() {
                 <div className="bar-row" key={nome}>
                   <div className="lb">{nome}</div>
                   <div className="bar-track">
-                    <div className="bar-fill" style={{ width: `${(valor / maiorAlunosMateria) * 100}%`, background: "linear-gradient(90deg,var(--c-accent2),#8f6f3d)" }} />
+                    <div className="bar-fill" style={{ width: `${(valor / maiorAlunosMateria) * 100}%`, background: "linear-gradient(90deg,var(--c-accent2),var(--c-accent2-deep))" }} />
                   </div>
                   <div className="val">{valor}</div>
                 </div>

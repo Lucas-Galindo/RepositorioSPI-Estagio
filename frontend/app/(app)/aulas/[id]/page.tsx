@@ -146,7 +146,7 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
       </Link>
 
       <div className="entity-hero">
-        <div className="avatar-lg" style={{ background: "var(--c-accent-tint)", color: "var(--c-accent-deep)" }}>
+        <div className="avatar-lg" style={{ background: "var(--c-accent-tint)", color: "var(--c-accent-text)" }}>
           <Icon name="cal" size={24} />
         </div>
         <div>

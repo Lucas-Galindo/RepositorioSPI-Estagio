@@ -1,48 +1,19 @@
 "use client";
 
 import { Icon } from "@/components/shared/Icon";
-import { useTheme, type ColorMode } from "@/contexts/ThemeContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/contexts/ToastContext";
+import { coresBase, DESTAQUE_PADRAO, DESTAQUES, MODOS_DE_CORES } from "@/lib/paleta";
 import { usePageHeader } from "@/lib/usePageHeader";
-
-const COLOR_MODES: { id: ColorMode; nome: string; desc: string; swatches: string[] }[] = [
-  { id: "normal", nome: "Padrão", desc: "Paleta original do SPI.", swatches: ["#4ecdc4", "#bb9457", "#ffe66d", "#c0392b"] },
-  { id: "protanopia", nome: "Protanopia", desc: "Ajuste para dificuldade com tons de vermelho.", swatches: ["#0072b2", "#e69f00", "#f0e442", "#d55e00"] },
-  { id: "deuteranopia", nome: "Deuteranopia", desc: "Ajuste para dificuldade com tons de verde.", swatches: ["#0072b2", "#cc79a7", "#f0e442", "#d55e00"] },
-  { id: "tritanopia", nome: "Tritanopia", desc: "Ajuste para dificuldade com tons de azul.", swatches: ["#cc79a7", "#e69f00", "#009e73", "#d55e00"] },
-];
 
 export default function ConfiguracoesPage() {
   usePageHeader("Configurações", "Aparência e acessibilidade do sistema");
-  const {
-    dark,
-    setDark,
-    colorMode,
-    setColorMode,
-    accentColor,
-    setAccentColor,
-    resetAccentColor,
-    customAccent,
-    customAccent2,
-    customAccent3,
-    customDanger,
-    setCustomAccent,
-    setCustomAccent2,
-    setCustomAccent3,
-    setCustomDanger,
-    resetCustomColors,
-  } = useTheme();
+  const { dark, setDark, colorMode, setColorMode, destaque, setDestaque } = useTheme();
   const { mostrarToast } = useToast();
 
-  // Calculada aqui (não em COLOR_MODES, const de módulo) porque as swatches
-  // precisam refletir a escolha atual do usuário, só disponível via useTheme().
-  const modoPersonalizado: (typeof COLOR_MODES)[number] = {
-    id: "personalizado",
-    nome: "Personalizado",
-    desc: "Escolha livremente as 4 cores da interface.",
-    swatches: [customAccent, customAccent2, customAccent3, customDanger],
-  };
-  const modosExibidos = [...COLOR_MODES, modoPersonalizado];
+  // specs/057: so ha cores da paleta oficial (lib/paleta.ts); a cor do texto
+  // de cada opcao e derivada automaticamente para manter o contraste.
+  const destaqueBloqueado = colorMode !== "normal";
 
   return (
     <>
@@ -83,25 +54,28 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
         <div className="colormode-grid">
-          {modosExibidos.map((cm) => (
-            <button
-              type="button"
-              key={cm.id}
-              className={`colormode-card${colorMode === cm.id ? " active" : ""}`}
-              onClick={() => {
-                setColorMode(cm.id);
-                mostrarToast(`Modo de cores atualizado: ${cm.nome}.`);
-              }}
-            >
-              <div className="colormode-swatches">
-                {cm.swatches.map((cor) => (
-                  <span className="swatch" style={{ background: cor }} key={cor} />
-                ))}
-              </div>
-              <div className="cm-name">{cm.nome}</div>
-              <div className="cm-desc">{cm.desc}</div>
-            </button>
-          ))}
+          {MODOS_DE_CORES.map((cm) => {
+            const cores = coresBase({ dark, colorMode: cm.id, destaque });
+            return (
+              <button
+                type="button"
+                key={cm.id}
+                className={`colormode-card${colorMode === cm.id ? " active" : ""}`}
+                onClick={() => {
+                  setColorMode(cm.id);
+                  mostrarToast(`Modo de cores atualizado: ${cm.nome}.`);
+                }}
+              >
+                <div className="colormode-swatches">
+                  {[cores.accent, cores.accent2, cores.accent3, cores.danger].map((cor) => (
+                    <span className="swatch" style={{ background: cor }} key={cor} />
+                  ))}
+                </div>
+                <div className="cm-name">{cm.nome}</div>
+                <div className="cm-desc">{cm.desc}</div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -112,74 +86,35 @@ export default function ConfiguracoesPage() {
           </div>
           <div>
             <h3>Cor de destaque</h3>
-            <p>Personalize a cor principal do sistema (só no modo de cores Padrão).</p>
+            <p>
+              {destaqueBloqueado
+                ? "Desativada enquanto um modo de daltonismo estiver ativo, para não sobrepor a paleta de acessibilidade."
+                : "Cor principal de botões, links e destaques. O texto se ajusta sozinho para continuar legível."}
+            </p>
           </div>
         </div>
-        {colorMode === "personalizado" ? (
-          <>
-            {[
-              { rotulo: "Destaque principal", valor: customAccent, setValor: setCustomAccent },
-              { rotulo: "Destaque secundário", valor: customAccent2, setValor: setCustomAccent2 },
-              { rotulo: "Destaque terciário", valor: customAccent3, setValor: setCustomAccent3 },
-              { rotulo: "Alerta/perigo", valor: customDanger, setValor: setCustomDanger },
-            ].map((campo) => (
-              <div className="accent-picker-row" key={campo.rotulo} style={{ marginBottom: 10 }}>
-                <label className="accent-swatch-label">
-                  <input type="color" value={campo.valor} onChange={(e) => campo.setValor(e.target.value)} />
-                  <span>Escolher cor</span>
-                </label>
-                <div className="accent-picker-info">
-                  <div className="accent-current">
-                    {campo.rotulo}: <b>{campo.valor}</b>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="colormode-grid">
+          {DESTAQUES.map((d) => (
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
+              key={d.id}
+              disabled={destaqueBloqueado}
+              className={`colormode-card${!destaqueBloqueado && destaque === d.id ? " active" : ""}`}
               onClick={() => {
-                resetCustomColors();
-                mostrarToast("Cores personalizadas restauradas para o padrão.");
+                setDestaque(d.id);
+                mostrarToast(`Cor de destaque atualizada: ${d.nome}.`);
               }}
             >
-              Restaurar padrão
+              <div className="colormode-swatches">
+                <span className="swatch" style={{ background: d.cor }} />
+              </div>
+              <div className="cm-name">
+                {d.nome}
+                {d.id === DESTAQUE_PADRAO && " (padrão)"}
+              </div>
             </button>
-          </>
-        ) : (
-          <div className="accent-picker-row">
-            <label className="accent-swatch-label">
-              <input
-                type="color"
-                value={accentColor}
-                disabled={colorMode !== "normal"}
-                onChange={(e) => setAccentColor(e.target.value)}
-              />
-              <span>Escolher cor</span>
-            </label>
-            <div className="accent-picker-info">
-              <div className="accent-current">
-                Cor atual: <b>{accentColor}</b>
-              </div>
-              <div className="accent-hint">
-                {colorMode !== "normal"
-                  ? "Desativada enquanto um modo de daltonismo estiver ativo, para não sobrepor a paleta de acessibilidade."
-                  : "A cor escolhida se aplica a botões, links e destaques em todo o sistema."}
-              </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                style={{ marginTop: 10 }}
-                onClick={() => {
-                  resetAccentColor();
-                  mostrarToast("Cor de destaque restaurada para o padrão.");
-                }}
-              >
-                Restaurar padrão
-              </button>
-            </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </>
   );

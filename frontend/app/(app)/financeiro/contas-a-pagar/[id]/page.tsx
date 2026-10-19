@@ -90,7 +90,7 @@ export default function ContaAPagarDetailPage({ params }: { params: Promise<{ id
       </Link>
 
       <div className="entity-hero">
-        <div className="avatar-lg" style={{ background: "var(--c-danger-tint)", color: "var(--c-danger)" }}>
+        <div className="avatar-lg" style={{ background: "var(--c-danger-tint)", color: "var(--c-danger-text)" }}>
           <Icon name="money" size={24} />
         </div>
         <div>
@@ -106,7 +106,7 @@ export default function ContaAPagarDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {ofertaAnexoVisivel && (
-        <div className="err-banner show" style={{ marginBottom: 20, background: "var(--c-accent2-tint)", color: "var(--c-accent2)" }}>
+        <div className="err-banner show" style={{ marginBottom: 20, background: "var(--c-accent2-tint)", color: "var(--c-accent2-text)" }}>
           <Icon name="paperclip" size={15} />
           <span style={{ flex: 1 }}>Registro salvo! Deseja anexar o comprovante agora?</span>
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => setOfertaAnexoVisivel(false)}>

@@ -1,4 +1,6 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
+import { PREFERENCIAS_PADRAO, tokensDoTema } from "@/lib/paleta";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider } from "@/contexts/ToastContext";
@@ -21,8 +23,10 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  // specs/057: tokens do tema padrao ja no primeiro desenho (inclusive o
+  // login); o ThemeProvider troca pelos da preferencia salva ao montar.
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" style={tokensDoTema(PREFERENCIAS_PADRAO) as CSSProperties} suppressHydrationWarning>
       <body>
         <ThemeProvider>
           <AuthProvider>

@@ -84,7 +84,7 @@ export default function MateriaDetailPage({ params }: { params: Promise<{ id: st
       </Link>
 
       <div className="entity-hero">
-        <div className="avatar-lg chip-turq" style={{ background: "var(--c-accent-tint)", color: "var(--c-accent-deep)" }}>
+        <div className="avatar-lg chip-turq" style={{ background: "var(--c-accent-tint)", color: "var(--c-accent-text)" }}>
           <Icon name="book" size={24} />
         </div>
         <div>

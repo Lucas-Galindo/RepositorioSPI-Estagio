@@ -325,7 +325,7 @@ function EditarProfessoraForm({
         </div>
       </form>
 
-      <div className="form-section" style={{ marginTop: 24, borderTop: "1px solid var(--border, #e5e5e5)", paddingTop: 20 }}>
+      <div className="form-section" style={{ marginTop: 24, borderTop: "1px solid var(--c-bg)", paddingTop: 20 }}>
         <div className="fs-title">
           <span className="fs-num">2</span> Zona de risco
         </div>
@@ -369,7 +369,7 @@ function EditarProfessoraForm({
               <span>
                 <strong>Atenção:</strong> este sistema hoje tem só esta professora cadastrada. Ao excluí-la, o sistema
                 fica inacessível para o uso normal (login da professora, alunos e aulas) até que o Admin cadastre uma
-                nova professora. Isso é diferente de um aviso comum de "ação irreversível" — aqui, todo mundo fica sem
+                nova professora. Isso é diferente de um aviso comum de &ldquo;ação irreversível&rdquo; — aqui, todo mundo fica sem
                 acesso até você cadastrar alguém de novo.
               </span>
             </div>
