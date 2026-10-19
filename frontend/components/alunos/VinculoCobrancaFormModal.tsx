@@ -49,8 +49,10 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
 
   // Conveniencia de UI: ao trocar a modalidade, limpa o campo que deixou de se
   // aplicar. A regra de negocio (rejeitar campo nao aplicavel) e do backend.
+  // specs/056: so a Avulsa e por turma; Mensalidade e Pacote valem para todas as aulas.
   const handleModalidade = (nova: ModalidadeCobranca) => {
     setModalidade(nova);
+    if (nova !== "Avulsa") setTurmaId("");
     if (nova !== "Mensalidade") setAulasIncluidas("");
     if (nova !== "Pacote") setSaldoAulas("");
   };
@@ -101,18 +103,6 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
 
             <div className="field-grid two">
               <div className="field">
-                <label>Turma</label>
-                <select value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
-                  <option value="">Atendimento individual</option>
-                  {turmaAtualForaDasAtivas && <option value={turmaAtualForaDasAtivas.id}>{turmaAtualForaDasAtivas.nome}</option>}
-                  {turmasAtivas.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
                 <label>
                   Modalidade<span className="req">*</span>
                 </label>
@@ -124,6 +114,25 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
                   ))}
                 </select>
               </div>
+              {modalidade === "Avulsa" ? (
+                <div className="field">
+                  <label>Turma</label>
+                  <select value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
+                    <option value="">Atendimento individual</option>
+                    {turmaAtualForaDasAtivas && <option value={turmaAtualForaDasAtivas.id}>{turmaAtualForaDasAtivas.nome}</option>}
+                    {turmasAtivas.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="field">
+                  <label>Vale para</label>
+                  <input disabled value="Todas as aulas do aluno" />
+                </div>
+              )}
               <div className="field">
                 <label>
                   Valor<span className="req">*</span>

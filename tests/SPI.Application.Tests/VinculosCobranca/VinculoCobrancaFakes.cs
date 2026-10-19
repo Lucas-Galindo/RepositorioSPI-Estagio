@@ -60,14 +60,6 @@ namespace SPI.Application.Tests.VinculosCobranca
             return Task.FromResult(lista);
         }
 
-        public Task<bool> ExisteAtivoAsync(int alunoId, int? turmaId, int? ignorarId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Vinculos.Any(v =>
-                v.AlunoId == alunoId && v.TurmaId == turmaId && v.Ativo && (ignorarId is null || v.Id != ignorarId)));
-
-        // specs/038
-        public Task<VinculoCobranca?> ObterAtivoPorAlunoEContextoAsync(int alunoId, int? turmaId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Vinculos.FirstOrDefault(v => v.AlunoId == alunoId && v.TurmaId == turmaId && v.Ativo));
-
         // specs/039
         public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(SPI.Domain.Enums.ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos.Where(v => v.Ativo && v.Modalidade == modalidade).ToList());

@@ -1,5 +1,7 @@
 # Feature Specification: Cobrança Automática por Modalidade do Vínculo
 
+> **Regra substituída em parte pela [spec 056](../056-cobranca-por-aluno/spec.md) (2026-10-19).** A cobrança de cada presença não busca mais o vínculo "do contexto da aula": segue a ordem mensalidade do aluno → pacote do aluno com saldo → avulsa do contexto → bloqueio (pacote esgotado sem avulsa) → valor da aula. Pacote esgotado com Avulsa no contexto passa a cobrar a avulsa, com aviso.
+
 **Feature Branch**: `038-vinculo-cobranca-gerar-contas`
 
 **Created**: 2026-09-22

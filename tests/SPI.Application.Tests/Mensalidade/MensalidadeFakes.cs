@@ -19,8 +19,6 @@ namespace SPI.Application.Tests.Mensalidade
         // sendo o unico dono do CRUD do vinculo).
         public Task<VinculoCobranca?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<List<VinculoCobranca>> ListarPorAlunoAsync(int alunoId, bool? ativo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public Task<bool> ExisteAtivoAsync(int alunoId, int? turmaId, int? ignorarId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public Task<VinculoCobranca?> ObterAtivoPorAlunoEContextoAsync(int alunoId, int? turmaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }

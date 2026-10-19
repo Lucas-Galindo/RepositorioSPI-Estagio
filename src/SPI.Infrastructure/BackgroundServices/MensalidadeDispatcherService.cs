@@ -98,12 +98,12 @@ namespace SPI.Infrastructure.BackgroundServices
                         continue;
                     }
 
-                    var contexto = vinculo.TurmaId.HasValue ? vinculo.Turma!.Nome : "Atendimento individual";
+                    // specs/056: a mensalidade e do aluno (cobre todas as aulas), sem turma.
                     var pagamento = new Pagamento
                     {
                         AlunoId = vinculo.AlunoId,
                         VinculoCobrancaId = vinculo.Id,
-                        Descricao = $"Mensalidade - {contexto} - {competencia:MM/yyyy}",
+                        Descricao = $"Mensalidade - {competencia:MM/yyyy}",
                         CategoriaReceitaId = categoria?.Id,
                         DataVencimento = new DateOnly(competencia.Year, competencia.Month, 10).AddMonths(1),
                         Competencia = competencia,

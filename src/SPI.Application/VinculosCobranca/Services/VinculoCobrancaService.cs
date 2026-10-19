@@ -41,7 +41,30 @@ namespace SPI.Application.VinculosCobranca.Services
             {
                 respostas.Add(await MapearAsync(vinculo, cancellationToken));
             }
+
+            MarcarConflitosHerdados(respostas);
             return respostas;
+        }
+
+        // specs/056 (FR-020/FR-021): vinculos cadastrados na regra antiga podem formar
+        // combinacoes hoje proibidas. Eles continuam valendo como estao (a cobranca
+        // segue a prioridade de RegraCobrancaPresenca); aqui so sao sinalizados para a
+        // professora decidir. Inativos nunca entram na conta.
+        private static void MarcarConflitosHerdados(List<VinculoCobrancaResponse> respostas)
+        {
+            var ativos = respostas.Where(r => r.Ativo).ToList();
+
+            if (ativos.Count > 1 && ativos.Any(r => r.Modalidade == ModalidadeCobranca.Mensalidade))
+            {
+                ativos.ForEach(r => r.Conflito = "Mensalidade nao pode coexistir com outros vinculos ativos.");
+                return;
+            }
+
+            var pacotes = ativos.Where(r => r.Modalidade == ModalidadeCobranca.Pacote).ToList();
+            if (pacotes.Count > 1)
+            {
+                pacotes.ForEach(r => r.Conflito = "Mais de um pacote ativo.");
+            }
         }
 
         public async Task<VinculoCobrancaResponse> ObterPorIdAsync(int alunoId, int id, CancellationToken cancellationToken = default)
@@ -61,7 +84,7 @@ namespace SPI.Application.VinculosCobranca.Services
                 await ValidarTurmaAsync(alunoId, request.TurmaId.Value, cancellationToken);
             }
 
-            await GarantirSemVinculoAtivoAsync(alunoId, request.TurmaId, null, cancellationToken);
+            await GarantirRegrasDeCombinacaoAsync(alunoId, request.Modalidade, request.TurmaId, ignorarId: null, cancellationToken);
 
             var vinculo = new VinculoCobranca
             {
@@ -96,15 +119,14 @@ namespace SPI.Application.VinculosCobranca.Services
 
             // Turma inalterada nao e revalidada (FR-013 so vale ao definir/alterar a turma):
             // editar o Valor de um vinculo cuja turma foi desativada depois continua possivel.
-            if (request.TurmaId != vinculo.TurmaId)
+            if (request.TurmaId != vinculo.TurmaId && request.TurmaId.HasValue)
             {
-                if (request.TurmaId.HasValue)
-                {
-                    await ValidarTurmaAsync(alunoId, request.TurmaId.Value, cancellationToken);
-                }
-
-                await GarantirSemVinculoAtivoAsync(alunoId, request.TurmaId, vinculo.Id, cancellationToken);
+                await ValidarTurmaAsync(alunoId, request.TurmaId.Value, cancellationToken);
             }
+
+            // Sempre, e nao so quando a turma muda: a modalidade tambem pode mudar
+            // (ex.: Avulsa virando Mensalidade com outros vinculos ativos).
+            await GarantirRegrasDeCombinacaoAsync(alunoId, request.Modalidade, request.TurmaId, vinculo.Id, cancellationToken);
 
             // specs/052 (FR-007/FR-010): nunca permitir que o novo total/teto
             // fique menor que o que ja foi consumido. Nao recalcula SaldoAulas
@@ -169,8 +191,8 @@ namespace SPI.Application.VinculosCobranca.Services
             }
 
             // FR-014: em conflito rejeita sem desativar nem alterar o vinculo ativo existente.
-            // Reaplica so a unicidade -- nao FR-013 (vinculos orfaos de turma ficam para fatia futura).
-            await GarantirSemVinculoAtivoAsync(alunoId, vinculo.TurmaId, vinculo.Id, cancellationToken);
+            // Reaplica so as regras de combinacao -- nao FR-013 (vinculos orfaos de turma ficam para fatia futura).
+            await GarantirRegrasDeCombinacaoAsync(alunoId, vinculo.Modalidade, vinculo.TurmaId, vinculo.Id, cancellationToken);
 
             vinculo.Ativo = true;
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
@@ -211,17 +233,42 @@ namespace SPI.Application.VinculosCobranca.Services
             }
         }
 
-        // FR-005/FR-006: no maximo um vinculo ATIVO por aluno+turma e um por aluno sem turma.
-        private async Task GarantirSemVinculoAtivoAsync(int alunoId, int? turmaId, int? ignorarId, CancellationToken cancellationToken)
+        // specs/056: quais vinculos podem ficar ativos ao mesmo tempo para o mesmo aluno.
+        // Mensalidade cobre todas as aulas, entao e exclusiva; Pacote e um saldo do aluno
+        // (um so por vez); Avulsa e por contexto (uma por turma e uma individual).
+        // ignorarId = o proprio vinculo, na edicao/reativacao.
+        private async Task GarantirRegrasDeCombinacaoAsync(int alunoId, ModalidadeCobranca modalidade, int? turmaId, int? ignorarId, CancellationToken cancellationToken)
         {
-            if (!await _vinculoRepository.ExisteAtivoAsync(alunoId, turmaId, ignorarId, cancellationToken))
+            var outrosAtivos = (await _vinculoRepository.ListarPorAlunoAsync(alunoId, ativo: true, cancellationToken))
+                .Where(v => v.Id != ignorarId)
+                .ToList();
+
+            if (modalidade == ModalidadeCobranca.Mensalidade)
             {
+                if (outrosAtivos.Count > 0)
+                {
+                    throw new ConflitoException("O aluno ja tem outros vinculos ativos. Desative-os antes de cadastrar a mensalidade, que cobre todas as aulas.");
+                }
+
                 return;
             }
 
-            throw new ConflitoException(turmaId.HasValue
-                ? "Ja existe um vinculo de cobranca ativo para este aluno nesta turma."
-                : "Ja existe um vinculo de cobranca ativo para este aluno em atendimento individual.");
+            if (outrosAtivos.Any(v => v.Modalidade == ModalidadeCobranca.Mensalidade))
+            {
+                throw new ConflitoException("O aluno tem mensalidade ativa, que ja cobre todas as aulas.");
+            }
+
+            if (modalidade == ModalidadeCobranca.Pacote && outrosAtivos.Any(v => v.Modalidade == ModalidadeCobranca.Pacote))
+            {
+                throw new ConflitoException("O aluno ja tem um pacote ativo.");
+            }
+
+            if (modalidade == ModalidadeCobranca.Avulsa && outrosAtivos.Any(v => v.Modalidade == ModalidadeCobranca.Avulsa && v.TurmaId == turmaId))
+            {
+                throw new ConflitoException(turmaId.HasValue
+                    ? "Ja existe um vinculo de cobranca ativo para este aluno nesta turma."
+                    : "Ja existe um vinculo de cobranca ativo para este aluno em atendimento individual.");
+            }
         }
 
         // specs/052: assincrono porque AulasDadasNoMes (Mensalidade) depende

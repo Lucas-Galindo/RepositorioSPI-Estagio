@@ -1,5 +1,7 @@
 # Feature Specification: Job de Cobrança Automática de Mensalidade
 
+> **Regra substituída em parte pela [spec 056](../056-cobranca-por-aluno/spec.md) (2026-10-19).** A mensalidade não tem mais turma: a descrição da cobrança passa a ser "Mensalidade - MM/aaaa", sem o contexto. O resto do job não mudou.
+
 **Feature Branch**: `039-job-cobranca-mensalidade`
 
 **Created**: 2026-09-22

@@ -44,7 +44,7 @@ namespace SPI.Application.Tests.VinculosCobranca
         }
 
         private VinculoCobranca Semear(
-            int? turmaId, ModalidadeCobranca modalidade = ModalidadeCobranca.Mensalidade, decimal valor = 350m,
+            int? turmaId, ModalidadeCobranca modalidade = ModalidadeCobranca.Avulsa, decimal valor = 80m,
             int? aulasIncluidas = null, int? saldoAulas = null, bool ativo = true, int alunoId = AlunoId) =>
             _vinculos.Semear(new VinculoCobranca
             {
@@ -53,7 +53,7 @@ namespace SPI.Application.Tests.VinculosCobranca
             });
 
         private static VinculoCobrancaRequest Request(
-            int? turmaId, ModalidadeCobranca modalidade = ModalidadeCobranca.Mensalidade, decimal valor = 350m,
+            int? turmaId, ModalidadeCobranca modalidade = ModalidadeCobranca.Avulsa, decimal valor = 80m,
             int? aulasIncluidas = null, int? saldoAulas = null) => new()
         {
             TurmaId = turmaId, Modalidade = modalidade, Valor = valor, AulasIncluidas = aulasIncluidas, SaldoAulas = saldoAulas,
@@ -68,9 +68,9 @@ namespace SPI.Application.Tests.VinculosCobranca
         [Fact]
         public async Task Editar_o_valor_persiste_e_devolve_a_resposta_atualizada()
         {
-            var vinculo = Semear(TurmaAId, aulasIncluidas: 8);
+            var vinculo = Semear(null, ModalidadeCobranca.Mensalidade, 350m, aulasIncluidas: 8);
 
-            var resposta = await _servico.AtualizarAsync(AlunoId, vinculo.Id, Request(TurmaAId, valor: 400m, aulasIncluidas: 8));
+            var resposta = await _servico.AtualizarAsync(AlunoId, vinculo.Id, Request(null, ModalidadeCobranca.Mensalidade, 400m, aulasIncluidas: 8));
 
             Assert.Equal(400m, resposta.Valor);
             Assert.Equal(400m, _vinculos.Vinculos.Single().Valor);
@@ -81,10 +81,10 @@ namespace SPI.Application.Tests.VinculosCobranca
         [Fact]
         public async Task Trocar_Mensalidade_por_Pacote_persiste_com_saldo_e_sem_aulas_incluidas()
         {
-            var vinculo = Semear(TurmaAId, aulasIncluidas: 8);
+            var vinculo = Semear(null, ModalidadeCobranca.Mensalidade, 350m, aulasIncluidas: 8);
 
             var resposta = await _servico.AtualizarAsync(
-                AlunoId, vinculo.Id, Request(TurmaAId, ModalidadeCobranca.Pacote, 500m, aulasIncluidas: null, saldoAulas: 10));
+                AlunoId, vinculo.Id, Request(null, ModalidadeCobranca.Pacote, 500m, aulasIncluidas: null, saldoAulas: 10));
 
             Assert.Equal(ModalidadeCobranca.Pacote, resposta.Modalidade);
             Assert.Equal(10, resposta.SaldoAulas);
@@ -198,7 +198,7 @@ namespace SPI.Application.Tests.VinculosCobranca
                 () => _servico.AtualizarAsync(AlunoId, vinculo.Id, Request(TurmaAId, valor: 999m)));
 
             Assert.Equal("Reative o vinculo antes de edita-lo.", excecao.Message);
-            Assert.Equal(350m, vinculo.Valor);
+            Assert.Equal(80m, vinculo.Valor);
         }
 
         [Fact]

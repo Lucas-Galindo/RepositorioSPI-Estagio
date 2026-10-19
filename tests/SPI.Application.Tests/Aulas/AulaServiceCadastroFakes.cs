@@ -79,10 +79,10 @@ namespace SPI.Application.Tests.Aulas
 
     public class FakeTurmaRepositoryParaCadastro : ITurmaRepository
     {
-        public Turma? Turma { get; set; }
+        public List<Turma> Turmas { get; } = new();
 
         public Task<Turma?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Turma?.Id == id ? Turma : null);
+            Task.FromResult(Turmas.FirstOrDefault(t => t.Id == id));
 
         public Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task AdicionarAsync(Turma turma, CancellationToken cancellationToken = default) => throw new NotImplementedException();
@@ -124,12 +124,14 @@ namespace SPI.Application.Tests.Aulas
         public FakeVinculoCobrancaRepositoryParaAula Vinculos { get; } = new();
         public FakeLembreteServiceVazio Lembretes { get; } = new();
         public FakeAlunoRepositoryParaCadastro AlunosRepo { get; } = new();
+        public FakeTurmaRepositoryParaCadastro TurmasRepo { get; } = new();
         public AulaService Servico { get; }
 
         public CenarioCadastroAula(params Aluno[] alunos)
         {
             var turma = new Turma { Id = TurmaId, Nome = "Turma A", Ativo = true };
             Aulas.Turma = turma;
+            TurmasRepo.Turmas.Add(turma);
             Aulas.AlunosAtivosPorTurma[TurmaId] = alunos.Select(a => a.Id).ToList();
             foreach (var aluno in alunos)
             {
@@ -140,7 +142,7 @@ namespace SPI.Application.Tests.Aulas
             Servico = new AulaService(
                 Aulas,
                 AlunosRepo,
-                new FakeTurmaRepositoryParaCadastro { Turma = turma },
+                TurmasRepo,
                 new FakeMateriaRepositoryParaCadastro { Materia = Aulas.Materia },
                 Lembretes,
                 Pagamentos,

@@ -28,6 +28,12 @@ function detalheDaModalidade(v: VinculoCobranca): string | null {
   return null;
 }
 
+// specs/056: Mensalidade e Pacote sao do aluno; so a Avulsa e por turma/individual.
+function contextoDoVinculo(v: VinculoCobranca): string {
+  if (v.modalidade !== "Avulsa") return "Todas as aulas do aluno";
+  return v.turmaNome ?? "Atendimento individual";
+}
+
 export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
   const { sessao } = useAuth();
   const { mostrarToast } = useToast();
@@ -107,6 +113,18 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
         </div>
       </div>
 
+      {/* specs/056: conflito herdado da regra antiga -- o backend so sinaliza; quem resolve e a professora. */}
+      {vinculos.some((v) => v.conflito) && (
+        <div className="err-banner show" style={{ marginBottom: 15 }}>
+          <Icon name="warn" size={15} />
+          <span>
+            Este aluno tem vínculos que não combinam mais pela regra atual (
+            {[...new Set(vinculos.map((v) => v.conflito).filter(Boolean))].join(" ")}). Exclua os que não valem mais. Até lá, a
+            mensalidade prevalece e o pacote mais antigo com saldo é usado primeiro.
+          </span>
+        </div>
+      )}
+
       {carregando ? (
         <p className="count-text">Carregando...</p>
       ) : erro ? (
@@ -120,7 +138,7 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
                 {currency(v.valor)}
               </div>
               <div className="lesson-info">
-                <div className="subj">{v.turmaNome ?? "Atendimento individual"}</div>
+                <div className="subj">{contextoDoVinculo(v)}</div>
                 <div className="who">{detalhe ? `${v.modalidade} · ${detalhe}` : v.modalidade}</div>
               </div>
               {!v.ativo && <StatusPill status="Inativo" />}

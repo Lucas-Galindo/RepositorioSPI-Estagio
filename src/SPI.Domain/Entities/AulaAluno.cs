@@ -22,6 +22,11 @@ namespace SPI.Domain.Entities
         public int? VinculoCobrancaId { get; set; }
         public VinculoCobranca? VinculoCobranca { get; set; }
 
+        // specs/056: TRUE = aluno colocado pela professora numa aula de turma sem
+        // ser matriculado nela (reposicao). So esses podem ser removidos
+        // individualmente da aula, e a edicao da aula os preserva.
+        public bool Reposicao { get; set; }
+
         public Aula Aula { get; set; } = null!;
         public Aluno Aluno { get; set; } = null!;
     }

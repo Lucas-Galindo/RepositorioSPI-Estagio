@@ -70,7 +70,8 @@ namespace SPI.Application.Dashboard.Services
                     VinculoId = v.Id,
                     AlunoId = v.AlunoId,
                     AlunoNome = v.Aluno.Nome,
-                    Contexto = v.TurmaId.HasValue ? v.Turma!.Nome : "Atendimento individual",
+                    // specs/056: pacote e do aluno, vale em qualquer aula.
+                    Contexto = "Todas as aulas do aluno",
                     SaldoAulas = v.SaldoAulas!.Value,
                     Estado = v.SaldoAulas == 0 ? "Esgotado" : "Atencao"
                 })

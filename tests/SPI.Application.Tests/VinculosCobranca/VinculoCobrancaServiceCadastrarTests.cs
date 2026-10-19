@@ -43,8 +43,8 @@ namespace SPI.Application.Tests.VinculosCobranca
 
         private static VinculoCobrancaRequest Request(
             int? turmaId = TurmaDoAlunoId,
-            ModalidadeCobranca modalidade = ModalidadeCobranca.Mensalidade,
-            decimal valor = 350m,
+            ModalidadeCobranca modalidade = ModalidadeCobranca.Avulsa,
+            decimal valor = 80m,
             int? aulasIncluidas = null,
             int? saldoAulas = null,
             int? totalAulasPacote = null) => new()
@@ -64,15 +64,15 @@ namespace SPI.Application.Tests.VinculosCobranca
         }
 
         [Fact]
-        public async Task Cadastra_vinculo_de_Mensalidade_em_turma_do_aluno_como_ativo()
+        public async Task Cadastra_Mensalidade_do_aluno_sem_turma_como_ativa()
         {
             var resposta = await _servico.CadastrarAsync(
-                AlunoId, Request(modalidade: ModalidadeCobranca.Mensalidade, valor: 350m, aulasIncluidas: 8));
+                AlunoId, Request(turmaId: null, modalidade: ModalidadeCobranca.Mensalidade, valor: 350m, aulasIncluidas: 8));
 
             Assert.True(resposta.Id > 0);
             Assert.Equal(AlunoId, resposta.AlunoId);
-            Assert.Equal(TurmaDoAlunoId, resposta.TurmaId);
-            Assert.Equal("Turma A", resposta.TurmaNome);
+            Assert.Null(resposta.TurmaId);
+            Assert.Null(resposta.TurmaNome);
             Assert.Equal(ModalidadeCobranca.Mensalidade, resposta.Modalidade);
             Assert.Equal(350m, resposta.Valor);
             Assert.Equal(8, resposta.AulasIncluidas);
@@ -134,8 +134,9 @@ namespace SPI.Application.Tests.VinculosCobranca
         {
             await _servico.CadastrarAsync(AlunoId, Request(turmaId: null, modalidade: ModalidadeCobranca.Avulsa, valor: 80m));
 
+            // specs/056: o conflito "atendimento individual" e entre duas Avulsas (Pacote convive com Avulsa).
             var excecao = await Assert.ThrowsAsync<ConflitoException>(
-                () => _servico.CadastrarAsync(AlunoId, Request(turmaId: null, modalidade: ModalidadeCobranca.Pacote, valor: 500m)));
+                () => _servico.CadastrarAsync(AlunoId, Request(turmaId: null, modalidade: ModalidadeCobranca.Avulsa, valor: 90m)));
 
             Assert.Equal("Ja existe um vinculo de cobranca ativo para este aluno em atendimento individual.", excecao.Message);
             Assert.Single(_vinculos.Vinculos);
@@ -148,7 +149,7 @@ namespace SPI.Application.Tests.VinculosCobranca
             _vinculos.Semear(new VinculoCobranca { AlunoId = AlunoId, TurmaId = null, Modalidade = ModalidadeCobranca.Avulsa, Valor = 80m, Ativo = false });
 
             var naTurma = await _servico.CadastrarAsync(AlunoId, Request());
-            var individual = await _servico.CadastrarAsync(AlunoId, Request(turmaId: null, modalidade: ModalidadeCobranca.Pacote, valor: 500m));
+            var individual = await _servico.CadastrarAsync(AlunoId, Request(turmaId: null, modalidade: ModalidadeCobranca.Avulsa, valor: 80m));
 
             Assert.True(naTurma.Ativo);
             Assert.True(individual.Ativo);

@@ -9,6 +9,8 @@ export interface AlunoPresenca {
   presente: boolean | null;
   /** null = presente ou falta comum; "PacoteEsgotado" = presenca barrada por pacote esgotado (specs/041). */
   motivoNaoRegistro: string | null;
+  /** true = aluno de fora da turma colocado nesta aula como reposicao (specs/056). */
+  reposicao: boolean;
 }
 
 /** Espelha SPI.Application.Aulas.Dtos.AulaResponse. Datas/horas como string ISO (DateOnly/TimeOnly do backend). */
@@ -82,4 +84,14 @@ export function registrarSessao(
 
 export function cancelarAula(id: number, accessToken: string): Promise<Aula> {
   return apiPost<Aula>(`/api/aulas/${id}/cancelar`, {}, accessToken);
+}
+
+/** specs/056: coloca um aluno de fora da turma na aula agendada (reposicao). */
+export function adicionarParticipante(id: number, alunoId: number, accessToken: string): Promise<Aula> {
+  return apiPost<Aula>(`/api/aulas/${id}/participantes`, { alunoId }, accessToken);
+}
+
+/** specs/056: retira um aluno de reposicao da aula agendada. */
+export function removerParticipante(id: number, alunoId: number, accessToken: string): Promise<void> {
+  return apiDelete(`/api/aulas/${id}/participantes/${alunoId}`, accessToken);
 }

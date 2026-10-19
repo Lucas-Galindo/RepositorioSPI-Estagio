@@ -16,5 +16,10 @@ namespace SPI.Application.Aulas.Dtos
         /// por pacote de aulas esgotado (specs/041); nunca indica bloqueio quando NULL.
         /// </summary>
         public string? MotivoNaoRegistro { get; set; }
+
+        /// <summary>
+        /// TRUE = aluno de fora da turma colocado nesta aula como reposicao (specs/056).
+        /// </summary>
+        public bool Reposicao { get; set; }
     }
 }

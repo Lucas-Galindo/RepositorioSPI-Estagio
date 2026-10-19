@@ -23,5 +23,9 @@ namespace SPI.Application.Aulas.Services
         Task<AulaResponse> RegistrarSessaoAsync(int id, RegistrarSessaoRequest request, CancellationToken cancellationToken = default);
 
         Task<AulaResponse> CancelarAsync(int id, CancellationToken cancellationToken = default);
+
+        Task<AulaResponse> AdicionarParticipanteAsync(int aulaId, int alunoId, CancellationToken cancellationToken = default);
+
+        Task<AulaResponse> RemoverParticipanteAsync(int aulaId, int alunoId, CancellationToken cancellationToken = default);
     }
 }

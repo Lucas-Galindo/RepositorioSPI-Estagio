@@ -31,8 +31,8 @@ namespace SPI.Application.Tests.VinculosCobranca
         }
 
         private VinculoCobranca Semear(
-            int? turmaId, bool ativo, ModalidadeCobranca modalidade = ModalidadeCobranca.Mensalidade,
-            decimal valor = 350m, int? aulasIncluidas = null, int alunoId = AlunoId) =>
+            int? turmaId, bool ativo, ModalidadeCobranca modalidade = ModalidadeCobranca.Avulsa,
+            decimal valor = 80m, int? aulasIncluidas = null, int alunoId = AlunoId) =>
             _vinculos.Semear(new VinculoCobranca
             {
                 AlunoId = alunoId, TurmaId = turmaId, Modalidade = modalidade, Valor = valor,
@@ -85,7 +85,7 @@ namespace SPI.Application.Tests.VinculosCobranca
         [Fact]
         public async Task Reativar_sem_conflito_volta_a_Ativo_true_e_devolve_a_resposta()
         {
-            var vinculo = Semear(TurmaAId, ativo: false, aulasIncluidas: 8);
+            var vinculo = Semear(TurmaAId, ativo: false);
 
             var resposta = await _servico.ReativarAsync(AlunoId, vinculo.Id);
 
@@ -100,8 +100,9 @@ namespace SPI.Application.Tests.VinculosCobranca
         [Fact]
         public async Task Reativar_com_outro_ativo_na_mesma_turma_e_rejeitado_sem_alterar_nenhum_vinculo()
         {
+            // specs/056: so Avulsa e por turma, entao o conflito "nesta turma" e entre duas Avulsas.
             var excluido = Semear(TurmaAId, ativo: false, ModalidadeCobranca.Avulsa, 80m);
-            var ativo = Semear(TurmaAId, ativo: true, ModalidadeCobranca.Mensalidade, 350m, aulasIncluidas: 8);
+            var ativo = Semear(TurmaAId, ativo: true, ModalidadeCobranca.Avulsa, 90m);
             var salvamentosAntes = _vinculos.SalvamentosRealizados;
 
             var excecao = await Assert.ThrowsAsync<ConflitoException>(() => _servico.ReativarAsync(AlunoId, excluido.Id));
@@ -109,9 +110,7 @@ namespace SPI.Application.Tests.VinculosCobranca
             Assert.Equal("Ja existe um vinculo de cobranca ativo para este aluno nesta turma.", excecao.Message);
             Assert.False(excluido.Ativo);
             Assert.True(ativo.Ativo);
-            Assert.Equal(ModalidadeCobranca.Mensalidade, ativo.Modalidade);
-            Assert.Equal(350m, ativo.Valor);
-            Assert.Equal(8, ativo.AulasIncluidas);
+            Assert.Equal(90m, ativo.Valor);
             Assert.Equal(TurmaAId, ativo.TurmaId);
             Assert.Equal(salvamentosAntes, _vinculos.SalvamentosRealizados);
         }
@@ -119,7 +118,8 @@ namespace SPI.Application.Tests.VinculosCobranca
         [Fact]
         public async Task Reativar_com_outro_individual_ativo_e_rejeitado_sem_alterar_nenhum_vinculo()
         {
-            var excluido = Semear(null, ativo: false, ModalidadeCobranca.Pacote, 500m);
+            // specs/056: Pacote convive com Avulsa individual; o conflito e entre duas Avulsas individuais.
+            var excluido = Semear(null, ativo: false, ModalidadeCobranca.Avulsa, 70m);
             var ativo = Semear(null, ativo: true, ModalidadeCobranca.Avulsa, 80m);
 
             var excecao = await Assert.ThrowsAsync<ConflitoException>(() => _servico.ReativarAsync(AlunoId, excluido.Id));

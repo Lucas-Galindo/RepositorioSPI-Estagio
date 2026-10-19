@@ -61,7 +61,7 @@ namespace SPI.Application.Tests.Aulas
             var alunoEsgotado = NovoAluno(AlunoEsgotadoId, "Bruno");
             var aula = NovaAula(1, new[] { alunoEsgotado });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: 0));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0));
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);
@@ -85,8 +85,8 @@ namespace SPI.Application.Tests.Aulas
             var alunoComSaldo = NovoAluno(AlunoComSaldoId, "Ana");
             var aula = NovaAula(1, new[] { alunoEsgotado, alunoComSaldo });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: 0));
-            var vinculoComSaldo = NovoVinculoPacote(AlunoComSaldoId, TurmaId, saldoAulas: 5);
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0));
+            var vinculoComSaldo = NovoVinculoPacote(AlunoComSaldoId, null, saldoAulas: 5);
             vinculos.Vinculos.Add(vinculoComSaldo);
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
@@ -109,8 +109,8 @@ namespace SPI.Application.Tests.Aulas
             var alunoB = NovoAluno(AlunoComSaldoId, "Carla");
             var aula = NovaAula(1, new[] { alunoA, alunoB });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: 0));
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoComSaldoId, TurmaId, saldoAulas: 0));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoComSaldoId, null, saldoAulas: 0));
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);
@@ -128,7 +128,7 @@ namespace SPI.Application.Tests.Aulas
             var alunoEsgotado = NovoAluno(AlunoEsgotadoId, "Bruno");
             var aula = NovaAula(1, new[] { alunoEsgotado });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: 0));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0));
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);
@@ -147,7 +147,7 @@ namespace SPI.Application.Tests.Aulas
             var alunoEsgotado = NovoAluno(AlunoEsgotadoId, "Bruno");
             var aula = NovaAula(1, new[] { alunoEsgotado });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: 0));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0));
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);
@@ -166,7 +166,7 @@ namespace SPI.Application.Tests.Aulas
             var aluno = NovoAluno(AlunoEsgotadoId, "Bruno");
             var aula = NovaAula(1, new[] { aluno });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: null));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: null));
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);
@@ -179,14 +179,15 @@ namespace SPI.Application.Tests.Aulas
             Assert.Empty(resposta.Avisos);
         }
 
+        // specs/056: o pacote e do aluno e vale em qualquer aula, entao esgotado ele
+        // bloqueia a presenca tambem em outra turma (antes so bloqueava no proprio contexto).
         [Fact]
-        public async Task Vinculo_esgotado_em_outro_contexto_nao_bloqueia()
+        public async Task Pacote_esgotado_bloqueia_em_qualquer_turma()
         {
             var aluno = NovoAluno(AlunoEsgotadoId, "Bruno");
-            var aula = NovaAula(1, new[] { aluno }, turmaId: TurmaId);
+            var aula = NovaAula(1, new[] { aluno }, turmaId: 99);
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            // Vinculo esgotado em OUTRA turma (99), nao na TurmaId da aula.
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, 99, saldoAulas: 0));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0));
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);
@@ -194,8 +195,9 @@ namespace SPI.Application.Tests.Aulas
             var resposta = await servico.RegistrarSessaoAsync(aula.Id, new RegistrarSessaoRequest { Presencas = { [AlunoEsgotadoId] = true } });
 
             var alunoResp = Assert.Single(resposta.Alunos);
-            Assert.True(alunoResp.Presente);
-            Assert.Null(alunoResp.MotivoNaoRegistro);
+            Assert.False(alunoResp.Presente);
+            Assert.NotNull(alunoResp.MotivoNaoRegistro);
+            Assert.Empty(pagamentos.Gerados);
         }
 
         [Fact]
@@ -204,16 +206,15 @@ namespace SPI.Application.Tests.Aulas
             var aluno = NovoAluno(AlunoEsgotadoId, "Bruno");
             var aula = NovaAula(1, new[] { aluno });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: 0, ativo: false));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0, ativo: false));
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);
 
             var resposta = await servico.RegistrarSessaoAsync(aula.Id, new RegistrarSessaoRequest { Presencas = { [AlunoEsgotadoId] = true } });
 
-            // FakeVinculoCobrancaRepositoryParaAula.ObterAtivoPorAlunoEContextoAsync ja
-            // filtra v.Ativo, entao um vinculo inativo nunca e' resolvido -- aluno vira
-            // "sem vinculo no contexto", cobrado por ValorAula (comportamento pre-existente).
+            // ListarPorAlunoAsync(ativo: true) nao traz o vinculo inativo -- o aluno fica
+            // "sem vinculo" e e cobrado pelo ValorAula (comportamento pre-existente).
             var alunoResp = Assert.Single(resposta.Alunos);
             Assert.True(alunoResp.Presente);
             Assert.Null(alunoResp.MotivoNaoRegistro);
@@ -263,7 +264,7 @@ namespace SPI.Application.Tests.Aulas
             var alunoEsgotado = NovoAluno(AlunoEsgotadoId, "Bruno");
             var aula = NovaAula(1, new[] { alunoEsgotado });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            var vinculo = NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: 0);
+            var vinculo = NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0);
             vinculos.Vinculos.Add(vinculo);
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
@@ -282,8 +283,8 @@ namespace SPI.Application.Tests.Aulas
             var alunoComSaldo = NovoAluno(AlunoComSaldoId, "Ana");
             var aula = NovaAula(1, new[] { alunoEsgotado, alunoComSaldo });
             var vinculos = new FakeVinculoCobrancaRepositoryParaAula();
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, TurmaId, saldoAulas: 0));
-            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoComSaldoId, TurmaId, saldoAulas: 5));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoEsgotadoId, null, saldoAulas: 0));
+            vinculos.Vinculos.Add(NovoVinculoPacote(AlunoComSaldoId, null, saldoAulas: 5));
             var aulas = new FakeAulaRepositoryParaAula { AulaSemeada = aula };
             var pagamentos = new FakePagamentoRepositoryParaAula();
             var servico = CriarServico(aulas, pagamentos, vinculos);

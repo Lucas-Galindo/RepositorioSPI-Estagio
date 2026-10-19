@@ -218,5 +218,25 @@ namespace SPI.Application.Tests.VinculosCobranca
             comTotal.ShouldNotHaveValidationErrorFor(x => x.TotalAulasPacote);
             semTotal.ShouldNotHaveValidationErrorFor(x => x.TotalAulasPacote);
         }
+
+        // specs/056: Mensalidade e Pacote sao do aluno; so Avulsa tem turma.
+        [Theory]
+        [InlineData(ModalidadeCobranca.Mensalidade)]
+        [InlineData(ModalidadeCobranca.Pacote)]
+        public void Deve_rejeitar_turma_em_Mensalidade_e_Pacote(ModalidadeCobranca modalidade)
+        {
+            var comTurma = _validator.TestValidate(CriarRequestValido(modalidade));
+            var semTurma = _validator.TestValidate(CriarRequestValido(modalidade) with { TurmaId = null });
+
+            comTurma.ShouldHaveValidationErrorFor(x => x.TurmaId)
+                .WithErrorMessage("Mensalidade e Pacote valem para todas as aulas do aluno e nao tem turma.");
+            semTurma.ShouldNotHaveValidationErrorFor(x => x.TurmaId);
+        }
+
+        [Fact]
+        public void Deve_aceitar_turma_em_Avulsa()
+        {
+            _validator.TestValidate(CriarRequestValido()).ShouldNotHaveValidationErrorFor(x => x.TurmaId);
+        }
     }
 }

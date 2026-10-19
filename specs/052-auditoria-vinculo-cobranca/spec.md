@@ -1,5 +1,7 @@
 # Feature Specification: Auditoria de Aulas Dadas por Vínculo de Cobrança
 
+> **Regra substituída em parte pela [spec 056](../056-cobranca-por-aluno/spec.md) (2026-10-19).** AulaAluno.VinculoCobrancaId passa a ser gravado também em presenças de outras turmas e de aula individual cobertas pela mensalidade ou pelo pacote do aluno, porque esses vínculos agora valem em qualquer aula.
+
 **Feature Branch**: `052-auditoria-vinculo-cobranca`
 
 **Created**: 2026-10-12

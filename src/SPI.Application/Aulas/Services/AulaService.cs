@@ -140,20 +140,33 @@ namespace SPI.Application.Aulas.Services
             aula.HoraInicio = request.HoraInicio;
             aula.HoraFim = request.HoraFim;
 
-            // Recalcula os alunos vinculados: remove os antigos e define os novos
-            // (turma inteira ou o aluno individual informado).
-            foreach (var vinculo in aula.AulaAlunos.ToList())
-            {
-                aula.AulaAlunos.Remove(vinculo);
-            }
-
-            await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
-
-            var alunoIds = request.TurmaId.HasValue
+            // Recalcula os alunos vinculados (turma inteira ou o aluno individual
+            // informado). specs/056: alunos de reposicao sobrevivem a edicao --
+            // exceto se a aula virou individual, que nao aceita extras (FR-017).
+            // Um aluno de reposicao que agora e matriculado na turma so perde a
+            // marca de reposicao, sem ser removido e recriado (nem duplicado).
+            var matriculados = request.TurmaId.HasValue
                 ? await _aulaRepository.ObterAlunosAtivosDaTurmaAsync(request.TurmaId.Value, cancellationToken)
                 : new List<int> { request.AlunoId!.Value };
 
-            await _aulaRepository.DefinirAlunosAsync(aula.Id, alunoIds, cancellationToken);
+            foreach (var participante in aula.AulaAlunos.ToList())
+            {
+                if (!participante.Reposicao || !request.TurmaId.HasValue)
+                {
+                    aula.AulaAlunos.Remove(participante);
+                }
+                else if (matriculados.Contains(participante.AlunoId))
+                {
+                    participante.Reposicao = false;
+                }
+            }
+
+            // A remocao precisa ir ao banco antes de recriar os matriculados:
+            // (aula_id, aluno_id) e a chave da tabela.
+            await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            var jaParticipam = aula.AulaAlunos.Select(aa => aa.AlunoId).ToHashSet();
+            await _aulaRepository.DefinirAlunosAsync(aula.Id, matriculados.Where(alunoId => !jaParticipam.Contains(alunoId)), cancellationToken);
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
 
             // Recalcula a turma nova e, se mudou, tambem a antiga (a "proxima
@@ -169,6 +182,75 @@ namespace SPI.Application.Aulas.Services
 
             var aulaCompleta = await _aulaRepository.ObterPorIdAsync(id, cancellationToken);
             return Mapear(aulaCompleta!);
+        }
+
+        // specs/056 (reposicao): a professora coloca um aluno de fora da turma numa
+        // aula ainda agendada. Ele participa como os demais (presenca e cobranca
+        // pelos vinculos dele), mas fica marcado como reposicao.
+        public async Task<AulaResponse> AdicionarParticipanteAsync(int aulaId, int alunoId, CancellationToken cancellationToken = default)
+        {
+            var aula = await ObterAgendadaAsync(aulaId, cancellationToken);
+
+            if (!aula.TurmaId.HasValue)
+            {
+                throw new ConflitoException("Aula individual nao aceita alunos de reposicao.");
+            }
+
+            var aluno = await _alunoRepository.ObterPorIdAsync(alunoId, cancellationToken)
+                ?? throw new NaoEncontradoException("Aluno nao encontrado.");
+
+            if (!aluno.Ativo)
+            {
+                throw new ConflitoException("O aluno esta inativo.");
+            }
+
+            if (aula.AulaAlunos.Any(aa => aa.AlunoId == alunoId))
+            {
+                throw new ConflitoException("O aluno ja participa desta aula.");
+            }
+
+            aula.AulaAlunos.Add(new AulaAluno { AulaId = aula.Id, AlunoId = alunoId, Aluno = aluno, Reposicao = true });
+            await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            var aulaCompleta = await _aulaRepository.ObterPorIdAsync(aulaId, cancellationToken);
+            return Mapear(aulaCompleta!);
+        }
+
+        // Remove so participantes de reposicao: os matriculados saem da aula pela
+        // turma, nunca individualmente (FR-016).
+        public async Task<AulaResponse> RemoverParticipanteAsync(int aulaId, int alunoId, CancellationToken cancellationToken = default)
+        {
+            var aula = await ObterAgendadaAsync(aulaId, cancellationToken);
+
+            var participante = aula.AulaAlunos.FirstOrDefault(aa => aa.AlunoId == alunoId)
+                ?? throw new ConflitoException("O aluno nao participa desta aula.");
+
+            if (!participante.Reposicao)
+            {
+                throw new ConflitoException("So alunos de reposicao podem ser removidos da aula; este aluno e matriculado na turma.");
+            }
+
+            aula.AulaAlunos.Remove(participante);
+            await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            var aulaCompleta = await _aulaRepository.ObterPorIdAsync(aulaId, cancellationToken);
+            return Mapear(aulaCompleta!);
+        }
+
+        private async Task<Aula> ObterAgendadaAsync(int aulaId, CancellationToken cancellationToken)
+        {
+            var aula = await _aulaRepository.ObterPorIdAsync(aulaId, cancellationToken);
+            if (aula is null || !aula.Ativo)
+            {
+                throw new NaoEncontradoException("Aula nao encontrada.");
+            }
+
+            if (aula.Status != "Agendada")
+            {
+                throw new ConflitoException("Somente aulas agendadas aceitam mudanca de participantes.");
+            }
+
+            return aula;
         }
 
         public async Task ExcluirAsync(int id, CancellationToken cancellationToken = default)
@@ -214,6 +296,10 @@ namespace SPI.Application.Aulas.Services
         {
             var avisos = new List<string>();
 
+            // Decisao de cobranca de cada aluno presente (specs/056), tomada uma vez
+            // aqui e so executada depois, em GerarContasAReceberAsync.
+            var decisoes = new Dictionary<int, DecisaoCobranca>();
+
             foreach (var aulaAluno in aula.AulaAlunos)
             {
                 if (!presencas.TryGetValue(aulaAluno.AlunoId, out var presente))
@@ -221,28 +307,35 @@ namespace SPI.Application.Aulas.Services
                     throw new ConflitoException($"Presenca do aluno {aulaAluno.AlunoId} nao foi informada.");
                 }
 
-                // specs/041 (US2/FR-005/FR-006/FR-012): pacote esgotado (saldo 0) no
-                // contexto desta aula barra so este aluno -- a aula continua Realizada
-                // normalmente para os demais (clarificacao 2026-09-23, opcao A). O
-                // motivo e' persistido (MotivoNaoRegistro) para distinguir de falta
-                // comum no historico; nunca lanca excecao (FR-005 nao recusa a aula).
-                if (presente)
+                // Falta nunca cobra nem consome pacote.
+                if (!presente)
                 {
-                    var vinculoCobranca = await _vinculoCobrancaRepository.ObterAtivoPorAlunoEContextoAsync(aulaAluno.AlunoId, aula.TurmaId, cancellationToken);
-                    if (vinculoCobranca is { Modalidade: ModalidadeCobranca.Pacote, SaldoAulas: 0 })
-                    {
-                        aulaAluno.Presente = false;
-                        aulaAluno.MotivoNaoRegistro = AulaAluno.MotivoPacoteEsgotado;
-                        avisos.Add($"Pacote esgotado: {aulaAluno.Aluno.Nome} não teve a presença registrada. Renove o pacote (edite o Vínculo de Cobrança) para liberar novos registros.");
-                        continue;
-                    }
+                    aulaAluno.Presente = false;
+                    continue;
                 }
 
-                aulaAluno.Presente = presente;
-                if (presente)
+                var vinculosAtivos = await _vinculoCobrancaRepository.ListarPorAlunoAsync(aulaAluno.AlunoId, ativo: true, cancellationToken);
+                var decisao = RegraCobrancaPresenca.Decidir(vinculosAtivos, aula.TurmaId);
+
+                // specs/041: pacote esgotado sem Avulsa para cair barra so este aluno --
+                // a aula continua Realizada para os demais. O motivo fica gravado para
+                // distinguir de uma falta comum no historico.
+                if (decisao.Tipo == TipoCobrancaPresenca.Bloqueada)
                 {
-                    aulaAluno.Aluno.Frequencia += 1;
+                    aulaAluno.Presente = false;
+                    aulaAluno.MotivoNaoRegistro = AulaAluno.MotivoPacoteEsgotado;
+                    avisos.Add($"Pacote esgotado: {aulaAluno.Aluno.Nome} não teve a presença registrada. Renove o pacote (edite o Vínculo de Cobrança) para liberar novos registros.");
+                    continue;
                 }
+
+                if (decisao.PacoteEsgotado)
+                {
+                    avisos.Add($"Pacote esgotado: {aulaAluno.Aluno.Nome} foi cobrado como aula avulsa. Renove o pacote para voltar a usar o saldo.");
+                }
+
+                aulaAluno.Presente = true;
+                aulaAluno.Aluno.Frequencia += 1;
+                decisoes[aulaAluno.AlunoId] = decisao;
             }
 
             aula.Status = "Realizada";
@@ -258,11 +351,7 @@ namespace SPI.Application.Aulas.Services
                 await _lembreteService.RecalcularAsync(aula.TurmaId.Value, cancellationToken);
             }
 
-            // Decisao de negocio aprovada (evolucao do Financeiro, Sprint 4):
-            // toda aula Realizada gera automaticamente uma Conta a Receber
-            // pendente por aluno presente (auladas com falta nao geram cobranca).
-            // Forma de pagamento fica em aberto ate o recebimento efetivo.
-            await GerarContasAReceberAsync(aula, cancellationToken);
+            await GerarContasAReceberAsync(aula, decisoes, cancellationToken);
 
             return avisos;
         }
@@ -292,32 +381,28 @@ namespace SPI.Application.Aulas.Services
             return Mapear(aula);
         }
 
-        private async Task GerarContasAReceberAsync(Aula aula, CancellationToken cancellationToken)
+        // Executa o efeito financeiro ja decidido (RegraCobrancaPresenca) para cada
+        // presenca confirmada. Decisao de negocio da evolucao do Financeiro (Sprint 4):
+        // a cobranca nasce Pendente, com forma de pagamento em aberto ate o recebimento.
+        private async Task GerarContasAReceberAsync(Aula aula, IReadOnlyDictionary<int, DecisaoCobranca> decisoes, CancellationToken cancellationToken)
         {
             var categoriaNome = aula.TurmaId.HasValue ? "Aula em turma" : "Aula particular";
             var categoria = await _categoriaReceitaRepository.ObterPorNomeAsync(categoriaNome, cancellationToken);
             var competencia = new DateOnly(aula.DataInicio.Year, aula.DataInicio.Month, 1);
 
-            foreach (var aulaAluno in aula.AulaAlunos.Where(v => v.Presente == true))
+            foreach (var aulaAluno in aula.AulaAlunos.Where(v => decisoes.ContainsKey(v.AlunoId)))
             {
-                // specs/038: a modalidade do VinculoCobranca correspondente ao
-                // contexto da aula (mesma Turma, ou nenhuma para atendimento
-                // individual) decide o efeito financeiro desta presenca.
-                var vinculoCobranca = await _vinculoCobrancaRepository.ObterAtivoPorAlunoEContextoAsync(
-                    aulaAluno.AlunoId, aula.TurmaId, cancellationToken);
+                var decisao = decisoes[aulaAluno.AlunoId];
 
-                // specs/052: registra qual vinculo (se algum) estava ativo no
-                // momento desta presenca, para auditoria historica -- vale
-                // para todas as modalidades, nao so Pacote. Nunca altera o
-                // efeito financeiro abaixo (FR-012).
-                aulaAluno.VinculoCobrancaId = vinculoCobranca?.Id;
+                // specs/052: grava qual vinculo foi aplicado nesta presenca (auditoria
+                // de aulas dadas por vinculo); nulo quando cobrada pelo Valor da aula.
+                aulaAluno.VinculoCobrancaId = decisao.Vinculo?.Id;
 
-                switch (vinculoCobranca?.Modalidade)
+                switch (decisao.Tipo)
                 {
-                    case null:
-                    case ModalidadeCobranca.Avulsa:
-                        // FR-002 (sem vinculo) e FR-003 (Avulsa) geram a cobranca do
-                        // mesmo jeito -- so a fonte do valor muda.
+                    case TipoCobrancaPresenca.SemVinculo:
+                    case TipoCobrancaPresenca.Avulsa:
+                        // Mesma cobranca nos dois casos -- so muda a fonte do valor.
                         var pagamento = new Pagamento
                         {
                             AlunoId = aulaAluno.AlunoId,
@@ -325,7 +410,7 @@ namespace SPI.Application.Aulas.Services
                             CategoriaReceitaId = categoria?.Id,
                             DataVencimento = aula.DataInicio.AddDays(5),
                             Competencia = competencia,
-                            ValorFinal = vinculoCobranca?.Valor ?? aulaAluno.Aluno.ValorAula,
+                            ValorFinal = decisao.Vinculo?.Valor ?? aulaAluno.Aluno.ValorAula,
                             Status = "Pendente"
                         };
 
@@ -334,18 +419,15 @@ namespace SPI.Application.Aulas.Services
                         await _pagamentoRepository.VincularAulaAsync(pagamento.Id, aula.Id, cancellationToken);
                         break;
 
-                    case ModalidadeCobranca.Mensalidade:
-                        // FR-004/FR-009: nenhuma cobranca avulsa; a mensalidade em si
-                        // fica para um job futuro, fora do escopo desta fatia.
+                    case TipoCobrancaPresenca.Mensalidade:
+                        // A mensalidade ja cobre a aula; a cobranca mensal e do job (specs/039).
                         break;
 
-                    case ModalidadeCobranca.Pacote:
-                        // FR-005/FR-006/FR-010: consome uma aula do saldo em vez de
-                        // gerar cobranca; nunca decrementa abaixo de zero nem altera
-                        // um saldo nunca informado (null).
-                        if (vinculoCobranca.SaldoAulas is > 0)
+                    case TipoCobrancaPresenca.Pacote:
+                        // Consome uma aula do saldo; um saldo nunca informado (nulo) fica como esta.
+                        if (decisao.Vinculo!.SaldoAulas is > 0)
                         {
-                            vinculoCobranca.SaldoAulas -= 1;
+                            decisao.Vinculo.SaldoAulas -= 1;
                             await _vinculoCobrancaRepository.SalvarAlteracoesAsync(cancellationToken);
                         }
                         break;
@@ -427,7 +509,8 @@ namespace SPI.Application.Aulas.Services
                 Nome = aa.Aluno.Nome,
                 Ra = aa.Aluno.Ra,
                 Presente = aa.Presente,
-                MotivoNaoRegistro = aa.MotivoNaoRegistro
+                MotivoNaoRegistro = aa.MotivoNaoRegistro,
+                Reposicao = aa.Reposicao
             }).ToList()
         };
     }

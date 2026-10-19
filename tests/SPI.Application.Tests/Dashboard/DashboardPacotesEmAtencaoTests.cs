@@ -18,20 +18,11 @@ namespace SPI.Application.Tests.Dashboard
             Ativo = ativo
         };
 
-        private static Turma NovaTurma(int id, string nome) => new()
-        {
-            Id = id,
-            Nome = nome,
-            Ativo = true
-        };
-
-        private static VinculoCobranca NovoVinculo(int id, Aluno aluno, Turma? turma, int? saldoAulas, bool ativo = true, ModalidadeCobranca modalidade = ModalidadeCobranca.Pacote) => new()
+        private static VinculoCobranca NovoVinculo(int id, Aluno aluno, int? saldoAulas, bool ativo = true, ModalidadeCobranca modalidade = ModalidadeCobranca.Pacote) => new()
         {
             Id = id,
             AlunoId = aluno.Id,
             Aluno = aluno,
-            TurmaId = turma?.Id,
-            Turma = turma,
             Modalidade = modalidade,
             Valor = 500m,
             SaldoAulas = saldoAulas,
@@ -42,7 +33,7 @@ namespace SPI.Application.Tests.Dashboard
         public void Saldo_zero_entra_como_esgotado()
         {
             var aluno = NovoAluno(1, "Ana");
-            var vinculo = NovoVinculo(1, aluno, null, saldoAulas: 0);
+            var vinculo = NovoVinculo(1, aluno, saldoAulas: 0);
 
             var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
 
@@ -57,7 +48,7 @@ namespace SPI.Application.Tests.Dashboard
         public void Saldos_1_e_2_entram_como_atencao(int saldo)
         {
             var aluno = NovoAluno(1, "Ana");
-            var vinculo = NovoVinculo(1, aluno, null, saldoAulas: saldo);
+            var vinculo = NovoVinculo(1, aluno, saldoAulas: saldo);
 
             var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
 
@@ -65,27 +56,17 @@ namespace SPI.Application.Tests.Dashboard
             Assert.Equal("Atencao", item.Estado);
         }
 
+        // specs/056: o pacote e do aluno (vale em qualquer aula), entao o contexto
+        // exibido e sempre o mesmo -- antes era o nome da turma ou "Atendimento individual".
         [Fact]
-        public void Contexto_usa_nome_da_turma_quando_ha_turma()
+        public void Contexto_e_todas_as_aulas_do_aluno()
         {
             var aluno = NovoAluno(1, "Ana");
-            var turma = NovaTurma(1, "Turma A");
-            var vinculo = NovoVinculo(1, aluno, turma, saldoAulas: 1);
+            var vinculo = NovoVinculo(1, aluno, saldoAulas: 1);
 
             var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
 
-            Assert.Equal("Turma A", Assert.Single(resultado).Contexto);
-        }
-
-        [Fact]
-        public void Contexto_e_atendimento_individual_quando_nao_ha_turma()
-        {
-            var aluno = NovoAluno(1, "Ana");
-            var vinculo = NovoVinculo(1, aluno, null, saldoAulas: 1);
-
-            var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
-
-            Assert.Equal("Atendimento individual", Assert.Single(resultado).Contexto);
+            Assert.Equal("Todas as aulas do aluno", Assert.Single(resultado).Contexto);
         }
 
         [Fact]
@@ -97,9 +78,9 @@ namespace SPI.Application.Tests.Dashboard
 
             var vinculos = new[]
             {
-                NovoVinculo(1, alunoBruno, null, saldoAulas: 1),
-                NovoVinculo(2, alunoAna, null, saldoAulas: 0),
-                NovoVinculo(3, alunoCarla, null, saldoAulas: 2)
+                NovoVinculo(1, alunoBruno, saldoAulas: 1),
+                NovoVinculo(2, alunoAna, saldoAulas: 0),
+                NovoVinculo(3, alunoCarla, saldoAulas: 2)
             };
 
             var resultado = DashboardService.MontarPacotesEmAtencao(vinculos);
@@ -122,7 +103,7 @@ namespace SPI.Application.Tests.Dashboard
         public void Saldo_3_ou_mais_nao_entra(int saldo)
         {
             var aluno = NovoAluno(1, "Ana");
-            var vinculo = NovoVinculo(1, aluno, null, saldoAulas: saldo);
+            var vinculo = NovoVinculo(1, aluno, saldoAulas: saldo);
 
             var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
 
@@ -133,7 +114,7 @@ namespace SPI.Application.Tests.Dashboard
         public void Saldo_nulo_nunca_informado_nao_entra()
         {
             var aluno = NovoAluno(1, "Ana");
-            var vinculo = NovoVinculo(1, aluno, null, saldoAulas: null);
+            var vinculo = NovoVinculo(1, aluno, saldoAulas: null);
 
             var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
 
@@ -144,7 +125,7 @@ namespace SPI.Application.Tests.Dashboard
         public void Vinculo_inativo_nao_entra()
         {
             var aluno = NovoAluno(1, "Ana");
-            var vinculo = NovoVinculo(1, aluno, null, saldoAulas: 1, ativo: false);
+            var vinculo = NovoVinculo(1, aluno, saldoAulas: 1, ativo: false);
 
             var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
 
@@ -157,7 +138,7 @@ namespace SPI.Application.Tests.Dashboard
         public void Outras_modalidades_nao_entram_mesmo_com_saldo_baixo(ModalidadeCobranca modalidade)
         {
             var aluno = NovoAluno(1, "Ana");
-            var vinculo = NovoVinculo(1, aluno, null, saldoAulas: 0, modalidade: modalidade);
+            var vinculo = NovoVinculo(1, aluno, saldoAulas: 0, modalidade: modalidade);
 
             var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
 
@@ -168,24 +149,24 @@ namespace SPI.Application.Tests.Dashboard
         public void Aluno_inativo_nao_entra()
         {
             var aluno = NovoAluno(1, "Ana", ativo: false);
-            var vinculo = NovoVinculo(1, aluno, null, saldoAulas: 0);
+            var vinculo = NovoVinculo(1, aluno, saldoAulas: 0);
 
             var resultado = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
 
             Assert.Empty(resultado);
         }
 
+        // specs/056: um aluno so pode ter um pacote ativo, mas um conflito herdado da
+        // regra antiga (dois pacotes, um por turma) ainda aparece por inteiro no painel.
         [Fact]
-        public void Mesmo_aluno_em_duas_turmas_gera_duas_linhas()
+        public void Aluno_com_dois_pacotes_herdados_gera_duas_linhas()
         {
             var aluno = NovoAluno(1, "Ana");
-            var turmaA = NovaTurma(1, "Turma A");
-            var turmaB = NovaTurma(2, "Turma B");
 
             var vinculos = new[]
             {
-                NovoVinculo(1, aluno, turmaA, saldoAulas: 1),
-                NovoVinculo(2, aluno, turmaB, saldoAulas: 2)
+                NovoVinculo(1, aluno, saldoAulas: 1),
+                NovoVinculo(2, aluno, saldoAulas: 2)
             };
 
             var resultado = DashboardService.MontarPacotesEmAtencao(vinculos);

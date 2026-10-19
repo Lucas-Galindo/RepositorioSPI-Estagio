@@ -15,11 +15,13 @@ export interface VinculoCobranca {
   aulasIncluidas: number | null;
   saldoAulas: number | null;
   ativo: boolean;
+  /** specs/056: combinacao herdada hoje proibida (so na listagem); null = sem conflito. */
+  conflito: string | null;
 }
 
 /** Espelha SPI.Application.VinculosCobranca.Dtos.VinculoCobrancaRequest. */
 export interface VinculoCobrancaRequest {
-  /** Nulo = atendimento individual. */
+  /** Somente com Avulsa; nulo = atendimento individual (Mensalidade e Pacote sempre nulo). */
   turmaId: number | null;
   modalidade: ModalidadeCobranca;
   valor: number;

@@ -18,5 +18,8 @@ namespace SPI.Application.VinculosCobranca.Dtos
         public int? AulasDadas { get; set; }
         public int? AulasDadasNoMes { get; set; }
         public bool Ativo { get; set; }
+        // specs/056: combinacao herdada da regra antiga que hoje e proibida (ex.:
+        // mensalidade + pacote ativos). So a listagem preenche; nunca e resolvida sozinha.
+        public string? Conflito { get; set; }
     }
 }

@@ -37,21 +37,8 @@ namespace SPI.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public Task<bool> ExisteAtivoAsync(int alunoId, int? turmaId, int? ignorarId, CancellationToken cancellationToken = default) =>
-            _dbContext.VinculosCobranca.AnyAsync(
-                v => v.AlunoId == alunoId
-                    && v.TurmaId == turmaId
-                    && v.Ativo
-                    && (ignorarId == null || v.Id != ignorarId),
-                cancellationToken);
-
-        public Task<VinculoCobranca?> ObterAtivoPorAlunoEContextoAsync(int alunoId, int? turmaId, CancellationToken cancellationToken = default) =>
-            _dbContext.VinculosCobranca.FirstOrDefaultAsync(
-                v => v.AlunoId == alunoId && v.TurmaId == turmaId && v.Ativo,
-                cancellationToken);
-
         public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
-            _dbContext.VinculosCobranca.Include(v => v.Turma).Include(v => v.Aluno).Where(v => v.Ativo && v.Modalidade == modalidade).ToListAsync(cancellationToken);
+            _dbContext.VinculosCobranca.Include(v => v.Aluno).Where(v => v.Ativo && v.Modalidade == modalidade).ToListAsync(cancellationToken);
 
         public async Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default) =>
             await _dbContext.VinculosCobranca.AddAsync(vinculo, cancellationToken);
@@ -64,9 +51,9 @@ namespace SPI.Infrastructure.Repositories
             }
             catch (DbUpdateException e) when (e.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry })
             {
-                // Corrida entre duas requisicoes: o indice unico de vinculos ativos
-                // (uq_vinculocobranca_chave_ativa) barrou a segunda gravacao.
-                throw new ConflitoException("Ja existe um vinculo de cobranca ativo para esta combinacao.");
+                // Corrida entre duas requisicoes: o indice unico de Avulsas ativas
+                // (uq_vinculocobranca_chave_avulsa_ativa, specs/056) barrou a segunda gravacao.
+                throw new ConflitoException("Ja existe um vinculo Avulsa ativo para este contexto.");
             }
         }
     }

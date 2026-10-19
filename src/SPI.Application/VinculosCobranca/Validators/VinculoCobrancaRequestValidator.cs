@@ -18,6 +18,13 @@ namespace SPI.Application.VinculosCobranca.Validators
                 .GreaterThan(0).WithMessage("O Valor deve ser maior que zero.")
                 .LessThanOrEqualTo(ValorMaximo).WithMessage("O Valor excede o limite permitido.");
 
+            // specs/056: Mensalidade e Pacote sao do aluno (valem em qualquer aula);
+            // so a Avulsa e por contexto e pode ter turma.
+            RuleFor(x => x.TurmaId)
+                .Null()
+                .When(x => x.Modalidade is ModalidadeCobranca.Mensalidade or ModalidadeCobranca.Pacote)
+                .WithMessage("Mensalidade e Pacote valem para todas as aulas do aluno e nao tem turma.");
+
             When(x => x.AulasIncluidas.HasValue, () =>
             {
                 RuleFor(x => x.AulasIncluidas)

@@ -1,5 +1,7 @@
 # Feature Specification: Vínculo de Cobrança do Aluno
 
+> **Regra substituída em parte pela [spec 056](../056-cobranca-por-aluno/spec.md) (2026-10-19).** Mensalidade e Pacote passam a ser do aluno (sem turma) e valem em qualquer aula; só a Avulsa continua por contexto (turma ou atendimento individual). A unicidade "um vínculo ativo por aluno e contexto" foi trocada pelas regras de combinação: Mensalidade é exclusiva, no máximo um Pacote ativo, uma Avulsa por contexto.
+
 **Feature Branch**: `037-vinculo-cobranca`
 
 **Created**: 2026-09-20

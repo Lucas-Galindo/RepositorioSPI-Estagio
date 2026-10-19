@@ -13,15 +13,14 @@ namespace SPI.Application.Tests.Mensalidade
     {
         private static readonly DateOnly Competencia = new(2026, 9, 1);
 
-        private static VinculoCobranca NovoVinculo(int id, int alunoId, int? turmaId, decimal valor, Turma? turma = null, bool ativo = true) => new()
+        // specs/056: mensalidade e do aluno, nunca tem turma.
+        private static VinculoCobranca NovoVinculo(int id, int alunoId, decimal valor, bool ativo = true) => new()
         {
             Id = id,
             AlunoId = alunoId,
-            TurmaId = turmaId,
             Modalidade = ModalidadeCobranca.Mensalidade,
             Valor = valor,
             Ativo = ativo,
-            Turma = turma,
         };
 
         private static (
@@ -36,11 +35,10 @@ namespace SPI.Application.Tests.Mensalidade
         }
 
         [Fact]
-        public async Task Vinculo_com_turma_gera_cobranca_com_valor_cheio_e_contexto_da_turma()
+        public async Task Gera_uma_cobranca_com_valor_cheio_e_descricao_da_competencia()
         {
             var (vinculos, pagamentos, categorias) = CriarFakes();
-            var turma = new Turma { Id = 4, Nome = "Turma A", Ativo = true };
-            vinculos.Vinculos.Add(NovoVinculo(1, alunoId: 1, turmaId: 4, valor: 300m, turma: turma));
+            vinculos.Vinculos.Add(NovoVinculo(1, alunoId: 1, valor: 300m));
 
             await MensalidadeDispatcherService.GerarCobrancasDoMesAsync(vinculos, pagamentos, categorias, Competencia, logger: null, CancellationToken.None);
 
@@ -51,28 +49,14 @@ namespace SPI.Application.Tests.Mensalidade
             Assert.Equal("Pendente", gerado.Status);
             Assert.Equal(Competencia, gerado.Competencia);
             Assert.Equal(9, gerado.CategoriaReceitaId);
-            Assert.Contains("Turma A", gerado.Descricao);
-            Assert.Contains("Mensalidade", gerado.Descricao);
-            Assert.Contains("09/2026", gerado.Descricao);
-        }
-
-        [Fact]
-        public async Task Vinculo_de_atendimento_individual_usa_esse_termo_no_contexto()
-        {
-            var (vinculos, pagamentos, categorias) = CriarFakes();
-            vinculos.Vinculos.Add(NovoVinculo(2, alunoId: 1, turmaId: null, valor: 250m));
-
-            await MensalidadeDispatcherService.GerarCobrancasDoMesAsync(vinculos, pagamentos, categorias, Competencia, logger: null, CancellationToken.None);
-
-            var gerado = Assert.Single(pagamentos.Gerados);
-            Assert.Contains("Atendimento individual", gerado.Descricao);
+            Assert.Equal("Mensalidade - 09/2026", gerado.Descricao);
         }
 
         [Fact]
         public async Task DataVencimento_e_o_dia_10_do_mes_seguinte_a_competencia()
         {
             var (vinculos, pagamentos, categorias) = CriarFakes();
-            vinculos.Vinculos.Add(NovoVinculo(3, alunoId: 1, turmaId: null, valor: 100m));
+            vinculos.Vinculos.Add(NovoVinculo(3, alunoId: 1, valor: 100m));
 
             await MensalidadeDispatcherService.GerarCobrancasDoMesAsync(vinculos, pagamentos, categorias, Competencia, logger: null, CancellationToken.None);
 
@@ -80,13 +64,15 @@ namespace SPI.Application.Tests.Mensalidade
             Assert.Equal(new DateOnly(2026, 10, 10), gerado.DataVencimento);
         }
 
+        // specs/056 (edge case): duas mensalidades ativas so existem como conflito herdado
+        // da regra antiga; ate a professora resolver, cada uma continua gerando a sua
+        // cobranca (o sistema nao soma nem descarta valores sozinho).
         [Fact]
-        public async Task Dois_vinculos_mensalidade_do_mesmo_aluno_geram_uma_cobranca_cada()
+        public async Task Duas_mensalidades_herdadas_do_mesmo_aluno_geram_uma_cobranca_cada()
         {
             var (vinculos, pagamentos, categorias) = CriarFakes();
-            var turma = new Turma { Id = 4, Nome = "Turma A", Ativo = true };
-            vinculos.Vinculos.Add(NovoVinculo(1, alunoId: 1, turmaId: 4, valor: 300m, turma: turma));
-            vinculos.Vinculos.Add(NovoVinculo(2, alunoId: 1, turmaId: null, valor: 250m));
+            vinculos.Vinculos.Add(NovoVinculo(1, alunoId: 1, valor: 300m));
+            vinculos.Vinculos.Add(NovoVinculo(2, alunoId: 1, valor: 250m));
 
             await MensalidadeDispatcherService.GerarCobrancasDoMesAsync(vinculos, pagamentos, categorias, Competencia, logger: null, CancellationToken.None);
 

@@ -1,5 +1,7 @@
 # Feature Specification: Esgotamento de Pacote de Aulas (Alerta e Bloqueio)
 
+> **Regra substituída em parte pela [spec 056](../056-cobranca-por-aluno/spec.md) (2026-10-19).** O pacote é do aluno, então esgotado ele bloqueia a presença em qualquer turma ou aula individual, e não só no próprio contexto. Exceção nova: se houver Avulsa no contexto da aula, a presença é cobrada como avulsa (com aviso) em vez de bloqueada.
+
 **Feature Branch**: `041-pacote-esgotado`
 
 **Created**: 2026-09-23

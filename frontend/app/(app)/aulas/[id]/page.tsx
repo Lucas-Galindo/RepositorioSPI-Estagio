@@ -10,7 +10,16 @@ import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
-import { obterAula, excluirAula, registrarSessao, cancelarAula, type Aula } from "@/lib/api/aulas";
+import {
+  obterAula,
+  excluirAula,
+  registrarSessao,
+  cancelarAula,
+  adicionarParticipante,
+  removerParticipante,
+  type Aula,
+} from "@/lib/api/aulas";
+import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { fmtData, fmtHora, initials, avatarColor } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
@@ -27,6 +36,9 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [confirmandoCancelamento, setConfirmandoCancelamento] = useState(false);
   const [processando, setProcessando] = useState(false);
+  // specs/056 (reposicao): alunos ativos que podem ser colocados nesta aula.
+  const [alunosAtivos, setAlunosAtivos] = useState<Aluno[]>([]);
+  const [alunoReposicao, setAlunoReposicao] = useState("");
 
   useEffect(() => {
     if (!sessao) return;
@@ -37,6 +49,44 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
       })
       .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Aula não encontrada."));
   }, [sessao, id]);
+
+  // Reposicao so existe em aula de turma ainda agendada (a regra e do backend;
+  // aqui so evita carregar a lista quando o campo nem aparece).
+  const aceitaReposicao = aula?.status === "Agendada" && aula.turmaId !== null;
+  useEffect(() => {
+    if (!sessao || !aceitaReposicao) return;
+    listarAlunos(sessao.accessToken, { ativo: true })
+      .then(setAlunosAtivos)
+      .catch(() => setAlunosAtivos([]));
+  }, [sessao, aceitaReposicao]);
+
+  const handleAdicionarReposicao = async () => {
+    if (!sessao || !aula || !alunoReposicao) return;
+    setProcessando(true);
+    try {
+      setAula(await adicionarParticipante(aula.id, Number(alunoReposicao), sessao.accessToken));
+      setAlunoReposicao("");
+      mostrarToast("Aluno adicionado como reposição.");
+    } catch (excecao) {
+      mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível adicionar o aluno.");
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  const handleRemoverReposicao = async (alunoId: number) => {
+    if (!sessao || !aula) return;
+    setProcessando(true);
+    try {
+      await removerParticipante(aula.id, alunoId, sessao.accessToken);
+      setAula({ ...aula, alunos: aula.alunos.filter((al) => al.alunoId !== alunoId) });
+      mostrarToast("Aluno retirado da aula.");
+    } catch (excecao) {
+      mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível retirar o aluno.");
+    } finally {
+      setProcessando(false);
+    }
+  };
 
   const handleExcluir = async () => {
     if (!sessao || !aula) return;
@@ -144,6 +194,19 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
                 <div className="who">RA {al.ra}</div>
               </div>
 
+              {al.reposicao && <span className="status-pill status-pendente">Reposição</span>}
+              {al.reposicao && aula.status === "Agendada" && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  type="button"
+                  title="Retirar da aula"
+                  disabled={processando}
+                  onClick={() => handleRemoverReposicao(al.alunoId)}
+                >
+                  <Icon name="x" size={13} />
+                </button>
+              )}
+
               {aula.status === "Agendada" ? (
                 <label className="chk-pill">
                   <input
@@ -166,6 +229,29 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
               )}
             </div>
           ))}
+
+          {aceitaReposicao && (
+            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+              <select value={alunoReposicao} onChange={(e) => setAlunoReposicao(e.target.value)} style={{ flex: 1, minWidth: 180 }}>
+                <option value="">Aluno para reposição...</option>
+                {alunosAtivos
+                  .filter((a) => !aula.alunos.some((al) => al.alunoId === a.id))
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.nome}
+                    </option>
+                  ))}
+              </select>
+              <button
+                className="btn btn-ghost btn-sm"
+                type="button"
+                disabled={processando || !alunoReposicao}
+                onClick={handleAdicionarReposicao}
+              >
+                <Icon name="plus" size={13} /> Adicionar (reposição)
+              </button>
+            </div>
+          )}
 
           {aula.status === "Agendada" && aula.alunos.length > 0 && (
             <button

@@ -262,5 +262,71 @@ namespace SPI.Api.Controllers
                 return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
             }
         }
+
+        [HttpPost("{id}/participantes")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para colocar um aluno de fora da turma numa aula agendada (reposicao, specs/056)
+        /// </summary>
+        /// <param name="id">Id da aula</param>
+        /// <param name="request">Aluno a adicionar</param>
+        /// <returns>Retorna a aula com o aluno marcado como reposicao</returns>
+        public async Task<IActionResult> AdicionarParticipante(int id, [FromBody] AdicionarParticipanteRequest request)
+        {
+            try
+            {
+                var response = await _aulaService.AdicionarParticipanteAsync(id, request.AlunoId);
+                _logger.LogInformation("Aluno {AlunoId} adicionado como reposicao na aula {Id}", request.AlunoId, id);
+                return Ok(response);
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (ConflitoException e)
+            {
+                return Conflict(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpDelete("{id}/participantes/{alunoId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para retirar um aluno de reposicao de uma aula agendada (specs/056)
+        /// </summary>
+        /// <param name="id">Id da aula</param>
+        /// <param name="alunoId">Id do aluno de reposicao</param>
+        /// <returns>Retorna a aula sem o aluno</returns>
+        public async Task<IActionResult> RemoverParticipante(int id, int alunoId)
+        {
+            try
+            {
+                var response = await _aulaService.RemoverParticipanteAsync(id, alunoId);
+                _logger.LogInformation("Aluno {AlunoId} removido da aula {Id}", alunoId, id);
+                return Ok(response);
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (ConflitoException e)
+            {
+                return Conflict(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
     }
 }
