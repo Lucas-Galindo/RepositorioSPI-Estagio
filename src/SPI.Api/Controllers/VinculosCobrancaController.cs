@@ -79,6 +79,32 @@ namespace SPI.Api.Controllers
             }
         }
 
+        [HttpGet("{id}/aulas")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para listar as aulas que contaram como dadas num pacote (specs/058)
+        /// </summary>
+        /// <param name="alunoId">Id do aluno</param>
+        /// <param name="id">Id do vinculo (pacote)</param>
+        /// <returns>Retorna as aulas, mais recentes primeiro</returns>
+        public async Task<IActionResult> ListarAulasDoPacote(int alunoId, int id)
+        {
+            try
+            {
+                return Ok(await _vinculoService.ListarAulasDoPacoteAsync(alunoId, id));
+            }
+            catch (NaoEncontradoException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

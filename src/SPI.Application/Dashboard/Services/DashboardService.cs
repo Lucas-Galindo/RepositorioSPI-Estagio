@@ -1,5 +1,6 @@
 using SPI.Application.Common.Dtos;
 using SPI.Application.Dashboard.Dtos;
+using SPI.Application.VinculosCobranca.Services;
 using SPI.Domain.Entities;
 using SPI.Domain.Enums;
 using SPI.Domain.Repositories;
@@ -10,14 +11,16 @@ namespace SPI.Application.Dashboard.Services
     {
         private readonly IRelatorioRepository _relatorioRepository;
         private readonly IVinculoCobrancaRepository _vinculoCobrancaRepository;
+        private readonly IAulaRepository _aulaRepository;
 
-        public DashboardService(IRelatorioRepository relatorioRepository, IVinculoCobrancaRepository vinculoCobrancaRepository)
+        public DashboardService(IRelatorioRepository relatorioRepository, IVinculoCobrancaRepository vinculoCobrancaRepository, IAulaRepository aulaRepository)
         {
             _relatorioRepository = relatorioRepository;
             _vinculoCobrancaRepository = vinculoCobrancaRepository;
+            _aulaRepository = aulaRepository;
         }
 
-        public async Task<DashboardResponse> ObterAsync(DateOnly? periodoInicio, DateOnly? periodoFim, CancellationToken cancellationToken = default)
+        public async Task<DashboardResponse> ObterAsync(DateOnly? periodoInicio, DateOnly? periodoFim, int? alunoId, CancellationToken cancellationToken = default)
         {
             // Sem periodo informado, assume o mes corrente (Estoria 11 nao
             // fixa um periodo padrao explicito).
@@ -33,7 +36,12 @@ namespace SPI.Application.Dashboard.Services
             var valorFaturado = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(inicio, fim, cancellationToken);
             var proximasAulas = await _relatorioRepository.ObterProximasAulasHojeAsync(cancellationToken);
             var lembretesPendentes = await _relatorioRepository.ContarLembretesPendentesAsync(cancellationToken);
-            var vinculosPacote = await _vinculoCobrancaRepository.ListarAtivosPorModalidadeAsync(ModalidadeCobranca.Pacote, cancellationToken);
+            // specs/058: pacotes (ativos e inativos) e as aulas dadas de cada um,
+            // no total e no periodo -- duas consultas em lote.
+            var pacotes = await _vinculoCobrancaRepository.ListarPacotesAsync(alunoId, cancellationToken);
+            var idsPacote = pacotes.Select(p => p.Id).ToList();
+            var presencas = await _aulaRepository.ContarPresencasPorVinculosAsync(idsPacote, null, null, cancellationToken);
+            var presencasNoPeriodo = await _aulaRepository.ContarPresencasPorVinculosAsync(idsPacote, inicio, fim, cancellationToken);
 
             return new DashboardResponse
             {
@@ -54,30 +62,46 @@ namespace SPI.Application.Dashboard.Services
                     HoraFim = a.HoraFim,
                     Status = a.Status
                 }).ToList(),
-                PacotesEmAtencao = MontarPacotesEmAtencao(vinculosPacote)
+                Pacotes = MontarResumoPacotes(pacotes, presencas, presencasNoPeriodo.Values.Sum())
             };
         }
 
-        // specs/041 (US1): unica dona da regra de elegibilidade do painel --
-        // estatica e pura, testavel sem banco (DashboardPacotesEmAtencaoTests).
-        // Nao confia no filtro do chamador: repete Ativo && Pacote aqui mesmo,
-        // para que a regra inteira tenha um dono so (Principio II).
-        public static List<PacoteEmAtencaoResponse> MontarPacotesEmAtencao(IEnumerable<VinculoCobranca> vinculos) =>
-            vinculos
-                .Where(v => v.Ativo && v.Modalidade == ModalidadeCobranca.Pacote && v.SaldoAulas is >= 0 and <= VinculoCobranca.LimiteAlertaPacote && v.Aluno.Ativo)
-                .Select(v => new PacoteEmAtencaoResponse
-                {
-                    VinculoId = v.Id,
-                    AlunoId = v.AlunoId,
-                    AlunoNome = v.Aluno.Nome,
-                    // specs/056: pacote e do aluno, vale em qualquer aula.
-                    Contexto = "Todas as aulas do aluno",
-                    SaldoAulas = v.SaldoAulas!.Value,
-                    Estado = v.SaldoAulas == 0 ? "Esgotado" : "Atencao"
-                })
-                .OrderBy(p => p.Estado == "Esgotado" ? 0 : 1)
-                .ThenBy(p => p.SaldoAulas)
-                .ThenBy(p => p.AlunoNome)
+        // specs/058: visao de negocio dos pacotes. Estatica e pura (testavel sem
+        // banco). O estado de cada pacote vem de ProgressoPacote -- o mesmo
+        // calculo da ficha do aluno, para os numeros baterem (FR-004).
+        public static PacotesResumoResponse MontarResumoPacotes(
+            IEnumerable<VinculoCobranca> pacotes, IReadOnlyDictionary<int, int> presencasPorPacote, int aulasDadasNoPeriodo)
+        {
+            var calculados = pacotes
+                .Where(p => p.Modalidade == ModalidadeCobranca.Pacote)
+                .Select(p => (Pacote: p, Progresso: ProgressoPacote.Calcular(p, presencasPorPacote.GetValueOrDefault(p.Id))))
                 .ToList();
+
+            // "Em uso": pacote ativo de aluno ativo -- o que a professora ainda acompanha.
+            var emUso = calculados.Where(c => c.Pacote.Ativo && c.Pacote.Aluno.Ativo).ToList();
+
+            return new PacotesResumoResponse
+            {
+                Ativos = emUso.Count(c => c.Progresso.Estado != ProgressoPacote.Esgotado),
+                Concluidos = calculados.Count(c => c.Progresso.Estado == ProgressoPacote.Esgotado),
+                ProximosDoFim = emUso.Count(c => c.Progresso.Estado == ProgressoPacote.Atencao),
+                AulasDadas = emUso.Sum(c => c.Progresso.AulasDadas),
+                AulasRestantes = emUso.Sum(c => c.Progresso.AulasRestantes ?? 0),
+                AulasDadasNoPeriodo = aulasDadasNoPeriodo,
+                Renovacao = emUso
+                    .Where(c => c.Progresso.Estado is ProgressoPacote.Esgotado or ProgressoPacote.Atencao)
+                    .OrderBy(c => c.Progresso.Estado == ProgressoPacote.Esgotado ? 0 : 1)
+                    .ThenBy(c => c.Progresso.AulasRestantes)
+                    .ThenBy(c => c.Pacote.Aluno.Nome)
+                    .Select(c => new PacoteEmAtencaoResponse
+                    {
+                        VinculoId = c.Pacote.Id,
+                        AlunoId = c.Pacote.AlunoId,
+                        AlunoNome = c.Pacote.Aluno.Nome,
+                        Progresso = c.Progresso,
+                    })
+                    .ToList(),
+            };
+        }
     }
 }

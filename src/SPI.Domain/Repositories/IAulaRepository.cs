@@ -35,6 +35,14 @@ namespace SPI.Domain.Repositories
         // mes/ano da aula -- usado para "aulas dadas no mes" da Mensalidade.
         Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default);
 
+        // specs/058: presencas por vinculo de cobranca, em lote (vinculoId -> total);
+        // de/ate opcionais filtram pela data da aula. Vinculos sem presenca nao aparecem.
+        Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default);
+
+        // specs/058: presencas que consumiram o vinculo, com Aula.Materia e
+        // Aula.Turma, mais recentes primeiro.
+        Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default);
+
         // specs/059: aulas ativas, ainda "Agendadas", cujo termino (data + hora
         // fim) esta entre `desde` e `agora`; professorId nulo = de todas.
         // Inclui Materia, Turma e AulaAlunos.Aluno.

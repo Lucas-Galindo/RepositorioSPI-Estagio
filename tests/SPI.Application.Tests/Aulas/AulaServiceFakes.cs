@@ -37,6 +37,8 @@ namespace SPI.Application.Tests.Aulas
         public Task DefinirAlunosAsync(int aulaId, IEnumerable<int> alunoIds, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
+        public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, DateTime desde, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
@@ -115,6 +117,8 @@ namespace SPI.Application.Tests.Aulas
         // cobranca com RegraCobrancaPresenca (nao ha mais busca "por contexto").
         public Task<List<VinculoCobranca>> ListarPorAlunoAsync(int alunoId, bool? ativo, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos.Where(v => v.AlunoId == alunoId && (!ativo.HasValue || v.Ativo == ativo.Value)).ToList());
+
+        public Task<List<VinculoCobranca>> ListarPacotesAsync(int? alunoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(SPI.Domain.Enums.ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();

@@ -24,7 +24,8 @@ namespace SPI.Domain.Entities
 
         // specs/052: total original de aulas do Pacote, gravado na criacao,
         // imutavel por consumo automatico (so SaldoAulas decresce). So se
-        // aplica a Modalidade Pacote. "Aulas dadas" = TotalAulasPacote - SaldoAulas.
+        // aplica a Modalidade Pacote. "Aulas dadas" = presencas registradas no
+        // pacote e restantes = total - dadas (specs/058, ProgressoPacote).
         public int? TotalAulasPacote { get; set; }
 
         public bool Ativo { get; set; }

@@ -25,12 +25,13 @@ namespace SPI.Api.Controllers
         /// </summary>
         /// <param name="periodoInicio">Inicio do periodo considerado para aulas/faturamento (padrao: inicio do mes corrente)</param>
         /// <param name="periodoFim">Fim do periodo considerado (padrao: fim do mes corrente)</param>
+        /// <param name="alunoId">Filtra a secao de pacotes por aluno (specs/058)</param>
         /// <returns>Retorna os indicadores consolidados em tempo real</returns>
-        public async Task<IActionResult> Obter([FromQuery] DateOnly? periodoInicio, [FromQuery] DateOnly? periodoFim)
+        public async Task<IActionResult> Obter([FromQuery] DateOnly? periodoInicio, [FromQuery] DateOnly? periodoFim, [FromQuery] int? alunoId)
         {
             try
             {
-                return Ok(await _dashboardService.ObterAsync(periodoInicio, periodoFim));
+                return Ok(await _dashboardService.ObterAsync(periodoInicio, periodoFim, alunoId));
             }
             catch (Exception e)
             {

@@ -80,35 +80,28 @@ namespace SPI.Application.Tests.Aulas
             Assert.Equal(9, vinculo.SaldoAulas);
         }
 
+        // specs/058: o painel da Home deixou de olhar o saldo -- usa aulas
+        // restantes = total - presencas. Renovar o pacote (aumentar o total)
+        // tira o aluno do painel conforme o que sobra.
         [Theory]
-        [InlineData(1)]
-        [InlineData(2)]
-        public void Saldo_renovado_para_1_ou_2_libera_presenca_e_continua_no_painel_como_atencao(int saldoRenovado)
+        [InlineData(11, "Atencao")]
+        [InlineData(12, "Atencao")]
+        public void Total_renovado_com_1_ou_2_restantes_continua_no_painel_como_atencao(int totalRenovado, string estado)
         {
-            var aluno = NovoAluno();
-            // TurmaId nulo (atendimento individual) -- este teste cobre o saldo, nao o contexto.
-            var vinculo = new VinculoCobranca { AlunoId = AlunoId, Aluno = aluno, TurmaId = null, Modalidade = ModalidadeCobranca.Pacote, Valor = 500m, SaldoAulas = 0, Ativo = true };
+            var vinculo = new VinculoCobranca { Id = 1, AlunoId = AlunoId, Aluno = NovoAluno(), Modalidade = ModalidadeCobranca.Pacote, Valor = 500m, TotalAulasPacote = totalRenovado, SaldoAulas = 0, Ativo = true };
 
-            vinculo.SaldoAulas = saldoRenovado;
+            var item = Assert.Single(DashboardService.MontarResumoPacotes(new[] { vinculo }, new Dictionary<int, int> { [1] = 10 }, 0).Renovacao);
 
-            var painel = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
-
-            var item = Assert.Single(painel);
-            Assert.Equal("Atencao", item.Estado);
-            Assert.Equal(saldoRenovado, item.SaldoAulas);
+            Assert.Equal(estado, item.Progresso.Estado);
+            Assert.Equal(totalRenovado - 10, item.Progresso.AulasRestantes);
         }
 
         [Fact]
-        public void Saldo_renovado_para_3_ou_mais_some_do_painel()
+        public void Total_renovado_com_3_ou_mais_restantes_some_do_painel()
         {
-            var aluno = NovoAluno();
-            var vinculo = new VinculoCobranca { AlunoId = AlunoId, Aluno = aluno, TurmaId = null, Modalidade = ModalidadeCobranca.Pacote, Valor = 500m, SaldoAulas = 0, Ativo = true };
+            var vinculo = new VinculoCobranca { Id = 1, AlunoId = AlunoId, Aluno = NovoAluno(), Modalidade = ModalidadeCobranca.Pacote, Valor = 500m, TotalAulasPacote = 20, SaldoAulas = 10, Ativo = true };
 
-            vinculo.SaldoAulas = 10;
-
-            var painel = DashboardService.MontarPacotesEmAtencao(new[] { vinculo });
-
-            Assert.Empty(painel);
+            Assert.Empty(DashboardService.MontarResumoPacotes(new[] { vinculo }, new Dictionary<int, int> { [1] = 10 }, 0).Renovacao);
         }
     }
 }

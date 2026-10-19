@@ -113,7 +113,7 @@ namespace SPI.Application.Tests.VinculosCobranca
                 AlunoId, Request(turmaId: null, modalidade: ModalidadeCobranca.Pacote, valor: 500m, saldoAulas: 10, totalAulasPacote: 10));
 
             Assert.Equal(10, resposta.TotalAulasPacote);
-            Assert.Equal(0, resposta.AulasDadas);
+            Assert.Equal(0, resposta.Progresso!.AulasDadas);
         }
 
         [Fact]

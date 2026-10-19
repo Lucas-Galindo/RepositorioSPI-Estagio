@@ -14,8 +14,9 @@ namespace SPI.Application.VinculosCobranca.Dtos
         public int? AulasIncluidas { get; set; }
         public int? SaldoAulas { get; set; }
         public int? TotalAulasPacote { get; set; }
-        // Somente-leitura, calculados (specs/052) -- nunca aceitos em request.
-        public int? AulasDadas { get; set; }
+        // Somente-leitura, calculados -- nunca aceitos em request. Progresso: so
+        // Pacote (specs/058); AulasDadasNoMes: so Mensalidade (specs/052).
+        public ProgressoPacoteResponse? Progresso { get; set; }
         public int? AulasDadasNoMes { get; set; }
         public bool Ativo { get; set; }
         // specs/056: combinacao herdada da regra antiga que hoje e proibida (ex.:

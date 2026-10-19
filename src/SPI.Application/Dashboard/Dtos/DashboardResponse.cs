@@ -14,9 +14,9 @@ namespace SPI.Application.Dashboard.Dtos
         public int LembretesPendentes { get; set; }
 
         /// <summary>
-        /// Vinculos Pacote ativos com saldo informado <= 2 (specs/041). Vazio
-        /// quando ninguem precisa de atencao; esgotados primeiro.
+        /// specs/058: indicadores e lista de renovacao dos pacotes (substitui o
+        /// antigo painel "Pacotes em atencao", que era baseado no saldo).
         /// </summary>
-        public List<PacoteEmAtencaoResponse> PacotesEmAtencao { get; set; } = new();
+        public PacotesResumoResponse Pacotes { get; set; } = new();
     }
 }

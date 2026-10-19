@@ -1,29 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { StatusPill } from "@/components/shared/StatusPill";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { ApiError } from "@/lib/api/client";
 import type { Aluno } from "@/lib/api/alunos";
 import {
   excluirVinculoCobranca,
+  listarAulasDoPacote,
   listarVinculosCobranca,
   reativarVinculoCobranca,
+  type AulaDoPacote,
+  type ProgressoPacote,
   type VinculoCobranca,
 } from "@/lib/api/vinculosCobranca";
-import { currency } from "@/lib/format";
+import { currency, fmtData, fmtHora } from "@/lib/format";
+import { ProgressoPacoteBarra } from "@/components/shared/ProgressoPacoteBarra";
 import { VinculoCobrancaFormModal } from "./VinculoCobrancaFormModal";
 
 function detalheDaModalidade(v: VinculoCobranca): string | null {
   if (v.modalidade === "Mensalidade" && v.aulasIncluidas !== null) {
     return `${v.aulasIncluidas} aula(s) incluída(s)`;
-  }
-  if (v.modalidade === "Pacote" && v.saldoAulas !== null) {
-    return `Saldo: ${v.saldoAulas} aula(s)`;
   }
   return null;
 }
@@ -142,6 +145,8 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
                 <div className="who">{detalhe ? `${v.modalidade} · ${detalhe}` : v.modalidade}</div>
               </div>
               {!v.ativo && <StatusPill status="Inativo" />}
+              {/* specs/058: o progresso (contado pelas presencas) substitui o "Saldo: N". */}
+              {v.progresso && <PacoteDetalhe alunoId={aluno.id} vinculoId={v.id} progresso={v.progresso} />}
               <div style={{ display: "flex", gap: 8 }}>
                 {v.ativo ? (
                   <>
@@ -187,6 +192,56 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
           confirmando={excluindo}
         />
       )}
+    </div>
+  );
+}
+
+// specs/058: progresso do pacote e, sob demanda, as aulas que contaram como dadas
+// (a mesma fonte da contagem -- SC-001).
+function PacoteDetalhe({ alunoId, vinculoId, progresso }: { alunoId: number; vinculoId: number; progresso: ProgressoPacote }) {
+  const { sessao } = useAuth();
+  const [aulas, setAulas] = useState<AulaDoPacote[] | null>(null);
+  const [aberto, setAberto] = useState(false);
+  const [erro, setErro] = useState("");
+
+  const alternar = () => {
+    const abrir = !aberto;
+    setAberto(abrir);
+    if (abrir && aulas === null && sessao) {
+      listarAulasDoPacote(alunoId, vinculoId, sessao.accessToken)
+        .then(setAulas)
+        .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as aulas do pacote."));
+    }
+  };
+
+  return (
+    <div className="pacote-detalhe">
+      <ProgressoPacoteBarra progresso={progresso} />
+      <button className="btn btn-ghost btn-sm" type="button" onClick={alternar} style={{ marginTop: 8 }}>
+        <Icon name="cal" size={13} /> {aberto ? "Ocultar aulas" : "Ver aulas"}
+      </button>
+      {aberto &&
+        (erro ? (
+          <p className="count-text">{erro}</p>
+        ) : aulas === null ? (
+          <p className="count-text">Carregando...</p>
+        ) : aulas.length === 0 ? (
+          <p className="count-text">Nenhuma aula dada neste pacote ainda.</p>
+        ) : (
+          <ul className="pacote-aulas">
+            {aulas.map((a) => (
+              <li key={a.aulaId}>
+                <Link href={`/aulas/${a.aulaId}`}>
+                  {fmtData(a.data)} · {fmtHora(a.horaInicio)}
+                </Link>
+                <span>
+                  {a.materiaNome} · {a.contexto}
+                </span>
+                <StatusBadge status={a.status} />
+              </li>
+            ))}
+          </ul>
+        ))}
     </div>
   );
 }

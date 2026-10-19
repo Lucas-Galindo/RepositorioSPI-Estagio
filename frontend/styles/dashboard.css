@@ -1931,3 +1931,57 @@ tbody tr.row-link:hover {
     overflow-x: auto;
   }
 }
+
+/* ===== Progresso de pacote (specs/058) -- so tokens de tema (specs/057) ===== */
+.pacote-detalhe {
+  order: 10;
+  flex-basis: 100%;
+  margin-top: 10px;
+}
+.pacote-progresso {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 6px;
+}
+.pacote-progresso-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--c-text);
+}
+.pacote-restantes {
+  color: var(--c-text-muted);
+}
+.pacote-aulas {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pacote-aulas li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+.pacote-aulas a {
+  color: var(--c-accent-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.pacotes-indicadores,
+.pacotes-renovacao {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+.pacotes-renovacao {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}

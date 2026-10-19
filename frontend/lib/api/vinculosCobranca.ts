@@ -3,6 +3,27 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 /** Espelha SPI.Domain.Enums.ModalidadeCobranca (serializado como string). */
 export type ModalidadeCobranca = "Avulsa" | "Mensalidade" | "Pacote";
 
+/** Espelha SPI.Application.VinculosCobranca.Dtos.ProgressoPacoteResponse (specs/058). */
+export interface ProgressoPacote {
+  /** Nulo sem total informado e sem saldo para estimar. */
+  total: number | null;
+  totalEstimado: boolean;
+  aulasDadas: number;
+  aulasRestantes: number | null;
+  estado: "EmDia" | "Atencao" | "Esgotado" | "SemTotal";
+}
+
+/** Espelha SPI.Application.VinculosCobranca.Dtos.AulaDoPacoteResponse (specs/058). */
+export interface AulaDoPacote {
+  aulaId: number;
+  data: string;
+  horaInicio: string;
+  horaFim: string;
+  materiaNome: string;
+  contexto: string;
+  status: string;
+}
+
 /** Espelha SPI.Application.VinculosCobranca.Dtos.VinculoCobrancaResponse. */
 export interface VinculoCobranca {
   id: number;
@@ -14,6 +35,9 @@ export interface VinculoCobranca {
   valor: number;
   aulasIncluidas: number | null;
   saldoAulas: number | null;
+  totalAulasPacote: number | null;
+  /** specs/058: so Pacote; calculado no backend (ProgressoPacote). */
+  progresso: ProgressoPacote | null;
   ativo: boolean;
   /** specs/056: combinacao herdada hoje proibida (so na listagem); null = sem conflito. */
   conflito: string | null;
@@ -29,6 +53,8 @@ export interface VinculoCobrancaRequest {
   aulasIncluidas: number | null;
   /** Somente com Pacote. */
   saldoAulas: number | null;
+  /** Somente com Pacote; no cadastro sem saldo, o saldo comeca igual ao total. */
+  totalAulasPacote: number | null;
 }
 
 const base = (alunoId: number) => `/api/alunos/${alunoId}/vinculos-cobranca`;
@@ -64,4 +90,9 @@ export function excluirVinculoCobranca(alunoId: number, id: number, accessToken:
 
 export function reativarVinculoCobranca(alunoId: number, id: number, accessToken: string): Promise<VinculoCobranca> {
   return apiPatch<VinculoCobranca>(`${base(alunoId)}/${id}/reativar`, accessToken);
+}
+
+/** specs/058: aulas que contaram como dadas no pacote, mais recentes primeiro. */
+export function listarAulasDoPacote(alunoId: number, id: number, accessToken: string): Promise<AulaDoPacote[]> {
+  return apiGet<AulaDoPacote[]>(`${base(alunoId)}/${id}/aulas`, accessToken);
 }

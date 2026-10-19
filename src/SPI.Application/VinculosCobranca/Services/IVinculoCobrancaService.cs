@@ -15,5 +15,7 @@ namespace SPI.Application.VinculosCobranca.Services
         Task ExcluirAsync(int alunoId, int id, CancellationToken cancellationToken = default);
 
         Task<VinculoCobrancaResponse> ReativarAsync(int alunoId, int id, CancellationToken cancellationToken = default);
+
+        Task<List<AulaDoPacoteResponse>> ListarAulasDoPacoteAsync(int alunoId, int id, CancellationToken cancellationToken = default);
     }
 }

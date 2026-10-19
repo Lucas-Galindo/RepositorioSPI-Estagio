@@ -16,6 +16,10 @@ namespace SPI.Domain.Repositories
         // de cobranca de mensalidade, para listar os candidatos a gerar cobranca).
         Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(ModalidadeCobranca modalidade, CancellationToken cancellationToken = default);
 
+        // specs/058: pacotes ativos e inativos, com o Aluno (visao de negocio da
+        // Home); alunoId nulo = de todos os alunos.
+        Task<List<VinculoCobranca>> ListarPacotesAsync(int? alunoId, CancellationToken cancellationToken = default);
+
         Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default);
 
         Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default);

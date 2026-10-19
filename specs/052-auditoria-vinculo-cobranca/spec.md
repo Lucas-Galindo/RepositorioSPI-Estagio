@@ -1,5 +1,7 @@
 # Feature Specification: Auditoria de Aulas Dadas por Vínculo de Cobrança
 
+> **Regra substituída em parte pela [spec 058](../058-progresso-pacote/spec.md) (2026-10-19).** "Aulas dadas" do Pacote passou a ser a contagem de presenças registradas com o vínculo (`aula_aluno.vinculo_cobranca_id`), e não mais `TotalAulasPacote − SaldoAulas`; restantes = total − dadas. A validação "total ≥ aulas dadas" na edição usa essa contagem.
+
 > **Regra substituída em parte pela [spec 056](../056-cobranca-por-aluno/spec.md) (2026-10-19).** AulaAluno.VinculoCobrancaId passa a ser gravado também em presenças de outras turmas e de aula individual cobertas pela mensalidade ou pelo pacote do aluno, porque esses vínculos agora valem em qualquer aula.
 
 **Feature Branch**: `052-auditoria-vinculo-cobranca`

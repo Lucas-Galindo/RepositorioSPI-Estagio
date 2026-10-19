@@ -138,6 +138,34 @@ namespace SPI.Infrastructure.Repositories
                     && aa.Aula.DataInicio.Month == competencia.Month,
                 cancellationToken);
 
+        // So presencas confirmadas recebem vinculo_cobranca_id (AulaService), entao
+        // falta e aula cancelada nunca entram na contagem.
+        public async Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default)
+        {
+            var query = _dbContext.AulaAlunos.Where(aa => aa.VinculoCobrancaId.HasValue && vinculoIds.Contains(aa.VinculoCobrancaId.Value));
+            if (de.HasValue)
+            {
+                query = query.Where(aa => aa.Aula.DataInicio >= de.Value);
+            }
+            if (ate.HasValue)
+            {
+                query = query.Where(aa => aa.Aula.DataInicio <= ate.Value);
+            }
+
+            return await query
+                .GroupBy(aa => aa.VinculoCobrancaId!.Value)
+                .Select(g => new { VinculoId = g.Key, Total = g.Count() })
+                .ToDictionaryAsync(x => x.VinculoId, x => x.Total, cancellationToken);
+        }
+
+        public Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default) =>
+            _dbContext.AulaAlunos
+                .Include(aa => aa.Aula).ThenInclude(a => a.Materia)
+                .Include(aa => aa.Aula).ThenInclude(a => a.Turma)
+                .Where(aa => aa.VinculoCobrancaId == vinculoId)
+                .OrderByDescending(aa => aa.Aula.DataInicio).ThenByDescending(aa => aa.Aula.HoraInicio)
+                .ToListAsync(cancellationToken);
+
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default) =>
             _dbContext.SaveChangesAsync(cancellationToken);
     }

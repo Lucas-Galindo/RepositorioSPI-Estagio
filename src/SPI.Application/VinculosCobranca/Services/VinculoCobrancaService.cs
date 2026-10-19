@@ -30,16 +30,14 @@ namespace SPI.Application.VinculosCobranca.Services
             await GarantirAlunoExisteAsync(alunoId, cancellationToken);
 
             var vinculos = await _vinculoRepository.ListarPorAlunoAsync(alunoId, ativo, cancellationToken);
+            // specs/058: aulas dadas de todos os pacotes numa consulta so.
+            var presencasPorPacote = await ContarPresencasDosPacotesAsync(vinculos, cancellationToken);
             var respostas = new List<VinculoCobrancaResponse>();
-            // MapearAsync faz 1 consulta extra por vinculo de Mensalidade (para
-            // contar as presencas do mes) -- tecnicamente um padrao "N+1", mas
-            // aceitavel aqui porque N e o numero de vinculos de UM aluno so
-            // (sempre pequeno, nunca uma listagem geral de todos os vinculos do
-            // sistema). Se este metodo um dia virar uma listagem ampla, valeria
-            // batchar essa contagem num unico IN (...) em vez de um loop.
+            // A Mensalidade ainda faz 1 consulta por vinculo (aulas do mes) --
+            // aceitavel porque sao os vinculos de UM aluno so.
             foreach (var vinculo in vinculos)
             {
-                respostas.Add(await MapearAsync(vinculo, cancellationToken));
+                respostas.Add(await MapearAsync(vinculo, presencasPorPacote, cancellationToken));
             }
 
             MarcarConflitosHerdados(respostas);
@@ -72,7 +70,7 @@ namespace SPI.Application.VinculosCobranca.Services
             await GarantirAlunoExisteAsync(alunoId, cancellationToken);
 
             var vinculo = await ObterDoAlunoAsync(alunoId, id, cancellationToken);
-            return await MapearAsync(vinculo, cancellationToken);
+            return await MapearAsync(vinculo, presencasPorPacote: null, cancellationToken);
         }
 
         public async Task<VinculoCobrancaResponse> CadastrarAsync(int alunoId, VinculoCobrancaRequest request, CancellationToken cancellationToken = default)
@@ -93,7 +91,10 @@ namespace SPI.Application.VinculosCobranca.Services
                 Modalidade = request.Modalidade,
                 Valor = request.Valor,
                 AulasIncluidas = request.AulasIncluidas,
-                SaldoAulas = request.SaldoAulas,
+                // specs/058: pacote cadastrado so com o total comeca com o saldo cheio.
+                SaldoAulas = request.Modalidade == ModalidadeCobranca.Pacote && request.SaldoAulas is null
+                    ? request.TotalAulasPacote
+                    : request.SaldoAulas,
                 TotalAulasPacote = request.TotalAulasPacote,
                 Ativo = true
             };
@@ -103,7 +104,7 @@ namespace SPI.Application.VinculosCobranca.Services
 
             // Recarrega para trazer a navegacao Turma (nome) no response.
             var salvo = await _vinculoRepository.ObterPorIdAsync(vinculo.Id, cancellationToken);
-            return await MapearAsync(salvo ?? vinculo, cancellationToken);
+            return await MapearAsync(salvo ?? vinculo, presencasPorPacote: null, cancellationToken);
         }
 
         public async Task<VinculoCobrancaResponse> AtualizarAsync(int alunoId, int id, VinculoCobrancaRequest request, CancellationToken cancellationToken = default)
@@ -134,7 +135,8 @@ namespace SPI.Application.VinculosCobranca.Services
             // SaldoAulas continua vindo so de request.SaldoAulas, como sempre.
             if (vinculo.Modalidade == ModalidadeCobranca.Pacote && request.TotalAulasPacote.HasValue)
             {
-                var dado = (vinculo.TotalAulasPacote ?? 0) - (vinculo.SaldoAulas ?? 0);
+                // specs/058: aulas dadas = presencas registradas no pacote.
+                var dado = (await _aulaRepository.ContarPresencasPorVinculosAsync(new[] { vinculo.Id }, null, null, cancellationToken)).GetValueOrDefault(vinculo.Id);
                 if (request.TotalAulasPacote.Value < dado)
                 {
                     throw new ConflitoException($"O novo total de aulas do pacote nao pode ser menor que as aulas ja dadas ({dado}).");
@@ -160,7 +162,7 @@ namespace SPI.Application.VinculosCobranca.Services
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
             var salvo = await _vinculoRepository.ObterPorIdAsync(vinculo.Id, cancellationToken);
-            return await MapearAsync(salvo ?? vinculo, cancellationToken);
+            return await MapearAsync(salvo ?? vinculo, presencasPorPacote: null, cancellationToken);
         }
 
         // Exclusao logica (Constituicao I): nunca remove o registro fisicamente.
@@ -187,7 +189,7 @@ namespace SPI.Application.VinculosCobranca.Services
 
             if (vinculo.Ativo)
             {
-                return await MapearAsync(vinculo, cancellationToken);
+                return await MapearAsync(vinculo, presencasPorPacote: null, cancellationToken);
             }
 
             // FR-014: em conflito rejeita sem desativar nem alterar o vinculo ativo existente.
@@ -197,7 +199,7 @@ namespace SPI.Application.VinculosCobranca.Services
             vinculo.Ativo = true;
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
-            return await MapearAsync(vinculo, cancellationToken);
+            return await MapearAsync(vinculo, presencasPorPacote: null, cancellationToken);
         }
 
         private async Task GarantirAlunoExisteAsync(int alunoId, CancellationToken cancellationToken)
@@ -271,16 +273,46 @@ namespace SPI.Application.VinculosCobranca.Services
             }
         }
 
-        // specs/052: assincrono porque AulasDadasNoMes (Mensalidade) depende
-        // de uma contagem de presencas via IAulaRepository.
-        private async Task<VinculoCobrancaResponse> MapearAsync(VinculoCobranca vinculo, CancellationToken cancellationToken)
+        // specs/058: aulas dadas (presencas) de cada pacote da lista, numa consulta so.
+        private async Task<IReadOnlyDictionary<int, int>> ContarPresencasDosPacotesAsync(IEnumerable<VinculoCobranca> vinculos, CancellationToken cancellationToken)
         {
-            int? aulasDadas = null;
+            var idsPacote = vinculos.Where(v => v.Modalidade == ModalidadeCobranca.Pacote).Select(v => v.Id).ToList();
+            return idsPacote.Count == 0
+                ? new Dictionary<int, int>()
+                : await _aulaRepository.ContarPresencasPorVinculosAsync(idsPacote, null, null, cancellationToken);
+        }
+
+        // specs/058: aulas que contaram como dadas no pacote (a mesma fonte do progresso).
+        public async Task<List<AulaDoPacoteResponse>> ListarAulasDoPacoteAsync(int alunoId, int id, CancellationToken cancellationToken = default)
+        {
+            await GarantirAlunoExisteAsync(alunoId, cancellationToken);
+            var vinculo = await ObterDoAlunoAsync(alunoId, id, cancellationToken);
+
+            var presencas = await _aulaRepository.ListarPresencasDoVinculoAsync(vinculo.Id, cancellationToken);
+            return presencas.Select(aa => new AulaDoPacoteResponse
+            {
+                AulaId = aa.AulaId,
+                Data = aa.Aula.DataInicio,
+                HoraInicio = aa.Aula.HoraInicio,
+                HoraFim = aa.Aula.HoraFim,
+                MateriaNome = aa.Aula.Materia.Nome,
+                Contexto = aa.Aula.Turma?.Nome ?? "Atendimento individual",
+                Status = aa.Aula.Status,
+            }).ToList();
+        }
+
+        // specs/052: assincrono porque AulasDadasNoMes (Mensalidade) depende
+        // de uma contagem de presencas via IAulaRepository. presencasPorPacote
+        // vem pronto na listagem (lote); nulo = conta so este vinculo.
+        private async Task<VinculoCobrancaResponse> MapearAsync(VinculoCobranca vinculo, IReadOnlyDictionary<int, int>? presencasPorPacote, CancellationToken cancellationToken)
+        {
+            ProgressoPacoteResponse? progresso = null;
             int? aulasDadasNoMes = null;
 
-            if (vinculo.Modalidade == ModalidadeCobranca.Pacote && vinculo.TotalAulasPacote.HasValue && vinculo.SaldoAulas.HasValue)
+            if (vinculo.Modalidade == ModalidadeCobranca.Pacote)
             {
-                aulasDadas = vinculo.TotalAulasPacote - vinculo.SaldoAulas;
+                presencasPorPacote ??= await ContarPresencasDosPacotesAsync(new[] { vinculo }, cancellationToken);
+                progresso = ProgressoPacote.Calcular(vinculo, presencasPorPacote.GetValueOrDefault(vinculo.Id));
             }
             else if (vinculo.Modalidade == ModalidadeCobranca.Mensalidade)
             {
@@ -299,7 +331,7 @@ namespace SPI.Application.VinculosCobranca.Services
                 AulasIncluidas = vinculo.AulasIncluidas,
                 SaldoAulas = vinculo.SaldoAulas,
                 TotalAulasPacote = vinculo.TotalAulasPacote,
-                AulasDadas = aulasDadas,
+                Progresso = progresso,
                 AulasDadasNoMes = aulasDadasNoMes,
                 Ativo = vinculo.Ativo
             };

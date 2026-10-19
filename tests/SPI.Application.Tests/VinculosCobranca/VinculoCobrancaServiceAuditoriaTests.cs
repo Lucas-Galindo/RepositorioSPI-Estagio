@@ -53,38 +53,33 @@ namespace SPI.Application.Tests.VinculosCobranca
             }
         }
 
-        // ---------- US1 (T010): AulasDadas do Pacote ----------
+        // ---------- US1: aulas dadas do Pacote ----------
+        // specs/058 (decisao do usuario): aulas dadas = presencas registradas no
+        // pacote, nao mais total - saldo. O progresso completo esta em
+        // ProgressoPacoteTests/VinculoCobrancaServiceProgressoTests.
 
         [Fact]
-        public async Task Pacote_com_total_e_saldo_informados_calcula_aulas_dadas()
+        public async Task Pacote_conta_aulas_dadas_pelas_presencas_e_nao_pelo_saldo()
         {
             var vinculo = Semear(ModalidadeCobranca.Pacote, saldoAulas: 7, totalAulasPacote: 10);
+            SemearPresencasNoMesCorrente(vinculo.Id, 2);
 
             var resposta = await _servico.ObterPorIdAsync(AlunoId, vinculo.Id);
 
-            Assert.Equal(3, resposta.AulasDadas);
-        }
-
-        [Fact]
-        public async Task Pacote_sem_total_informado_aulas_dadas_fica_nulo_sem_lancar_excecao()
-        {
-            var vinculo = Semear(ModalidadeCobranca.Pacote, saldoAulas: 7, totalAulasPacote: null);
-
-            var resposta = await _servico.ObterPorIdAsync(AlunoId, vinculo.Id);
-
-            Assert.Null(resposta.AulasDadas);
+            Assert.Equal(2, resposta.Progresso!.AulasDadas);
+            Assert.Equal(8, resposta.Progresso.AulasRestantes);
         }
 
         [Theory]
         [InlineData(ModalidadeCobranca.Mensalidade)]
         [InlineData(ModalidadeCobranca.Avulsa)]
-        public async Task Mensalidade_ou_Avulsa_aulas_dadas_do_pacote_sempre_nulo(ModalidadeCobranca modalidade)
+        public async Task Mensalidade_ou_Avulsa_nao_tem_progresso_de_pacote(ModalidadeCobranca modalidade)
         {
             var vinculo = Semear(modalidade, aulasIncluidas: modalidade == ModalidadeCobranca.Mensalidade ? 10 : null);
 
             var resposta = await _servico.ObterPorIdAsync(AlunoId, vinculo.Id);
 
-            Assert.Null(resposta.AulasDadas);
+            Assert.Null(resposta.Progresso);
         }
 
         // ---------- US3 (T020): AulasDadasNoMes da Mensalidade ----------
@@ -143,7 +138,9 @@ namespace SPI.Application.Tests.VinculosCobranca
         [Fact]
         public async Task Pacote_reduzir_total_abaixo_do_ja_dado_e_rejeitado()
         {
-            var vinculo = Semear(ModalidadeCobranca.Pacote, saldoAulas: 4, totalAulasPacote: 10); // dado = 6
+            // specs/058: "ja dado" = presencas (6), mesmo com o saldo dizendo outra coisa.
+            var vinculo = Semear(ModalidadeCobranca.Pacote, saldoAulas: 9, totalAulasPacote: 10);
+            SemearPresencasNoMesCorrente(vinculo.Id, 6);
 
             var excecao = await Assert.ThrowsAsync<ConflitoException>(
                 () => _servico.AtualizarAsync(AlunoId, vinculo.Id, Request(ModalidadeCobranca.Pacote, saldoAulas: 4, totalAulasPacote: 5)));
@@ -154,7 +151,8 @@ namespace SPI.Application.Tests.VinculosCobranca
         [Fact]
         public async Task Pacote_aumentar_total_para_igual_ao_ja_dado_e_aceito_sem_recalcular_saldo()
         {
-            var vinculo = Semear(ModalidadeCobranca.Pacote, saldoAulas: 4, totalAulasPacote: 10); // dado = 6
+            var vinculo = Semear(ModalidadeCobranca.Pacote, saldoAulas: 4, totalAulasPacote: 10);
+            SemearPresencasNoMesCorrente(vinculo.Id, 6);
 
             var resposta = await _servico.AtualizarAsync(AlunoId, vinculo.Id, Request(ModalidadeCobranca.Pacote, saldoAulas: 4, totalAulasPacote: 6));
 

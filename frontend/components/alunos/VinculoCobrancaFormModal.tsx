@@ -37,6 +37,7 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
   const [valor, setValor] = useState(vinculo?.valor.toString() ?? "");
   const [aulasIncluidas, setAulasIncluidas] = useState(vinculo?.aulasIncluidas?.toString() ?? "");
   const [saldoAulas, setSaldoAulas] = useState(vinculo?.saldoAulas?.toString() ?? "");
+  const [totalAulasPacote, setTotalAulasPacote] = useState(vinculo?.totalAulasPacote?.toString() ?? "");
 
   // Se a turma atual do vinculo nao esta entre as ativas do aluno (foi desativada
   // depois), mantem-na como opcao para nao forcar a troca ao editar so o valor.
@@ -54,7 +55,10 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
     setModalidade(nova);
     if (nova !== "Avulsa") setTurmaId("");
     if (nova !== "Mensalidade") setAulasIncluidas("");
-    if (nova !== "Pacote") setSaldoAulas("");
+    if (nova !== "Pacote") {
+      setSaldoAulas("");
+      setTotalAulasPacote("");
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -70,6 +74,7 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
       valor: Number(valor) || 0,
       aulasIncluidas: aulasIncluidas ? Number(aulasIncluidas) : null,
       saldoAulas: saldoAulas ? Number(saldoAulas) : null,
+      totalAulasPacote: totalAulasPacote ? Number(totalAulasPacote) : null,
     };
 
     try {
@@ -147,7 +152,15 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
               )}
               {modalidade === "Pacote" && (
                 <div className="field">
-                  <label>Saldo de aulas (opcional)</label>
+                  <label>Total de aulas do pacote</label>
+                  <input type="number" step="1" min="1" value={totalAulasPacote} onChange={(e) => setTotalAulasPacote(e.target.value)} placeholder="10" />
+                </div>
+              )}
+              {/* specs/058: no cadastro o saldo comeca igual ao total (backend). Na
+                  edicao o saldo e o ajuste manual que libera/bloqueia a presenca (spec 041). */}
+              {modalidade === "Pacote" && editando && (
+                <div className="field">
+                  <label>Saldo de aulas</label>
                   <input type="number" step="1" min="0" value={saldoAulas} onChange={(e) => setSaldoAulas(e.target.value)} placeholder="10" />
                 </div>
               )}

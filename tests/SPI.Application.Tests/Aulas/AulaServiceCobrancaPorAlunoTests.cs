@@ -48,7 +48,12 @@ namespace SPI.Application.Tests.Aulas
         private async Task<(AulaResponse Resposta, Aula Aula)> RegistrarAsync(int aulaId, int? turmaId, bool presente = true)
         {
             var aula = NovaAula(aulaId, turmaId);
-            var servico = new AulaService(
+            var resposta = await NovoServico(aula).RegistrarSessaoAsync(aulaId, new RegistrarSessaoRequest { Presencas = { [AlunoId] = presente } });
+            return (resposta, aula);
+        }
+
+        private AulaService NovoServico(Aula aula) =>
+            new AulaService(
                 new FakeAulaRepositoryParaAula { AulaSemeada = aula },
                 new FakeAlunoRepositoryVazio(),
                 new FakeTurmaRepositoryVazia(),
@@ -61,10 +66,6 @@ namespace SPI.Application.Tests.Aulas
                     AulaParticular = new CategoriaReceita { Id = 2, Nome = "Aula particular", Ativo = true },
                 },
                 _vinculos);
-
-            var resposta = await servico.RegistrarSessaoAsync(aulaId, new RegistrarSessaoRequest { Presencas = { [AlunoId] = presente } });
-            return (resposta, aula);
-        }
 
         // ---------- Mensalidade (US1) ----------
 
@@ -138,6 +139,24 @@ namespace SPI.Application.Tests.Aulas
 
             Assert.Equal(10, pacote.SaldoAulas);
             Assert.Empty(_pagamentos.Gerados);
+        }
+
+        // specs/058 FR-001 (MUST NOT): falta e aula cancelada nao contam como aula
+        // dada. A contagem le AulaAluno.VinculoCobrancaId, que so a presenca recebe.
+        [Fact]
+        public async Task So_a_presenca_fica_atribuida_ao_pacote_falta_e_cancelada_nao()
+        {
+            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, saldo: 10);
+
+            var (_, presenca) = await RegistrarAsync(1, TurmaA, presente: true);
+            var (_, falta) = await RegistrarAsync(2, TurmaA, presente: false);
+            var cancelada = NovaAula(3, TurmaA);
+            await NovoServico(cancelada).CancelarAsync(cancelada.Id);
+
+            Assert.Equal(pacote.Id, presenca.AulaAlunos.Single().VinculoCobrancaId);
+            Assert.Null(falta.AulaAlunos.Single().VinculoCobrancaId);
+            Assert.Null(cancelada.AulaAlunos.Single().VinculoCobrancaId);
+            Assert.Equal(9, pacote.SaldoAulas);
         }
 
         [Fact]

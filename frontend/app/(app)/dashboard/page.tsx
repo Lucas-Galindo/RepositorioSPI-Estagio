@@ -8,7 +8,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { obterDashboard, type Dashboard } from "@/lib/api/dashboard";
-import { PacotesEmAtencaoPanel } from "@/components/dashboard/PacotesEmAtencaoPanel";
+import { PacotesPanel } from "@/components/dashboard/PacotesPanel";
+import { DateInput } from "@/components/shared/DateInput";
+import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { currency, dataIsoLocal, fmtData, fmtHora } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
@@ -37,6 +39,11 @@ export default function DashboardPage() {
   const [aulas, setAulas] = useState<Aula[] | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [erro, setErro] = useState("");
+  // specs/058: filtros da secao de pacotes (o periodo vale para o dashboard todo).
+  const [periodoInicio, setPeriodoInicio] = useState("");
+  const [periodoFim, setPeriodoFim] = useState("");
+  const [alunoId, setAlunoId] = useState("");
+  const [alunosAtivos, setAlunosAtivos] = useState<Aluno[]>([]);
 
   const semana = diasDaSemana();
   const hojeIso = dataIsoLocal();
@@ -47,9 +54,20 @@ export default function DashboardPage() {
     listarAulas(sessao.accessToken, { dataInicio: semana[0].chave, dataFim: semana[6].chave })
       .then(setAulas)
       .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar a agenda."));
-    obterDashboard(sessao.accessToken).then(setDashboard).catch(() => setDashboard(null));
+    listarAlunos(sessao.accessToken, { ativo: true }).then(setAlunosAtivos).catch(() => setAlunosAtivos([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessao]);
+
+  useEffect(() => {
+    if (!sessao) return;
+    obterDashboard(sessao.accessToken, {
+      periodoInicio: periodoInicio || undefined,
+      periodoFim: periodoFim || undefined,
+      alunoId: alunoId ? Number(alunoId) : undefined,
+    })
+      .then(setDashboard)
+      .catch(() => setDashboard(null));
+  }, [sessao, periodoInicio, periodoFim, alunoId]);
 
   const alunosAtendidos = dashboard?.alunosAtendidosNoPeriodo ?? null;
   const recebidoMes = dashboard?.valorFaturadoNoPeriodo ?? null;
@@ -129,12 +147,24 @@ export default function DashboardPage() {
 
       {dashboard && (
         <div style={{ marginTop: 18, marginBottom: 24 }}>
-          <div className="section-title">Pacotes em atenção</div>
+          <div className="section-title">Pacotes de aulas</div>
           <div className="section-sub" style={{ marginBottom: 0 }}>
-            Alunos com pacote de aulas acabando ou esgotado
+            Aulas dadas contam as presenças registradas em cada pacote
+          </div>
+          <div className="filter-bar" style={{ marginTop: 10 }}>
+            <select className="filter-input" value={alunoId} onChange={(e) => setAlunoId(e.target.value)} title="Filtrar por aluno">
+              <option value="">Todos os alunos</option>
+              {alunosAtivos.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nome}
+                </option>
+              ))}
+            </select>
+            <DateInput className="filter-input filter-date" value={periodoInicio} onChange={setPeriodoInicio} title="Período a partir de" />
+            <DateInput className="filter-input filter-date" value={periodoFim} onChange={setPeriodoFim} title="Período até" />
           </div>
           <div style={{ marginTop: 10 }}>
-            <PacotesEmAtencaoPanel pacotes={dashboard.pacotesEmAtencao} />
+            <PacotesPanel resumo={dashboard.pacotes} />
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { apiGet } from "./client";
+import type { ProgressoPacote } from "./vinculosCobranca";
 
 /** Espelha SPI.Application.Dashboard.Dtos.GargaloCaixaResponse. */
 export interface GargaloCaixa {
@@ -46,14 +47,24 @@ export interface AulaResumo {
   status: string;
 }
 
-/** Espelha SPI.Application.Dashboard.Dtos.PacoteEmAtencaoResponse. */
+/** Espelha SPI.Application.Dashboard.Dtos.PacoteEmAtencaoResponse (specs/058). */
 export interface PacoteEmAtencao {
   vinculoId: number;
   alunoId: number;
   alunoNome: string;
-  contexto: string;
-  saldoAulas: number;
-  estado: "Esgotado" | "Atencao";
+  progresso: ProgressoPacote;
+}
+
+/** Espelha SPI.Application.Dashboard.Dtos.PacotesResumoResponse (specs/058). */
+export interface PacotesResumo {
+  ativos: number;
+  concluidos: number;
+  proximosDoFim: number;
+  aulasDadas: number;
+  aulasRestantes: number;
+  aulasDadasNoPeriodo: number;
+  /** Ja ordenada no backend (esgotados primeiro). */
+  renovacao: PacoteEmAtencao[];
 }
 
 /** Espelha SPI.Application.Dashboard.Dtos.DashboardResponse. */
@@ -66,12 +77,12 @@ export interface Dashboard {
   valorFaturadoNoPeriodo: number;
   proximasAulasHoje: AulaResumo[];
   lembretesPendentes: number;
-  pacotesEmAtencao: PacoteEmAtencao[];
+  pacotes: PacotesResumo;
 }
 
 export function obterDashboard(
   accessToken: string,
-  filtros?: { periodoInicio?: string; periodoFim?: string }
+  filtros?: { periodoInicio?: string; periodoFim?: string; alunoId?: number }
 ): Promise<Dashboard> {
   return apiGet<Dashboard>("/api/dashboard", accessToken, filtros);
 }

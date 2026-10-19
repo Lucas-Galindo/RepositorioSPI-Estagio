@@ -40,6 +40,12 @@ namespace SPI.Infrastructure.Repositories
         public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
             _dbContext.VinculosCobranca.Include(v => v.Aluno).Where(v => v.Ativo && v.Modalidade == modalidade).ToListAsync(cancellationToken);
 
+        public Task<List<VinculoCobranca>> ListarPacotesAsync(int? alunoId, CancellationToken cancellationToken = default) =>
+            _dbContext.VinculosCobranca
+                .Include(v => v.Aluno)
+                .Where(v => v.Modalidade == ModalidadeCobranca.Pacote && (!alunoId.HasValue || v.AlunoId == alunoId.Value))
+                .ToListAsync(cancellationToken);
+
         public async Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default) =>
             await _dbContext.VinculosCobranca.AddAsync(vinculo, cancellationToken);
 

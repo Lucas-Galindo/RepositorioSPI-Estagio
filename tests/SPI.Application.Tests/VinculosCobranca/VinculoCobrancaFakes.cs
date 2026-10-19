@@ -61,6 +61,8 @@ namespace SPI.Application.Tests.VinculosCobranca
         }
 
         // specs/039
+        public Task<List<VinculoCobranca>> ListarPacotesAsync(int? alunoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(SPI.Domain.Enums.ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos.Where(v => v.Ativo && v.Modalidade == modalidade).ToList());
 
@@ -146,6 +148,20 @@ namespace SPI.Application.Tests.VinculosCobranca
     public class FakeAulaRepositoryParaVinculo : IAulaRepository
     {
         public List<(int VinculoCobrancaId, int Ano, int Mes)> Presencas { get; } = new();
+
+        // specs/058: presencas com aula (para a lista de aulas do pacote).
+        public List<AulaAluno> PresencasComAula { get; } = new();
+
+        public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Presencas
+                .Where(p => vinculoIds.Contains(p.VinculoCobrancaId))
+                .Where(p => !de.HasValue || new DateOnly(p.Ano, p.Mes, 1) >= new DateOnly(de.Value.Year, de.Value.Month, 1))
+                .Where(p => !ate.HasValue || new DateOnly(p.Ano, p.Mes, 1) <= new DateOnly(ate.Value.Year, ate.Value.Month, 1))
+                .GroupBy(p => p.VinculoCobrancaId)
+                .ToDictionary(g => g.Key, g => g.Count()));
+
+        public Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(PresencasComAula.Where(aa => aa.VinculoCobrancaId == vinculoId).OrderByDescending(aa => aa.Aula.DataInicio).ToList());
 
         public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, DateTime desde, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
