@@ -1,3 +1,5 @@
+using SPI.Domain.Entities;
+using SPI.Domain.Enums;
 using SPI.Domain.Exceptions;
 using Xunit;
 
@@ -12,7 +14,11 @@ namespace SPI.Application.Tests.Notificacoes
 
         private readonly CenarioNotificacao _c = new();
 
-        private int Linhas(int aulaId) => _c.Notificacoes.Salvas.Count(n => n.AulaId == aulaId);
+        // specs/060: aula de hoje que ainda nao terminou tambem tem aviso de aula
+        // futura -- estes testes (059) olham so o tipo AulaPendente.
+        private List<Notificacao> Pendentes => _c.Notificacoes.Salvas.Where(n => n.Tipo == TipoNotificacao.AulaPendente).ToList();
+
+        private int Linhas(int aulaId) => Pendentes.Count(n => n.AulaId == aulaId);
 
         // ---------- US1: criacao ----------
 
@@ -37,12 +43,12 @@ namespace SPI.Application.Tests.Notificacoes
         {
             _c.NovaAula(1, Hoje);
 
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora.AddMinutes(5), null);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora.AddDays(2), null);
+            await _c.Servico.SincronizarAsync(Agora, null);
+            await _c.Servico.SincronizarAsync(Agora.AddMinutes(5), null);
+            await _c.Servico.SincronizarAsync(Agora.AddDays(2), null);
 
             Assert.Equal(1, Linhas(1));
-            Assert.Null(_c.Notificacoes.Salvas.Single().ResolvidaEm);
+            Assert.Null(Pendentes.Single().ResolvidaEm);
         }
 
         [Fact]
@@ -51,8 +57,8 @@ namespace SPI.Application.Tests.Notificacoes
             _c.NovaAula(1, Hoje);
             _c.Notificacoes.LancarConflitoNoProximoSalvar = true;
 
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
+            await _c.Servico.SincronizarAsync(Agora, null);
+            await _c.Servico.SincronizarAsync(Agora, null);
 
             Assert.Equal(1, Linhas(1));
         }
@@ -62,9 +68,9 @@ namespace SPI.Application.Tests.Notificacoes
         {
             _c.NovaAula(1, Hoje);
 
-            await _c.Servico.SincronizarAulasPendentesAsync(Hoje.ToDateTime(new TimeOnly(10, 59)), null);
+            await _c.Servico.SincronizarAsync(Hoje.ToDateTime(new TimeOnly(10, 59)), null);
 
-            Assert.Empty(_c.Notificacoes.Salvas);
+            Assert.Empty(Pendentes);
         }
 
         // FR-004 (MUST NOT): aula que terminou antes da entrada no ar nao gera aviso.
@@ -73,9 +79,9 @@ namespace SPI.Application.Tests.Notificacoes
         {
             _c.NovaAula(1, DateOnly.FromDateTime(CenarioNotificacao.Desde).AddDays(-1));
 
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
+            await _c.Servico.SincronizarAsync(Agora, null);
 
-            Assert.Empty(_c.Notificacoes.Salvas);
+            Assert.Empty(Pendentes);
         }
 
         [Fact]
@@ -85,10 +91,10 @@ namespace SPI.Application.Tests.Notificacoes
             _c.NovaAula(2, Hoje, professorId: 99);
 
             var lista = await _c.Servico.ListarAtivasAsync(CenarioNotificacao.ProfessoraId, Agora);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
+            await _c.Servico.SincronizarAsync(Agora, null);
 
             Assert.Equal(1, Assert.Single(lista).Aula!.Id);
-            Assert.Equal(99, _c.Notificacoes.Salvas.Single(n => n.AulaId == 2).ProfessorId);
+            Assert.Equal(99, Pendentes.Single(n => n.AulaId == 2).ProfessorId);
         }
 
         [Fact]
@@ -105,7 +111,7 @@ namespace SPI.Application.Tests.Notificacoes
         public async Task Lista_vem_das_mais_recentes_para_as_mais_antigas()
         {
             _c.NovaAula(1, Hoje.AddDays(-1));
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora.AddDays(-1), null);
+            await _c.Servico.SincronizarAsync(Agora.AddDays(-1), null);
             _c.NovaAula(2, Hoje);
 
             var lista = await _c.Servico.ListarAtivasAsync(CenarioNotificacao.ProfessoraId, Agora);
@@ -124,7 +130,7 @@ namespace SPI.Application.Tests.Notificacoes
             await _c.Servico.MarcarComoLidaAsync(CenarioNotificacao.ProfessoraId, id, Agora);
             await _c.Servico.MarcarComoLidaAsync(CenarioNotificacao.ProfessoraId, id, Agora.AddHours(1));
 
-            var n = _c.Notificacoes.Salvas.Single();
+            var n = Pendentes.Single();
             Assert.Equal(Agora, n.LidaEm);
             Assert.Null(n.ResolvidaEm);
             Assert.True(Assert.Single(await _c.Servico.ListarAtivasAsync(CenarioNotificacao.ProfessoraId, Agora)).Lida);
@@ -134,12 +140,12 @@ namespace SPI.Application.Tests.Notificacoes
         public async Task Marcar_notificacao_de_outra_professora_responde_nao_encontrada()
         {
             _c.NovaAula(1, Hoje, professorId: 99);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
-            var id = _c.Notificacoes.Salvas.Single().Id;
+            await _c.Servico.SincronizarAsync(Agora, null);
+            var id = Pendentes.Single().Id;
 
             await Assert.ThrowsAsync<NaoEncontradoException>(() => _c.Servico.MarcarComoLidaAsync(CenarioNotificacao.ProfessoraId, id, Agora));
             await Assert.ThrowsAsync<NaoEncontradoException>(() => _c.Servico.MarcarComoLidaAsync(CenarioNotificacao.ProfessoraId, 999, Agora));
-            Assert.Null(_c.Notificacoes.Salvas.Single().LidaEm);
+            Assert.Null(Pendentes.Single().LidaEm);
         }
 
         // ---------- US3: resolucao ----------
@@ -151,32 +157,32 @@ namespace SPI.Application.Tests.Notificacoes
         public async Task Aula_atualizada_ou_excluida_resolve_a_notificacao(string status, bool ativa)
         {
             var aula = _c.NovaAula(1, Hoje);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
+            await _c.Servico.SincronizarAsync(Agora, null);
 
             aula.Status = status;
             aula.Ativo = ativa;
             var lista = await _c.Servico.ListarAtivasAsync(CenarioNotificacao.ProfessoraId, Agora.AddMinutes(1));
 
             Assert.Empty(lista);
-            Assert.Equal(Agora.AddMinutes(1), _c.Notificacoes.Salvas.Single().ResolvidaEm);
+            Assert.Equal(Agora.AddMinutes(1), Pendentes.Single().ResolvidaEm);
         }
 
         [Fact]
         public async Task Aula_movida_para_o_futuro_resolve_e_ao_passar_de_novo_reativa_a_mesma()
         {
             var aula = _c.NovaAula(1, Hoje);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
-            var id = _c.Notificacoes.Salvas.Single().Id;
+            await _c.Servico.SincronizarAsync(Agora, null);
+            var id = Pendentes.Single().Id;
             await _c.Servico.MarcarComoLidaAsync(CenarioNotificacao.ProfessoraId, id, Agora);
 
             aula.DataInicio = Hoje.AddDays(1);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora.AddMinutes(1), null);
-            Assert.NotNull(_c.Notificacoes.Salvas.Single().ResolvidaEm);
+            await _c.Servico.SincronizarAsync(Agora.AddMinutes(1), null);
+            Assert.NotNull(Pendentes.Single().ResolvidaEm);
 
             var depois = Agora.AddDays(1).AddHours(1);
-            await _c.Servico.SincronizarAulasPendentesAsync(depois, null);
+            await _c.Servico.SincronizarAsync(depois, null);
 
-            var n = Assert.Single(_c.Notificacoes.Salvas);
+            var n = Assert.Single(Pendentes);
             Assert.Equal(id, n.Id);
             Assert.Null(n.ResolvidaEm);
             Assert.Null(n.LidaEm);
@@ -188,13 +194,13 @@ namespace SPI.Application.Tests.Notificacoes
         public async Task Notificacao_resolvida_nao_volta_sozinha()
         {
             var aula = _c.NovaAula(1, Hoje);
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora, null);
+            await _c.Servico.SincronizarAsync(Agora, null);
             aula.Status = "Realizada";
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora.AddMinutes(1), null);
+            await _c.Servico.SincronizarAsync(Agora.AddMinutes(1), null);
 
-            await _c.Servico.SincronizarAulasPendentesAsync(Agora.AddDays(3), null);
+            await _c.Servico.SincronizarAsync(Agora.AddDays(3), null);
 
-            var n = Assert.Single(_c.Notificacoes.Salvas);
+            var n = Assert.Single(Pendentes);
             Assert.Equal(Agora.AddMinutes(1), n.ResolvidaEm);
         }
     }

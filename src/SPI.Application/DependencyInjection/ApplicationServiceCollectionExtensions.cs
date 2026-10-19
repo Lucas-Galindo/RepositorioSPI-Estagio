@@ -40,6 +40,7 @@ namespace SPI.Application.DependencyInjection
             services.AddScoped<ILembreteService, LembreteService>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<INotificacaoService, NotificacaoService>();
+            services.AddScoped<ILembretePagamentoService, LembretePagamentoService>();
             services.AddScoped<IFinanceiroService, FinanceiroService>();
             services.AddScoped<IRelatorioService, RelatorioService>();
             services.AddScoped<IAnexoValidator, AnexoValidator>();

@@ -22,6 +22,31 @@ namespace SPI.Infrastructure.Repositories
                 .Include(a => a.AulaAlunos).ThenInclude(aa => aa.Aluno)
                 .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
+        public async Task<List<Aula>> ListarNaJanelaDeAvisoAsync(DateTime agora, int diasAntes, TimeOnly hora, int? professorId, CancellationToken cancellationToken = default)
+        {
+            // O aviso de uma aula do dia D aparece a partir de (D - diasAntes) as
+            // `hora`. Equivale a D <= data(agora - hora) + diasAntes: com 1 dia e
+            // 08:00, as 07:59 o limite ainda e hoje; as 08:00 passa a ser amanha.
+            var limite = DateOnly.FromDateTime(agora - hora.ToTimeSpan()).AddDays(diasAntes);
+            var hoje = DateOnly.FromDateTime(agora);
+            var horaAgora = TimeOnly.FromDateTime(agora);
+
+            var query = _dbContext.Aulas
+                .Include(a => a.Materia)
+                .Include(a => a.Turma)
+                .Include(a => a.AulaAlunos).ThenInclude(aa => aa.Aluno)
+                .Where(a => a.Ativo && a.Status == "Agendada" && a.DataInicio <= limite)
+                // Ainda nao terminou (terminada sem status vira aviso de aula pendente).
+                .Where(a => a.DataInicio > hoje || (a.DataInicio == hoje && a.HoraFim > horaAgora));
+
+            if (professorId.HasValue)
+            {
+                query = query.Where(a => a.ProfessorId == professorId.Value);
+            }
+
+            return await query.ToListAsync(cancellationToken);
+        }
+
         public async Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, DateTime desde, int? professorId, CancellationToken cancellationToken = default)
         {
             // Termino = DataInicio + HoraFim. Comparado em duas partes (data antes,

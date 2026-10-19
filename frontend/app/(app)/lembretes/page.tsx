@@ -1,5 +1,6 @@
 "use client";
 
+import { LembretePagamentoSection } from "@/components/lembretes/LembretePagamentoSection";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -313,6 +314,9 @@ export default function LembretesPage() {
           </table>
         )}
       </div>
+
+      {/* specs/060: e-mail semanal de pagamento pendente (regra + historico). */}
+      <LembretePagamentoSection />
 
       {exclusaoPendente && (
         <ConfirmModal

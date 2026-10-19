@@ -14,6 +14,9 @@ namespace SPI.Domain.Repositories
         // Notificacoes do tipo para as aulas informadas, em qualquer estado.
         Task<List<Notificacao>> ListarPorAulasAsync(TipoNotificacao tipo, IReadOnlyCollection<int> aulaIds, CancellationToken cancellationToken = default);
 
+        // specs/060: notificacoes do tipo da professora para os alunos informados, em qualquer estado.
+        Task<List<Notificacao>> ListarPorAlunosAsync(TipoNotificacao tipo, int professorId, IReadOnlyCollection<int> alunoIds, CancellationToken cancellationToken = default);
+
         // Ativas do tipo; professorId nulo = de todas as professoras (rotina).
         Task<List<Notificacao>> ListarAtivasPorTipoAsync(TipoNotificacao tipo, int? professorId, CancellationToken cancellationToken = default);
 

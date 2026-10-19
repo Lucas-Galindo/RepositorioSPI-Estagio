@@ -69,6 +69,10 @@ namespace SPI.Infrastructure.DependencyInjection
             services.AddSingleton(configuration.GetSection(NotificacoesOptions.SectionName).Get<NotificacoesOptions>() ?? new NotificacoesOptions());
             services.AddHostedService<NotificacaoDispatcherService>();
 
+            // specs/060
+            services.AddScoped<ILembretePagamentoRepository, LembretePagamentoRepository>();
+            services.AddHostedService<LembretePagamentoDispatcherService>();
+
             return services;
         }
     }

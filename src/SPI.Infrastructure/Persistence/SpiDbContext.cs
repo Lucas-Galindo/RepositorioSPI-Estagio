@@ -30,6 +30,8 @@ namespace SPI.Infrastructure.Persistence
         public DbSet<SenhaResetToken> SenhaResetTokens => Set<SenhaResetToken>();
         public DbSet<ExclusaoProfessorToken> ExclusaoProfessorTokens => Set<ExclusaoProfessorToken>();
         public DbSet<Notificacao> Notificacoes => Set<Notificacao>();
+        public DbSet<RegraLembretePagamento> RegrasLembretePagamento => Set<RegraLembretePagamento>();
+        public DbSet<EnvioLembretePagamento> EnviosLembretePagamento => Set<EnvioLembretePagamento>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

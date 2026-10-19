@@ -102,6 +102,14 @@ namespace SPI.Infrastructure.Repositories
                     && p.DataVencimento <= dataVencimentoAlvo)
                 .ToListAsync(cancellationToken);
 
+        public Task<List<Pagamento>> ListarPendentesVencidosAsync(DateOnly hoje, CancellationToken cancellationToken = default) =>
+            _dbContext.Pagamentos
+                .Include(p => p.Aluno)
+                .Include(p => p.VinculoCobranca)
+                .Where(p => p.Status == "Pendente" && p.DataVencimento < hoje)
+                .OrderBy(p => p.DataVencimento)
+                .ToListAsync(cancellationToken);
+
         public async Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) =>
             await _dbContext.PagamentosAula.AddAsync(new PagamentoAula { PagamentoId = pagamentoId, AulaId = aulaId }, cancellationToken);
 

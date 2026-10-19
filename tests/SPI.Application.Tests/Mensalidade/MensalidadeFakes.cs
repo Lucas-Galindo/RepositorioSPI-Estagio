@@ -69,6 +69,8 @@ namespace SPI.Application.Tests.Mensalidade
 
         public Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
+        public Task<List<Pagamento>> ListarPendentesVencidosAsync(DateOnly hoje, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public Task<List<Pagamento>> ListarMensalidadesParaLembreteVencimentoAsync(DateOnly dataVencimentoAlvo, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 

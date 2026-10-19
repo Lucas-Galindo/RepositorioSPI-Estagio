@@ -13,5 +13,10 @@ namespace SPI.Infrastructure.Email
         public string SmtpChave { get; set; } = string.Empty;
         public string RemetenteEmail { get; set; } = string.Empty;
         public string RemetenteNome { get; set; } = "SPI - Sistema para Professoras Independentes";
+
+        // specs/060: em Development, TODO e-mail vai para este endereco (User
+        // Secrets, nunca appsettings). Vazio em Development = envio recusado,
+        // para nenhum teste chegar a aluno/responsavel real.
+        public string? RedirecionarTodosPara { get; set; }
     }
 }

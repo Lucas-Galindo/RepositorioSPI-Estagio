@@ -4,8 +4,9 @@ namespace SPI.Application.Notificacoes.Services
 {
     public interface INotificacaoService
     {
-        // Mantem uma notificacao por aula pendente; professorId nulo = todas (rotina).
-        Task SincronizarAulasPendentesAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default);
+        // Mantem as notificacoes de todos os tipos (aula pendente, aula futura,
+        // pagamento pendente); professorId nulo = todas (rotina).
+        Task SincronizarAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default);
 
         // Sincroniza a professora e devolve as notificacoes ativas dela.
         Task<List<NotificacaoResponse>> ListarAtivasAsync(int professorId, DateTime agora, CancellationToken cancellationToken = default);

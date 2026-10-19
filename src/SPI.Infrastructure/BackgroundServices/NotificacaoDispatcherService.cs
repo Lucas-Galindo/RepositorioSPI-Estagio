@@ -5,7 +5,8 @@ using SPI.Application.Notificacoes.Services;
 
 namespace SPI.Infrastructure.BackgroundServices
 {
-    // specs/059: rotina que mantem os avisos de aula pendente de todas as
+    // specs/059/060: rotina que mantem as notificacoes (aula pendente, aula
+    // futura, pagamento pendente) de todas as
     // professoras, mesmo sem ninguem com o sistema aberto. Mesmo padrao das
     // demais rotinas: PeriodicTimer, escopo por execucao, falha de uma execucao
     // registrada sem derrubar o servico. A regra fica toda no NotificacaoService.
@@ -32,11 +33,11 @@ namespace SPI.Infrastructure.BackgroundServices
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var servico = scope.ServiceProvider.GetRequiredService<INotificacaoService>();
-                    await servico.SincronizarAulasPendentesAsync(DateTime.Now, professorId: null, stoppingToken);
+                    await servico.SincronizarAsync(DateTime.Now, professorId: null, stoppingToken);
                 }
                 catch (Exception e) when (e is not OperationCanceledException)
                 {
-                    _logger.LogError(e, "Falha ao sincronizar notificacoes de aula pendente.");
+                    _logger.LogError(e, "Falha ao sincronizar notificacoes.");
                 }
             }
         }

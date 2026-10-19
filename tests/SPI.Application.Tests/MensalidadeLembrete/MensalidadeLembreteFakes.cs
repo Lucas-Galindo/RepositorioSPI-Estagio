@@ -12,6 +12,8 @@ namespace SPI.Application.Tests.MensalidadeLembrete
         public List<Pagamento> Pagamentos { get; } = new();
         public int Salvamentos { get; private set; }
 
+        public Task<List<Pagamento>> ListarPendentesVencidosAsync(DateOnly hoje, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public Task<List<Pagamento>> ListarMensalidadesParaLembreteVencimentoAsync(DateOnly dataVencimentoAlvo, CancellationToken cancellationToken = default) =>
             Task.FromResult(Pagamentos
                 .Where(p => p.VinculoCobrancaId != null

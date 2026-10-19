@@ -267,6 +267,29 @@ nav.nav-group {
   background: var(--c-accent-tint);
   color: var(--c-accent-text);
 }
+.notif-tag.pagamento {
+  background: var(--c-accent2-tint);
+  color: var(--c-accent2-text);
+}
+.notif-filtros {
+  display: flex;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+.notif-filtro {
+  border: none;
+  background: transparent;
+  color: var(--c-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 100px;
+  cursor: pointer;
+}
+.notif-filtro.active {
+  background: var(--c-accent-tint);
+  color: var(--c-accent-text);
+}
 .notif-text {
   flex: 1;
   display: flex;

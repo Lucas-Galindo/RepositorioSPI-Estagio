@@ -11,5 +11,10 @@ namespace SPI.Application.Notificacoes.Services
 
         // Intervalo da rotina NotificacaoDispatcherService.
         public int IntervaloVerificacaoSegundos { get; set; } = 300;
+
+        // specs/060: o aviso de aula futura aparece AulaFuturaDiasAntes dias antes
+        // da aula, a partir de AulaFuturaHora (decisao do usuario: ajustavel sem codigo).
+        public int AulaFuturaDiasAntes { get; set; } = 1;
+        public TimeOnly AulaFuturaHora { get; set; } = new(8, 0);
     }
 }

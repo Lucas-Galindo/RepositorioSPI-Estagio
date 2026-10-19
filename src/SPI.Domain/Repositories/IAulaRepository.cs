@@ -43,6 +43,12 @@ namespace SPI.Domain.Repositories
         // Aula.Turma, mais recentes primeiro.
         Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default);
 
+        // specs/060: aulas ativas, "Agendadas", que ainda nao terminaram e ja
+        // entraram na janela do aviso de aula futura -- desde (DataInicio -
+        // diasAntes) as `hora`. professorId nulo = de todas.
+        // Inclui Materia, Turma e AulaAlunos.Aluno.
+        Task<List<Aula>> ListarNaJanelaDeAvisoAsync(DateTime agora, int diasAntes, TimeOnly hora, int? professorId, CancellationToken cancellationToken = default);
+
         // specs/059: aulas ativas, ainda "Agendadas", cujo termino (data + hora
         // fim) esta entre `desde` e `agora`; professorId nulo = de todas.
         // Inclui Materia, Turma e AulaAlunos.Aluno.

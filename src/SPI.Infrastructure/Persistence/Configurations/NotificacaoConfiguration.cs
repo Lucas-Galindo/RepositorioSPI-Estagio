@@ -15,6 +15,7 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(n => n.ProfessorId).HasColumnName("professor_id");
             builder.Property(n => n.Tipo).HasColumnName("tipo").HasMaxLength(40).IsRequired().HasConversion<string>();
             builder.Property(n => n.AulaId).HasColumnName("aula_id");
+            builder.Property(n => n.AlunoId).HasColumnName("aluno_id");
             builder.Property(n => n.CriadaEm).HasColumnName("criada_em");
             builder.Property(n => n.LidaEm).HasColumnName("lida_em");
             builder.Property(n => n.ResolvidaEm).HasColumnName("resolvida_em");
@@ -23,6 +24,11 @@ namespace SPI.Infrastructure.Persistence.Configurations
                 .WithMany()
                 .HasForeignKey(n => n.AulaId)
                 .HasConstraintName("fk_notificacao_aula");
+
+            builder.HasOne(n => n.Aluno)
+                .WithMany()
+                .HasForeignKey(n => n.AlunoId)
+                .HasConstraintName("fk_notificacao_aluno");
         }
     }
 }

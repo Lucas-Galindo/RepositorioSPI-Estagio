@@ -30,6 +30,10 @@ namespace SPI.Domain.Repositories
         // que nunca sera enviado duas vezes.
         Task<List<Pagamento>> ListarMensalidadesParaLembreteVencimentoAsync(DateOnly dataVencimentoAlvo, CancellationToken cancellationToken = default);
 
+        // specs/060: pagamentos "Pendente" com vencimento antes de `hoje` (o que
+        // vence hoje nao e pendencia), com Aluno e VinculoCobranca.
+        Task<List<Pagamento>> ListarPendentesVencidosAsync(DateOnly hoje, CancellationToken cancellationToken = default);
+
         Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default);
 
         // Chama sp_atualizar_status_pagamento (04_procedures.sql): preenche

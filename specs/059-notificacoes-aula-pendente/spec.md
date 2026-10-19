@@ -1,5 +1,7 @@
 # Feature Specification: Notificações de Status de Aula Pendente
 
+> **Estendida pela [spec 060](../060-centro-notificacoes/spec.md) (2026-10-19).** O sino virou um centro de notificações com vários tipos: além de "aula pendente", agora há "aula futura" (véspera, a partir das 08:00) e "pagamento pendente" (um por aluno), com filtro Todas/Aulas/Pagamentos. A regra desta spec para aula pendente não mudou.
+
 **Feature Branch**: `059-notificacoes-aula-pendente`
 
 **Created**: 2026-10-19

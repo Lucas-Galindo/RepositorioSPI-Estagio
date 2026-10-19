@@ -15,12 +15,21 @@ namespace SPI.Api.Controllers
     {
         private readonly ILembreteService _lembreteService;
         private readonly IValidator<LembreteRequest> _validator;
+        private readonly ILembretePagamentoService _lembretePagamentoService;
+        private readonly IValidator<RegraLembretePagamentoDto> _regraValidator;
         private readonly ILogger<LembretesController> _logger;
 
-        public LembretesController(ILembreteService lembreteService, IValidator<LembreteRequest> validator, ILogger<LembretesController> logger)
+        public LembretesController(
+            ILembreteService lembreteService,
+            IValidator<LembreteRequest> validator,
+            ILembretePagamentoService lembretePagamentoService,
+            IValidator<RegraLembretePagamentoDto> regraValidator,
+            ILogger<LembretesController> logger)
         {
             _lembreteService = lembreteService;
             _validator = validator;
+            _lembretePagamentoService = lembretePagamentoService;
+            _regraValidator = regraValidator;
             _logger = logger;
         }
 
@@ -164,6 +173,74 @@ namespace SPI.Api.Controllers
             catch (NaoEncontradoException e)
             {
                 return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpGet("pagamento-pendente/regra")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para obter a regra do e-mail semanal de pagamento pendente (specs/060)
+        /// </summary>
+        /// <returns>Retorna ativo, dia da semana (0 = domingo) e horario</returns>
+        public async Task<IActionResult> ObterRegraPagamentoPendente()
+        {
+            try
+            {
+                return Ok(await _lembretePagamentoService.ObterRegraAsync());
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpPut("pagamento-pendente/regra")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para alterar a regra do e-mail semanal de pagamento pendente (specs/060)
+        /// </summary>
+        /// <param name="regra">Ativo, dia da semana (0-6) e horario</param>
+        /// <returns>Retorna a regra salva</returns>
+        public async Task<IActionResult> AtualizarRegraPagamentoPendente([FromBody] RegraLembretePagamentoDto regra)
+        {
+            try
+            {
+                var validacao = await _regraValidator.ValidateAsync(regra);
+                if (!validacao.IsValid)
+                {
+                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+                }
+
+                var resposta = await _lembretePagamentoService.AtualizarRegraAsync(regra);
+                _logger.LogInformation("Regra do lembrete de pagamento pendente atualizada");
+                return Ok(resposta);
+            }
+            catch (Exception e)
+            {
+                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpGet("pagamento-pendente/envios")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para listar o historico de e-mails de pagamento pendente (specs/060)
+        /// </summary>
+        /// <param name="limite">Quantidade maxima (1-500, padrao 100)</param>
+        /// <returns>Retorna os envios, mais recentes primeiro</returns>
+        public async Task<IActionResult> ListarEnviosPagamentoPendente([FromQuery] int limite = 100)
+        {
+            try
+            {
+                return Ok(await _lembretePagamentoService.ListarEnviosAsync(limite));
             }
             catch (Exception e)
             {
