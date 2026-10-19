@@ -9,7 +9,7 @@ import { usePageHeader } from "@/lib/usePageHeader";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { obterDashboard, type Dashboard } from "@/lib/api/dashboard";
 import { PacotesEmAtencaoPanel } from "@/components/dashboard/PacotesEmAtencaoPanel";
-import { currency, fmtData, fmtHora } from "@/lib/format";
+import { currency, dataIsoLocal, fmtData, fmtHora } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -22,7 +22,7 @@ function diasDaSemana(): { chave: string; label: string; curto: string }[] {
   return Array.from({ length: 7 }, (_, i) => {
     const dia = new Date(inicio);
     dia.setDate(inicio.getDate() + i);
-    const chave = dia.toISOString().slice(0, 10);
+    const chave = dataIsoLocal(dia);
     return {
       chave,
       label: DIAS_SEMANA[dia.getDay()],
@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const [erro, setErro] = useState("");
 
   const semana = diasDaSemana();
-  const hojeIso = new Date().toISOString().slice(0, 10);
+  const hojeIso = dataIsoLocal();
 
   useEffect(() => {
     if (!sessao) return;

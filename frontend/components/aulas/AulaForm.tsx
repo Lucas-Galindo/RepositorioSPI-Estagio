@@ -12,6 +12,8 @@ import { listarMaterias, type Materia } from "@/lib/api/materias";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { cadastrarAula, atualizarAula, type Aula, type AulaRequest } from "@/lib/api/aulas";
+import { dataIsoLocal } from "@/lib/format";
+import { PresencaChecklist, type AlunoDaChecklist } from "./PresencaChecklist";
 
 interface AulaFormProps {
   aula?: Aula;
@@ -44,8 +46,25 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
   const [dataInicio, setDataInicio] = useState(aula?.dataInicio ?? dataPreSelecionada ?? "");
   const [horaInicio, setHoraInicio] = useState(aula?.horaInicio.slice(0, 5) ?? "");
   const [horaFim, setHoraFim] = useState(aula?.horaFim.slice(0, 5) ?? "");
+  const [presencas, setPresencas] = useState<Record<number, boolean>>({});
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
+
+  // specs/055: aula de hoje ou do passado e lancamento retroativo -- a presenca
+  // e marcada aqui mesmo e a aula ja nasce "Realizada". Mesma comparacao (so a
+  // data) que o backend faz; quem decide de verdade continua sendo o backend.
+  const retroativa = !editando && dataInicio !== "" && dataInicio <= dataIsoLocal();
+
+  // De uma aula ja realizada so a descricao pode mudar (o backend recusa o resto);
+  // os demais campos ficam travados pra nao oferecer uma edicao que vai falhar.
+  const somenteDescricao = editando && aula?.status === "Realizada";
+
+  // Quem entra na lista de presenca: os alunos ATIVOS da turma (mesma regra que o
+  // backend usa ao criar a aula) ou o aluno da aula individual. A turma traz todos
+  // os vinculados, inclusive inativos, por isso o cruzamento com `alunos` (ativos).
+  const alunosDaAula: AlunoDaChecklist[] = turmaId
+    ? (turmas.find((t) => t.id === Number(turmaId))?.alunos ?? []).filter((a) => alunos.some((ativo) => ativo.id === a.id))
+    : alunos.filter((a) => a.id === Number(alunoId));
 
   useEffect(() => {
     if (!sessao) return;
@@ -69,13 +88,21 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
       dataInicio,
       horaInicio: `${horaInicio}:00`,
       horaFim: `${horaFim}:00`,
+      // O backend exige a presenca de TODOS os alunos da aula; quem nao foi
+      // desmarcado conta como presente (padrao marcado).
+      presencas: retroativa ? Object.fromEntries(alunosDaAula.map((a) => [a.id, presencas[a.id] ?? true])) : undefined,
     };
 
     try {
       const resultado = editando && aula
         ? await atualizarAula(aula.id, request, sessao.accessToken)
         : await cadastrarAula(request, sessao.accessToken);
-      mostrarToast(editando ? "Aula atualizada com sucesso." : "Aula agendada com sucesso.");
+      const mensagem = editando
+        ? "Aula atualizada com sucesso."
+        : retroativa
+          ? "Aula registrada como realizada."
+          : "Aula agendada com sucesso.";
+      mostrarToast(resultado.avisos.length > 0 ? `${mensagem} ${resultado.avisos.join(" ")}` : mensagem);
       if (onSalvo) {
         onSalvo(resultado);
       } else {
@@ -98,6 +125,12 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
           </div>
         )}
 
+        {somenteDescricao && (
+          <p className="hint" style={{ marginBottom: 16 }}>
+            Esta aula já foi realizada: só a descrição pode ser alterada.
+          </p>
+        )}
+
         <div className="form-section">
           <div className="fs-title">
             <span className="fs-num">1</span> O que e quando
@@ -107,7 +140,7 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
               <label>
                 Matéria<span className="req">*</span>
               </label>
-              <select required value={materiaId} onChange={(e) => setMateriaId(e.target.value)}>
+              <select required disabled={somenteDescricao} value={materiaId} onChange={(e) => setMateriaId(e.target.value)}>
                 <option value="">Selecione...</option>
                 {materias.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -120,6 +153,7 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
               <label>Turma (opcional)</label>
               <select
                 value={turmaId}
+                disabled={somenteDescricao}
                 onChange={(e) => {
                   setTurmaId(e.target.value);
                   if (e.target.value) setAlunoId("");
@@ -138,7 +172,7 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
                 <label>
                   Aluno<span className="req">*</span>
                 </label>
-                <select required={!turmaId} value={alunoId} onChange={(e) => setAlunoId(e.target.value)}>
+                <select required={!turmaId} disabled={somenteDescricao} value={alunoId} onChange={(e) => setAlunoId(e.target.value)}>
                   <option value="">Selecione...</option>
                   {alunos.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -164,22 +198,38 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
               <label>
                 Data<span className="req">*</span>
               </label>
-              <DateInput required value={dataInicio} onChange={setDataInicio} />
+              <DateInput required disabled={somenteDescricao} value={dataInicio} onChange={setDataInicio} />
             </div>
             <div className="field">
               <label>
                 Horário início<span className="req">*</span>
               </label>
-              <TimeInput required value={horaInicio} onChange={setHoraInicio} />
+              <TimeInput required disabled={somenteDescricao} value={horaInicio} onChange={setHoraInicio} />
             </div>
             <div className="field">
               <label>
                 Horário fim<span className="req">*</span>
               </label>
-              <TimeInput required value={horaFim} onChange={setHoraFim} />
+              <TimeInput required disabled={somenteDescricao} value={horaFim} onChange={setHoraFim} />
             </div>
           </div>
         </div>
+
+        {retroativa && (turmaId || alunoId) && (
+          <div className="form-section">
+            <div className="fs-title">
+              <span className="fs-num">3</span> Presença
+            </div>
+            <p className="hint" style={{ marginBottom: 12 }}>
+              A data já chegou, então a aula será registrada como realizada. Desmarque quem faltou.
+            </p>
+            <PresencaChecklist
+              alunos={alunosDaAula}
+              presencas={presencas}
+              onChange={(id, presente) => setPresencas((atual) => ({ ...atual, [id]: presente }))}
+            />
+          </div>
+        )}
 
         <div className="form-actions">
           <button
@@ -190,7 +240,7 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
             Cancelar
           </button>
           <button type="submit" className="btn btn-primary" disabled={salvando}>
-            {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Agendar aula"}
+            {salvando ? "Salvando..." : editando ? "Salvar alterações" : retroativa ? "Registrar aula realizada" : "Agendar aula"}
           </button>
         </div>
       </form>

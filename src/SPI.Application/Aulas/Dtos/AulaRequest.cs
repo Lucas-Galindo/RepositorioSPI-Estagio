@@ -19,5 +19,14 @@ namespace SPI.Application.Aulas.Dtos
         public DateOnly DataInicio { get; set; }
         public TimeOnly HoraInicio { get; set; }
         public TimeOnly HoraFim { get; set; }
+
+        /// <summary>
+        /// Presenca de cada aluno (chave = AlunoId, valor = presente). Obrigatorio
+        /// so ao CRIAR uma aula com DataInicio hoje ou no passado (lancamento
+        /// retroativo, specs/055): a aula ja nasce "Realizada". Ignorado para aula
+        /// futura e na edicao -- presenca de aula existente continua sendo
+        /// registrada via RegistrarSessao.
+        /// </summary>
+        public Dictionary<int, bool>? Presencas { get; set; }
     }
 }

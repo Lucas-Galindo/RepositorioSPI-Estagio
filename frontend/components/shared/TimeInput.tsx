@@ -33,6 +33,7 @@ interface TimeInputProps {
   id?: string;
   className?: string;
   title?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -40,7 +41,7 @@ interface TimeInputProps {
  * formato exibido/aceito nao dependa do idioma/SO do navegador da usuaria (nunca AM/PM). O
  * valor emitido/recebido continua `HH:mm`, o mesmo contrato do input nativo que substitui.
  */
-export function TimeInput({ value, onChange, required, id, className, title }: TimeInputProps) {
+export function TimeInput({ value, onChange, required, id, className, title, disabled }: TimeInputProps) {
   const [texto, setTexto] = useState(() => hhmmParaTexto(value));
   const [ultimoValue, setUltimoValue] = useState(value);
 
@@ -73,6 +74,7 @@ export function TimeInput({ value, onChange, required, id, className, title }: T
       value={texto}
       onChange={handleChange}
       required={required}
+      disabled={disabled}
       id={id}
       title={title}
       className={["time-input", className].filter(Boolean).join(" ")}

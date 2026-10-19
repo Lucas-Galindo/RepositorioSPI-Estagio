@@ -15,7 +15,7 @@ import { usePageHeader } from "@/lib/usePageHeader";
 import { obterAluno, excluirAluno, reativarAluno, type Aluno } from "@/lib/api/alunos";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { listarPagamentos, type Pagamento } from "@/lib/api/pagamentos";
-import { avatarColor, initials, fmtData, fmtHora, currency } from "@/lib/format";
+import { avatarColor, initials, fmtData, fmtHora, currency, dataIsoLocal } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
 
 export default function AlunoDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -88,7 +88,7 @@ export default function AlunoDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const aulasOrdenadas = [...aulas].sort((x, y) => (x.dataInicio + x.horaInicio).localeCompare(y.dataInicio + y.horaInicio));
-  const hojeIso = new Date().toISOString().slice(0, 10);
+  const hojeIso = dataIsoLocal();
   const proxima = aulasOrdenadas.find((a) => a.dataInicio >= hojeIso && a.status === "Agendada");
   const realizadas = aulas.filter((a) => a.status === "Realizada").length;
   const freqPct = realizadas ? Math.round((aluno.frequencia / realizadas) * 100) : null;

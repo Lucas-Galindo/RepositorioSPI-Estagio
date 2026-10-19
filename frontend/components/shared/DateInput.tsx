@@ -43,6 +43,7 @@ interface DateInputProps {
   id?: string;
   className?: string;
   title?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -50,7 +51,7 @@ interface DateInputProps {
  * formato exibido/aceito nao dependa do idioma/SO do navegador da usuaria. O valor
  * emitido/recebido continua `yyyy-MM-dd`, o mesmo contrato do input nativo que substitui.
  */
-export function DateInput({ value, onChange, required, id, className, title }: DateInputProps) {
+export function DateInput({ value, onChange, required, id, className, title, disabled }: DateInputProps) {
   const [texto, setTexto] = useState(() => isoParaTexto(value));
   const [ultimoValue, setUltimoValue] = useState(value);
 
@@ -83,6 +84,7 @@ export function DateInput({ value, onChange, required, id, className, title }: D
       value={texto}
       onChange={handleChange}
       required={required}
+      disabled={disabled}
       id={id}
       title={title}
       className={["date-input", className].filter(Boolean).join(" ")}

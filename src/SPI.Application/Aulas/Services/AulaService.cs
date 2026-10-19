@@ -63,6 +63,16 @@ namespace SPI.Application.Aulas.Services
             await ValidarReferenciasAsync(request, cancellationToken);
             await ValidarConflitoAsync(professorId, request, ignorarAulaId: null, cancellationToken);
 
+            // specs/055: aula com data de hoje ou do passado e um lancamento
+            // retroativo -- ela ja nasce "Realizada", com as presencas informadas
+            // no mesmo formulario. Compara so a data (sem a hora), como decidido
+            // na spec: uma aula marcada pra mais tarde hoje ja conta como retroativa.
+            var retroativa = request.DataInicio <= DateOnly.FromDateTime(DateTime.Now);
+            if (retroativa && request.Presencas is null)
+            {
+                throw new ConflitoException("Informe a presenca de cada aluno para criar uma aula retroativa.");
+            }
+
             var aula = new Aula
             {
                 Descricao = request.Descricao,
@@ -86,15 +96,26 @@ namespace SPI.Application.Aulas.Services
             await _aulaRepository.DefinirAlunosAsync(aula.Id, alunoIds, cancellationToken);
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
 
-            if (request.TurmaId.HasValue)
+            // Estoria 5: a aula nova muda a "proxima aula" da turma, entao os
+            // lembretes precisam recalcular. Na aula retroativa isso ja acontece
+            // dentro de AplicarPresencasAsync -- por isso aqui so no caso futuro,
+            // para nunca recalcular duas vezes.
+            if (!retroativa && request.TurmaId.HasValue)
             {
-                // Estoria 5: uma nova aula agendada para a turma recalcula a
-                // hora programada dos lembretes configurados para ela.
                 await _lembreteService.RecalcularAsync(request.TurmaId.Value, cancellationToken);
             }
 
-            var aulaCompleta = await _aulaRepository.ObterPorIdAsync(aula.Id, cancellationToken);
-            return Mapear(aulaCompleta!);
+            // Recarrega com Materia e AulaAlunos.Aluno: AplicarPresencasAsync usa
+            // esses dados (nome do aluno no aviso, frequencia, descricao da cobranca).
+            var aulaCompleta = (await _aulaRepository.ObterPorIdAsync(aula.Id, cancellationToken))!;
+
+            var avisos = retroativa
+                ? await AplicarPresencasAsync(aulaCompleta, request.Presencas!, cancellationToken)
+                : new List<string>();
+
+            var resposta = Mapear(aulaCompleta);
+            resposta.Avisos = avisos;
+            return resposta;
         }
 
         public async Task<AulaResponse> AtualizarAsync(int id, AulaRequest request, CancellationToken cancellationToken = default)
@@ -102,12 +123,12 @@ namespace SPI.Application.Aulas.Services
             var aula = await _aulaRepository.ObterPorIdAsync(id, cancellationToken)
                 ?? throw new NaoEncontradoException("Aula nao encontrada.");
 
-            var turmaIdAntiga = aula.TurmaId;
-
             if (aula.Status == "Realizada")
             {
-                throw new ConflitoException("Uma aula ja realizada nao pode ser alterada.");
+                return await AtualizarDescricaoDeAulaRealizadaAsync(aula, request, cancellationToken);
             }
+
+            var turmaIdAntiga = aula.TurmaId;
 
             await ValidarReferenciasAsync(request, cancellationToken);
             await ValidarConflitoAsync(aula.ProfessorId, request, ignorarAulaId: id, cancellationToken);
@@ -177,11 +198,25 @@ namespace SPI.Application.Aulas.Services
                 throw new ConflitoException("Somente aulas com status 'Agendada' podem ter a sessao registrada.");
             }
 
+            var avisos = await AplicarPresencasAsync(aula, request.Presencas, cancellationToken);
+
+            var resposta = Mapear(aula);
+            resposta.Avisos = avisos;
+            return resposta;
+        }
+
+        // Unico ponto que transforma as presencas informadas em uma aula
+        // "Realizada" (specs/055, research.md R1). Usado por RegistrarSessaoAsync
+        // (aula que ja existia) e por CadastrarAsync (aula retroativa criada ja
+        // realizada), para a regra de presenca e cobranca nunca divergir entre os
+        // dois caminhos. Devolve os avisos a mostrar para a professora.
+        private async Task<List<string>> AplicarPresencasAsync(Aula aula, Dictionary<int, bool> presencas, CancellationToken cancellationToken)
+        {
             var avisos = new List<string>();
 
             foreach (var aulaAluno in aula.AulaAlunos)
             {
-                if (!request.Presencas.TryGetValue(aulaAluno.AlunoId, out var presente))
+                if (!presencas.TryGetValue(aulaAluno.AlunoId, out var presente))
                 {
                     throw new ConflitoException($"Presenca do aluno {aulaAluno.AlunoId} nao foi informada.");
                 }
@@ -229,9 +264,32 @@ namespace SPI.Application.Aulas.Services
             // Forma de pagamento fica em aberto ate o recebimento efetivo.
             await GerarContasAReceberAsync(aula, cancellationToken);
 
-            var resposta = Mapear(aula);
-            resposta.Avisos = avisos;
-            return resposta;
+            return avisos;
+        }
+
+        // specs/055 (US2): de uma aula ja Realizada, so a Descricao pode mudar (para
+        // anotar o que de fato foi lecionado). Qualquer outro campo diferente do
+        // atual continua recusado, como antes desta feature. Como nada de
+        // data/horario/turma muda aqui, nao ha conflito de horario, lista de alunos
+        // ou lembrete a recalcular.
+        private async Task<AulaResponse> AtualizarDescricaoDeAulaRealizadaAsync(Aula aula, AulaRequest request, CancellationToken cancellationToken)
+        {
+            // Aula individual nao tem turma: o aluno dela e o unico participante.
+            var tentaMudarOutroCampo = request.MateriaId != aula.MateriaId
+                || request.TurmaId != aula.TurmaId
+                || (!aula.TurmaId.HasValue && request.AlunoId != aula.AulaAlunos.FirstOrDefault()?.AlunoId)
+                || request.DataInicio != aula.DataInicio
+                || request.HoraInicio != aula.HoraInicio
+                || request.HoraFim != aula.HoraFim;
+
+            if (tentaMudarOutroCampo)
+            {
+                throw new ConflitoException("Uma aula ja realizada so permite editar a descricao.");
+            }
+
+            aula.Descricao = request.Descricao;
+            await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+            return Mapear(aula);
         }
 
         private async Task GerarContasAReceberAsync(Aula aula, CancellationToken cancellationToken)

@@ -39,6 +39,8 @@ export interface AulaRequest {
   dataInicio: string;
   horaInicio: string;
   horaFim: string;
+  /** So ao criar aula com data de hoje/passada (specs/055): AlunoId -> presente. */
+  presencas?: Record<number, boolean>;
 }
 
 export function listarAulas(

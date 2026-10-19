@@ -24,6 +24,17 @@ export function avatarColor(id: string | number): string {
   return AV_COLORS[hash % AV_COLORS.length];
 }
 
+/**
+ * Data (yyyy-MM-dd) no fuso do navegador -- por padrao, hoje. Nao usar
+ * data.toISOString().slice(0, 10): isso da a data em UTC, e no Brasil
+ * (UTC-3) vira o dia seguinte entre 21h e meia-noite.
+ */
+export function dataIsoLocal(data: Date = new Date()): string {
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
+  return `${data.getFullYear()}-${mes}-${dia}`;
+}
+
 /** Formata uma data ISO (yyyy-MM-dd) para dd/mm/aaaa. */
 export function fmtData(iso: string): string {
   const [y, m, d] = iso.split("-");
