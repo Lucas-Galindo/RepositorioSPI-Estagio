@@ -184,15 +184,121 @@ nav.nav-group {
 .icon-round:hover {
   box-shadow: var(--shadow-press);
 }
-.icon-round .dot {
+/* ===== Notificacoes (specs/059) -- so tokens de tema (specs/057) ===== */
+.notif-wrap {
+  position: relative;
+}
+.notif-count {
   position: absolute;
-  top: 7px;
-  right: 7px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--c-accent2);
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 100px;
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  font-size: 9.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1.5px solid var(--c-surface);
+}
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  max-height: 380px;
+  overflow-y: auto;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-out);
+  padding: 10px;
+  z-index: 90;
+}
+.notif-panel-head {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px 10px;
+}
+.notif-empty {
+  font-size: 12px;
+  color: var(--c-text-muted);
+  padding: 4px 8px 8px;
+}
+.notif-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--c-text);
+  padding: 9px 8px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.notif-item:hover {
+  background: var(--c-bg);
+}
+.notif-item.unread .notif-title {
+  font-weight: 700;
+}
+.notif-item.unread::after {
+  content: "";
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--c-accent);
+}
+.notif-tag {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 100px;
+  background: var(--c-accent-tint);
+  color: var(--c-accent-text);
+}
+.notif-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.notif-title {
+  font-size: 12px;
+  font-weight: 500;
+}
+.notif-sub {
+  font-size: 11px;
+  color: var(--c-text-muted);
+}
+.notif-modal .ic {
+  background: var(--c-accent-tint);
+  color: var(--c-accent-text);
+}
+.notif-detalhes {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 12.5px;
+  margin: 14px 0 4px;
+}
+.notif-detalhes dt {
+  color: var(--c-text-muted);
+}
+.notif-detalhes dd {
+  margin: 0;
+  font-weight: 600;
 }
 .header-user {
   display: flex;

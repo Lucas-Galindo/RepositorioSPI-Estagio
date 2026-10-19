@@ -9,6 +9,7 @@ using SPI.Application.Dashboard.Services;
 using SPI.Application.Financeiro.Services;
 using SPI.Application.Lembretes.Services;
 using SPI.Application.Materias.Services;
+using SPI.Application.Notificacoes.Services;
 using SPI.Application.Pagamentos.Services;
 using SPI.Application.Professores.Services;
 using SPI.Application.Relatorios.Services;
@@ -38,6 +39,7 @@ namespace SPI.Application.DependencyInjection
             services.AddScoped<IContaPagarService, ContaPagarService>();
             services.AddScoped<ILembreteService, LembreteService>();
             services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<INotificacaoService, NotificacaoService>();
             services.AddScoped<IFinanceiroService, FinanceiroService>();
             services.AddScoped<IRelatorioService, RelatorioService>();
             services.AddScoped<IAnexoValidator, AnexoValidator>();

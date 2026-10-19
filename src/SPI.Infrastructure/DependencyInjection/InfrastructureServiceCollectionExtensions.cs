@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SPI.Application.Common;
+using SPI.Application.Notificacoes.Services;
 using SPI.Domain.Repositories;
 using SPI.Infrastructure.BackgroundServices;
 using SPI.Infrastructure.Email;
@@ -62,6 +63,11 @@ namespace SPI.Infrastructure.DependencyInjection
             services.AddHostedService<LembreteDispatcherService>();
             services.AddHostedService<MensalidadeDispatcherService>();
             services.AddHostedService<MensalidadeLembreteDispatcherService>();
+
+            // specs/059
+            services.AddScoped<INotificacaoRepository, NotificacaoRepository>();
+            services.AddSingleton(configuration.GetSection(NotificacoesOptions.SectionName).Get<NotificacoesOptions>() ?? new NotificacoesOptions());
+            services.AddHostedService<NotificacaoDispatcherService>();
 
             return services;
         }

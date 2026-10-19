@@ -1,7 +1,7 @@
 "use client";
 
-import { Icon } from "@/components/shared/Icon";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { NotificacoesSino } from "./NotificacoesSino";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHeader } from "@/contexts/HeaderContext";
 import { initials } from "@/lib/format";
@@ -18,10 +18,8 @@ export function Header() {
       </div>
       <div className="header-right">
         <ThemeToggle className="icon-round" />
-        <div className="icon-round">
-          <Icon name="bell" size={15} />
-          <span className="dot" />
-        </div>
+        {/* specs/059: so a professora tem aulas (o Admin nao ve o sino). */}
+        {sessao?.perfil === "Professor" && <NotificacoesSino />}
         <div className="header-user">
           <div className="avatar-sm">{sessao ? initials(sessao.nome) : "?"}</div>
           <div>

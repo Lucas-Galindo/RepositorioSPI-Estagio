@@ -147,6 +147,8 @@ namespace SPI.Application.Tests.VinculosCobranca
     {
         public List<(int VinculoCobrancaId, int Ano, int Mes)> Presencas { get; } = new();
 
+        public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, DateTime desde, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
             Task.FromResult(Presencas.Count(p => p.VinculoCobrancaId == vinculoCobrancaId && p.Ano == competencia.Year && p.Mes == competencia.Month));
 
