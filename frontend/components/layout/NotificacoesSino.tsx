@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +75,13 @@ export function NotificacoesSino() {
     }
   };
 
+  // Clicar na pendencia leva direto ao registro do pagamento (mesmo padrao das
+  // tabelas das outras telas: linha clicavel, sem aparencia de link).
+  const irParaPagamento = (pagamentoId: number) => {
+    router.push(`/financeiro/contas-a-receber/${pagamentoId}`);
+    setSelecionada(null);
+  };
+
   const irParaAula = () => {
     if (!selecionada?.aula) return;
     router.push(`/aulas/${selecionada.aula.id}`);
@@ -135,14 +141,14 @@ export function NotificacoesSino() {
 
       {selecionada && (
         <div className="modal-overlay" onClick={() => setSelecionada(null)}>
-          <div className={`modal notif-modal${selecionada.pagamento ? " modal-lg" : ""}`} onClick={(e) => e.stopPropagation()}>
+          <div className={`modal notif-modal${selecionada.pagamento ? " notif-modal-wide" : ""}`} onClick={(e) => e.stopPropagation()}>
             <div className="ic">
               <Icon name={selecionada.pagamento ? "money" : "bell"} size={18} />
             </div>
             <h3>{TIPOS[selecionada.tipo].titulo}</h3>
             <p>{selecionada.mensagem}</p>
             {selecionada.pagamento && (
-              <div className="table-wrap" style={{ marginTop: 12 }}>
+              <div className="table-wrap notif-pendencias">
                 <table>
                   <thead>
                     <tr>
@@ -154,12 +160,8 @@ export function NotificacoesSino() {
                   </thead>
                   <tbody>
                     {selecionada.pagamento.pendencias.map((p) => (
-                      <tr key={p.pagamentoId}>
-                        <td>
-                          <Link href={`/financeiro/contas-a-receber/${p.pagamentoId}`} onClick={() => setSelecionada(null)}>
-                            {p.descricao}
-                          </Link>
-                        </td>
+                      <tr className="row-link" key={p.pagamentoId} onClick={() => irParaPagamento(p.pagamentoId)}>
+                        <td>{p.descricao}</td>
                         <td>{currency(p.valor)}</td>
                         <td>{fmtData(p.vencimento)}</td>
                         <td>{p.diasAtraso === 1 ? "1 dia" : `${p.diasAtraso} dias`}</td>

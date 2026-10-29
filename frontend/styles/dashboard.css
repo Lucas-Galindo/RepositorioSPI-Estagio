@@ -209,7 +209,7 @@ nav.nav-group {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 300px;
+  width: 420px;
   max-width: calc(100vw - 32px);
   max-height: 380px;
   overflow-y: auto;
@@ -219,6 +219,18 @@ nav.nav-group {
   box-shadow: var(--shadow-out);
   padding: 10px;
   z-index: 90;
+}
+/* Telas estreitas: o painel deixa de ancorar no sino (que fica longe da borda
+   direita) e ocupa a largura da tela, com 16px de margem de cada lado. */
+@media (max-width: 640px) {
+  .notif-panel {
+    position: fixed;
+    top: 72px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: none;
+  }
 }
 .notif-panel-head {
   font-size: 12px;
@@ -304,6 +316,39 @@ nav.nav-group {
 .notif-sub {
   font-size: 11px;
   color: var(--c-text-muted);
+}
+/* Larguras (card "Aumentar a largura das telas de notificações"): o painel
+   passa de 300px para 420px; o pop-up de aula de 360px para 480px; e o de
+   pagamento, que tem tabela, para 640px. Todos respeitam a largura da tela
+   (max-width/width em %), entao nada transborda no celular. */
+.modal.notif-modal {
+  max-width: 480px;
+}
+.modal.notif-modal.notif-modal-wide {
+  max-width: 640px;
+}
+/* Respiro entre os detalhes/tabela e os botoes. */
+.notif-modal .modal-actions {
+  margin-top: 22px;
+}
+/* Tabela de pendencias dentro do pop-up: sem o cartao elevado e com celulas
+   menos espacadas que as telas cheias (24px); valores nunca quebram em 2 linhas.
+   A rolagem horizontal fica so como ultimo recurso em telas muito estreitas. */
+.notif-modal .notif-pendencias {
+  margin-top: 12px;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+.notif-modal .notif-pendencias thead th {
+  padding: 8px 12px;
+}
+.notif-modal .notif-pendencias tbody td {
+  padding: 12px;
+  white-space: nowrap;
+}
+.notif-modal .notif-pendencias tbody td:first-child {
+  white-space: normal;
 }
 .notif-modal .ic {
   background: var(--c-accent-tint);
