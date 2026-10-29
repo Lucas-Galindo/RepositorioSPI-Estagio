@@ -93,13 +93,20 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
         <div className="avatar-lg" style={{ background: "var(--c-accent2-tint)", color: "var(--c-accent2-text)" }}>
           <Icon name="wallet" size={24} />
         </div>
-        <div>
+        <div className="hero-info">
           <h2>{currency(pagamento.valorFinal)}</h2>
           <div className="meta">
             <Link href={`/alunos/${pagamento.alunoId}`} style={{ color: "inherit" }}>
               {pagamento.alunoNome}
             </Link>
             ·<span>{pagamento.formaPagamentoNome ?? "Forma não definida"}</span>·<StatusPill status={pagamento.status} />
+          </div>
+          <div className="hero-status-actions">
+            {STATUS_OPCOES.filter((s) => s !== pagamento.status).map((s) => (
+              <button key={s} type="button" className="btn btn-sm btn-ghost" disabled={processando} onClick={() => setStatusEmConfirmacao(s)}>
+                {STATUS_ROTULO_ACAO[s]}
+              </button>
+            ))}
           </div>
         </div>
         <Link href={`/financeiro/contas-a-receber/${pagamento.id}/editar`} className="btn btn-ghost btn-sm" style={{ marginLeft: "auto" }}>
@@ -118,7 +125,7 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
       )}
 
       <div className="grid-2b">
-        <div className="mini-panel">
+        <div className="mini-panel full-span">
           <h4>
             <Icon name="cal" size={15} /> Detalhes
           </h4>
@@ -173,31 +180,6 @@ export default function ContaAReceberDetailPage({ params }: { params: Promise<{ 
             onAnexar={handleAnexar}
             onVisualizar={() => obterAnexoPagamento(pagamento.id, sessao!.accessToken)}
           />
-        </div>
-
-        <div className="mini-panel">
-          <h4>
-            <Icon name="edit" size={15} /> Alterar status
-          </h4>
-          <div className="meta" style={{ marginBottom: 12 }}>
-            Status atual: <StatusPill status={pagamento.status} />
-          </div>
-          <div className="checkbox-list">
-            {STATUS_OPCOES.filter((s) => s !== pagamento.status).map((s) => (
-              <button
-                key={s}
-                type="button"
-                className="btn btn-sm btn-ghost"
-                disabled={processando}
-                onClick={() => setStatusEmConfirmacao(s)}
-              >
-                {STATUS_ROTULO_ACAO[s]}
-              </button>
-            ))}
-          </div>
-          <p className="hint" style={{ marginTop: 12 }}>
-            Ao marcar como Pago, a data de pagamento é preenchida automaticamente. Cancelar não exclui o registro, apenas encerra a cobrança.
-          </p>
         </div>
       </div>
 

@@ -1178,6 +1178,19 @@ nav.nav-group {
   display: flex;
   gap: 8px;
 }
+/* Acoes de status (Pendente/Pago/Cancelar) no cabecalho do registro financeiro:
+   centralizadas abaixo do valor e da linha de meta (contas a pagar e a receber). */
+.entity-hero .hero-info {
+  display: flex;
+  flex-direction: column;
+}
+.entity-hero .hero-status-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
 .breadcrumb {
   display: flex;
   align-items: center;

@@ -93,11 +93,18 @@ export default function ContaAPagarDetailPage({ params }: { params: Promise<{ id
         <div className="avatar-lg" style={{ background: "var(--c-danger-tint)", color: "var(--c-danger-text)" }}>
           <Icon name="money" size={24} />
         </div>
-        <div>
+        <div className="hero-info">
           <h2>{currency(conta.valor)}</h2>
           <div className="meta">
             <span>{conta.categoriaDespesaNome}</span>·<span>{conta.formaPagamentoNome ?? "Forma não definida"}</span>·
             <StatusPill status={conta.status} />
+          </div>
+          <div className="hero-status-actions">
+            {STATUS_OPCOES.filter((s) => s !== conta.status).map((s) => (
+              <button key={s} type="button" className="btn btn-sm btn-ghost" disabled={processando} onClick={() => setStatusEmConfirmacao(s)}>
+                {STATUS_ROTULO_ACAO[s]}
+              </button>
+            ))}
           </div>
         </div>
         <Link href={`/financeiro/contas-a-pagar/${conta.id}/editar`} className="btn btn-ghost btn-sm" style={{ marginLeft: "auto" }}>
@@ -116,7 +123,7 @@ export default function ContaAPagarDetailPage({ params }: { params: Promise<{ id
       )}
 
       <div className="grid-2b">
-        <div className="mini-panel">
+        <div className="mini-panel full-span">
           <h4>
             <Icon name="cal" size={15} /> Detalhes
           </h4>
@@ -163,31 +170,6 @@ export default function ContaAPagarDetailPage({ params }: { params: Promise<{ id
             onAnexar={handleAnexar}
             onVisualizar={() => obterAnexoContaPagar(conta.id, sessao!.accessToken)}
           />
-        </div>
-
-        <div className="mini-panel">
-          <h4>
-            <Icon name="edit" size={15} /> Alterar status
-          </h4>
-          <div className="meta" style={{ marginBottom: 12 }}>
-            Status atual: <StatusPill status={conta.status} />
-          </div>
-          <div className="checkbox-list">
-            {STATUS_OPCOES.filter((s) => s !== conta.status).map((s) => (
-              <button
-                key={s}
-                type="button"
-                className="btn btn-sm btn-ghost"
-                disabled={processando}
-                onClick={() => setStatusEmConfirmacao(s)}
-              >
-                {STATUS_ROTULO_ACAO[s]}
-              </button>
-            ))}
-          </div>
-          <p className="hint" style={{ marginTop: 12 }}>
-            Ao marcar como Pago, a data de pagamento é preenchida automaticamente. Cancelar não exclui o registro, apenas encerra a despesa.
-          </p>
         </div>
       </div>
 
