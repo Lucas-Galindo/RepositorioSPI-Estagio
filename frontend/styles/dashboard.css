@@ -368,6 +368,47 @@ nav.nav-group {
   margin: 0;
   font-weight: 600;
 }
+/* Pop-up de detalhes da aula (specs/061), somente leitura. Reaproveita o bloco
+   .notif-detalhes. 480px como o pop-up de aula das notificacoes; a lista de
+   alunos rola por dentro para nunca passar da altura da tela. */
+.modal.aula-detalhes-popup {
+  max-width: 480px;
+}
+.aula-detalhes-status {
+  margin-bottom: 4px;
+}
+.aula-detalhes-subtitulo {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--c-text-muted);
+  margin: 16px 0 6px;
+}
+.aula-detalhes-alunos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.aula-detalhes-alunos li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 7px 0;
+  font-size: 12.5px;
+  border-top: 1px solid var(--c-bg);
+}
+.aula-detalhes-ra {
+  color: var(--c-text-muted);
+  font-size: 11px;
+}
+.aula-detalhes-popup .modal-actions {
+  margin-top: 22px;
+}
 .header-user {
   display: flex;
   align-items: center;
@@ -767,11 +808,18 @@ nav.nav-group {
   border-left: 3px solid var(--c-accent);
   padding: 4px 6px;
   margin-bottom: 7px;
-  font-size: 11px;
   cursor: pointer;
   box-shadow: var(--shadow-out-sm);
   color: inherit;
   text-decoration: none;
+  /* specs/061: a aula da agenda e um <button> (abre o pop-up de detalhes): reset do botao. */
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 11px;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
 }
 .week-event .t {
   font-weight: 700;

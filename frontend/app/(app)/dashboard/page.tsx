@@ -9,6 +9,7 @@ import { usePageHeader } from "@/lib/usePageHeader";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { obterDashboard, type Dashboard } from "@/lib/api/dashboard";
 import { PacotesPanel } from "@/components/dashboard/PacotesPanel";
+import { AulaDetalhesPopup } from "@/components/aulas/AulaDetalhesPopup";
 import { DateInput } from "@/components/shared/DateInput";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { currency, dataIsoLocal, fmtData, fmtHora } from "@/lib/format";
@@ -39,6 +40,8 @@ export default function DashboardPage() {
   const [aulas, setAulas] = useState<Aula[] | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [erro, setErro] = useState("");
+  // specs/061: aula da agenda semanal cujo pop-up de detalhes esta aberto.
+  const [aulaAberta, setAulaAberta] = useState<Aula | null>(null);
   // specs/058: filtros da secao de pacotes (o periodo vale para o dashboard todo).
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFim, setPeriodoFim] = useState("");
@@ -184,16 +187,17 @@ export default function DashboardPage() {
               </div>
               {dasAulas.length ? (
                 dasAulas.map((a) => (
-                  <Link
-                    href={`/aulas/${a.id}`}
+                  <button
+                    type="button"
                     className={`week-event${a.status === "Realizada" ? " st-realizada" : a.status === "Cancelada" ? " st-cancelada" : ""}`}
                     key={a.id}
+                    onClick={() => setAulaAberta(a)}
                   >
                     <div className="t">
                       {fmtHora(a.horaInicio)} {a.materiaNome}
                     </div>
                     <div className="s">{a.turmaNome ?? a.alunos.map((al) => al.nome).join(", ")}</div>
-                  </Link>
+                  </button>
                 ))
               ) : (
                 <div className="week-empty">{aulas === null ? "Carregando..." : "Sem aulas"}</div>
@@ -202,6 +206,8 @@ export default function DashboardPage() {
           );
         })}
       </div>
+
+      {aulaAberta && <AulaDetalhesPopup aula={aulaAberta} onFechar={() => setAulaAberta(null)} />}
     </>
   );
 }
