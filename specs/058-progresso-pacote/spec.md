@@ -1,5 +1,7 @@
 # Feature Specification: Progresso de Pacote de Aulas
 
+> **Ajuste de 2026-10-29 (pedido do usuário):** a Home deixou de exibir os indicadores "Concluídos" e "Aulas dadas no período" da seção "Pacotes de aulas". Os demais indicadores e a lista de renovação não mudaram. O backend ainda calcula e devolve os dois campos (`concluidos` e `aulasDadasNoPeriodo`); o destino deles será definido no card "Estudar implementação de dashboard de aulas".
+
 **Feature Branch**: `058-progresso-pacote`
 
 **Created**: 2026-10-19

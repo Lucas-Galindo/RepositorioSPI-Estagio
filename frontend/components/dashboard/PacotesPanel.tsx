@@ -12,10 +12,8 @@ export function PacotesPanel({ resumo }: { resumo: PacotesResumo }) {
   const indicadores = [
     { rotulo: "Pacotes ativos", valor: resumo.ativos },
     { rotulo: "Próximos do fim", valor: resumo.proximosDoFim },
-    { rotulo: "Concluídos", valor: resumo.concluidos },
     { rotulo: "Aulas dadas", valor: resumo.aulasDadas },
     { rotulo: "Aulas restantes", valor: resumo.aulasRestantes },
-    { rotulo: "Aulas dadas no período", valor: resumo.aulasDadasNoPeriodo },
   ];
 
   return (
