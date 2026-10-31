@@ -7,8 +7,9 @@ using Xunit;
 
 namespace SPI.Application.Tests.VinculosCobranca
 {
-    // specs/056: regras de combinacao de vinculos ativos do mesmo aluno -- mensalidade
-    // exclusiva, um pacote por vez, avulsa por contexto -- no cadastro, na edicao e na
+    // specs/056 + specs/063: regras de combinacao de vinculos ativos do mesmo aluno -- mensalidade
+    // exclusiva, um pacote por grupo (um de aulas individuais e um por turma), avulsa por contexto --
+    // no cadastro, na edicao e na
     // reativacao. Toda recusa deixa os vinculos exatamente como estavam.
     public class VinculoCobrancaServiceCombinacaoTests
     {
@@ -17,7 +18,7 @@ namespace SPI.Application.Tests.VinculosCobranca
 
         private const string MsgMensalidadeComOutros = "O aluno ja tem outros vinculos ativos. Desative-os antes de cadastrar a mensalidade, que cobre todas as aulas.";
         private const string MsgJaTemMensalidade = "O aluno tem mensalidade ativa, que ja cobre todas as aulas.";
-        private const string MsgJaTemPacote = "O aluno ja tem um pacote ativo.";
+        private const string MsgJaTemPacote = "O aluno ja tem um pacote de aulas individuais ativo.";
 
         private readonly FakeVinculoCobrancaRepositoryParaTeste _vinculos = new();
         private readonly FakeTurmaRepositoryParaVinculo _turmas = new();
@@ -111,7 +112,7 @@ namespace SPI.Application.Tests.VinculosCobranca
             Assert.Null(resposta.TurmaId);
         }
 
-        // ---------- Um pacote por aluno; pacote convive com avulsa (US2) ----------
+        // ---------- Um pacote de aulas individuais por aluno; pacote convive com avulsa (US2) ----------
 
         [Fact]
         public async Task Cadastrar_segundo_pacote_ativo_e_recusado()

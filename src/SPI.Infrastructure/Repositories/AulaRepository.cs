@@ -73,6 +73,9 @@ namespace SPI.Infrastructure.Repositories
             return await query.ToListAsync(cancellationToken);
         }
 
+        // So aulas ativas (exclusao e logica). Filtros opcionais que se somam (E); o periodo e sobre
+        // a DATA DA AULA, com as duas pontas incluidas, e "aluno" casa com quem esta na lista de
+        // presenca da aula. Ordem: data e depois hora de inicio.
         public async Task<List<Aula>> ListarAsync(
             string? status,
             int? turmaId,

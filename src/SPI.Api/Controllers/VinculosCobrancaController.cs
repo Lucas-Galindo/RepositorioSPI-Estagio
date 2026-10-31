@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using SPI.Application.VinculosCobranca.Dtos;
 using SPI.Application.VinculosCobranca.Services;
 using SPI.Domain.Enums;
-using SPI.Domain.Exceptions;
 
 namespace SPI.Api.Controllers
 {
@@ -39,18 +38,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna os vinculos do aluno (ativos primeiro)</returns>
         public async Task<IActionResult> Listar(int alunoId, [FromQuery] bool? ativo)
         {
-            try
-            {
-                return Ok(await _vinculoService.ListarPorAlunoAsync(alunoId, ativo));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _vinculoService.ListarPorAlunoAsync(alunoId, ativo));
         }
 
         [HttpGet("{id}")]
@@ -65,18 +53,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o vinculo encontrado</returns>
         public async Task<IActionResult> ObterPorId(int alunoId, int id)
         {
-            try
-            {
-                return Ok(await _vinculoService.ObterPorIdAsync(alunoId, id));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _vinculoService.ObterPorIdAsync(alunoId, id));
         }
 
         [HttpGet("{id}/aulas")]
@@ -91,18 +68,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna as aulas, mais recentes primeiro</returns>
         public async Task<IActionResult> ListarAulasDoPacote(int alunoId, int id)
         {
-            try
-            {
-                return Ok(await _vinculoService.ListarAulasDoPacoteAsync(alunoId, id));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _vinculoService.ListarAulasDoPacoteAsync(alunoId, id));
         }
 
         [HttpPost]
@@ -119,30 +85,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o vinculo cadastrado</returns>
         public async Task<IActionResult> Cadastrar(int alunoId, [FromBody] VinculoCobrancaRequest request)
         {
-            try
+            var validacao = await _validator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _validator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _vinculoService.CadastrarAsync(alunoId, request);
-                _logger.LogInformation("Vinculo de cobranca {Id} cadastrado para o aluno {AlunoId}", response.Id, alunoId);
-                return CreatedAtAction(nameof(ObterPorId), new { alunoId, id = response.Id }, response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _vinculoService.CadastrarAsync(alunoId, request);
+            _logger.LogInformation("Vinculo de cobranca {Id} cadastrado para o aluno {AlunoId}", response.Id, alunoId);
+            return CreatedAtAction(nameof(ObterPorId), new { alunoId, id = response.Id }, response);
         }
 
         [HttpPut("{id}")]
@@ -160,30 +111,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o vinculo atualizado</returns>
         public async Task<IActionResult> Atualizar(int alunoId, int id, [FromBody] VinculoCobrancaRequest request)
         {
-            try
+            var validacao = await _validator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _validator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _vinculoService.AtualizarAsync(alunoId, id, request);
-                _logger.LogInformation("Vinculo de cobranca {Id} do aluno {AlunoId} atualizado", id, alunoId);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _vinculoService.AtualizarAsync(alunoId, id, request);
+            _logger.LogInformation("Vinculo de cobranca {Id} do aluno {AlunoId} atualizado", id, alunoId);
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
@@ -198,20 +134,9 @@ namespace SPI.Api.Controllers
         /// <returns>Sem conteudo em caso de sucesso</returns>
         public async Task<IActionResult> Excluir(int alunoId, int id)
         {
-            try
-            {
-                await _vinculoService.ExcluirAsync(alunoId, id);
-                _logger.LogInformation("Vinculo de cobranca {Id} do aluno {AlunoId} excluido (logicamente)", id, alunoId);
-                return Ok();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            await _vinculoService.ExcluirAsync(alunoId, id);
+            _logger.LogInformation("Vinculo de cobranca {Id} do aluno {AlunoId} excluido (logicamente)", id, alunoId);
+            return Ok();
         }
 
         [HttpPatch("{id}/reativar")]
@@ -227,24 +152,9 @@ namespace SPI.Api.Controllers
         /// <returns>O vinculo reativado; 409 se ja existir outro ativo para a mesma combinacao</returns>
         public async Task<IActionResult> Reativar(int alunoId, int id)
         {
-            try
-            {
-                var response = await _vinculoService.ReativarAsync(alunoId, id);
-                _logger.LogInformation("Vinculo de cobranca {Id} do aluno {AlunoId} reativado", id, alunoId);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _vinculoService.ReativarAsync(alunoId, id);
+            _logger.LogInformation("Vinculo de cobranca {Id} do aluno {AlunoId} reativado", id, alunoId);
+            return Ok(response);
         }
     }
 }

@@ -48,8 +48,16 @@ namespace SPI.Application.Tests.Aulas
         public Task<List<int>> ObterAlunosAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) =>
             Task.FromResult(AlunosAtivosPorTurma.TryGetValue(turmaId, out var ids) ? ids.ToList() : new List<int>());
 
-        public Task<bool> ExisteConflitoAsync(int professorId, DateOnly data, TimeOnly horaInicio, TimeOnly horaFim, int? ignorarAulaId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(false);
+        // specs/063 (FR-016): a regra de conflito de horario e da PROFESSORA (qualquer aula dela), nunca do
+        // aluno. O fake so registra as consultas e devolve o resultado configurado.
+        public bool ConflitoSimulado { get; set; }
+        public List<(int ProfessorId, DateOnly Data, TimeOnly Inicio, TimeOnly Fim)> ConsultasDeConflito { get; } = new();
+
+        public Task<bool> ExisteConflitoAsync(int professorId, DateOnly data, TimeOnly horaInicio, TimeOnly horaFim, int? ignorarAulaId, CancellationToken cancellationToken = default)
+        {
+            ConsultasDeConflito.Add((professorId, data, horaInicio, horaFim));
+            return Task.FromResult(ConflitoSimulado);
+        }
 
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
         {

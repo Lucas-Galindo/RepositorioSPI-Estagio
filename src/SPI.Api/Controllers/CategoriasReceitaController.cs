@@ -26,15 +26,8 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a lista de categorias de receita ativas</returns>
         public async Task<IActionResult> Listar()
         {
-            try
-            {
-                var categorias = await _categoriaReceitaRepository.ListarAtivasAsync();
-                return Ok(categorias.Select(c => new { c.Id, c.Nome }));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var categorias = await _categoriaReceitaRepository.ListarAtivasAsync();
+            return Ok(categorias.Select(c => new { c.Id, c.Nome }));
         }
     }
 }

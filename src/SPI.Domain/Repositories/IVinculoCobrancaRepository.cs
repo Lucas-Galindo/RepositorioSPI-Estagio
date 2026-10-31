@@ -20,6 +20,14 @@ namespace SPI.Domain.Repositories
         // Home); alunoId nulo = de todos os alunos.
         Task<List<VinculoCobranca>> ListarPacotesAsync(int? alunoId, CancellationToken cancellationToken = default);
 
+        // specs/063: pacotes ATIVOS apontando para a turma (com o Aluno). Base da regra
+        // "quem pode voltar a uma turma de pacote" e do encerramento da turma.
+        Task<List<VinculoCobranca>> ListarPacotesAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default);
+
+        // specs/063: pacotes ATIVOS de turmas ENCERRADAS -- turma inativa ou com data de
+        // fim anterior a `hoje` (com a Turma). A rotina de fim de turma os inativa.
+        Task<List<VinculoCobranca>> ListarPacotesAtivosDeTurmasEncerradasAsync(DateOnly hoje, CancellationToken cancellationToken = default);
+
         Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default);
 
         Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default);

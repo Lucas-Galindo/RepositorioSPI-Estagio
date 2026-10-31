@@ -251,6 +251,8 @@ namespace SPI.Infrastructure.Repositories
             return query.Select(aa => aa.AlunoId).Distinct().CountAsync(cancellationToken);
         }
 
+        // Pagamentos efetivamente pagos: o periodo vale para a DATA DE PAGAMENTO (nao a de vencimento).
+        // Turma = o aluno participa da turma; materia = alguma aula ligada ao pagamento e dessa materia.
         public Task<List<Pagamento>> ListarPagosNoPeriodoAsync(
             DateOnly? inicio, DateOnly? fim, int? formaPagamentoId, int? alunoId, int? turmaId, int? materiaId, CancellationToken cancellationToken = default)
         {

@@ -1,5 +1,7 @@
 # Feature Specification: Cobrança por Aluno e Reposição de Aulas
 
+> **Regra substituída em parte pela [spec 063](../063-pacote-fora-da-turma/spec.md) (2026-10-30).** O pacote deixa de ser "do aluno, sem turma, válido em qualquer aula": todo pacote pertence a um grupo (uma turma de pacote ou as aulas individuais) e só é consumido em aula do seu grupo; fora dele o aluno paga como avulso. O aluno pode ter 0 ou N pacotes de turma (um por turma) e no máximo um de aulas individuais (no lugar de "um pacote ativo por aluno"). A turma passa a ter tipo (Mensalidade ou Pacote), a turma de pacote é fechada depois que começa e, quando acaba, os pacotes dela ficam inativos com o saldo preservado. Mensalidade, Avulsa e reposição não mudam.
+
 **Feature Branch**: `056-cobranca-por-aluno`
 
 **Created**: 2026-10-19

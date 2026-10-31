@@ -2,7 +2,7 @@
  * Decodifica o payload de um JWT (sem validar assinatura -- o token ja foi
  * validado pelo backend; aqui so lemos as claims para exibir na UI).
  */
-export function decodeJwtPayload<T = Record<string, unknown>>(token: string): T | null {
+function decodeJwtPayload<T = Record<string, unknown>>(token: string): T | null {
   try {
     const payload = token.split(".")[1];
     const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));

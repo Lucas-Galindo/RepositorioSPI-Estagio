@@ -5,7 +5,6 @@ using SPI.Application.Anexos.Services;
 using SPI.Application.ContasPagar.Dtos;
 using SPI.Application.ContasPagar.Services;
 using SPI.Domain.Enums;
-using SPI.Domain.Exceptions;
 
 namespace SPI.Api.Controllers
 {
@@ -56,14 +55,7 @@ namespace SPI.Api.Controllers
             [FromQuery] DateOnly? vencimentoInicio,
             [FromQuery] DateOnly? vencimentoFim)
         {
-            try
-            {
-                return Ok(await _contaPagarService.ListarAsync(categoriaDespesaId, status, favorecido, vencimentoInicio, vencimentoFim));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _contaPagarService.ListarAsync(categoriaDespesaId, status, favorecido, vencimentoInicio, vencimentoFim));
         }
 
         [HttpGet("{id}")]
@@ -77,18 +69,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a conta a pagar encontrada</returns>
         public async Task<IActionResult> ObterPorId(int id)
         {
-            try
-            {
-                return Ok(await _contaPagarService.ObterPorIdAsync(id));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _contaPagarService.ObterPorIdAsync(id));
         }
 
         [HttpPost]
@@ -103,26 +84,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a conta a pagar registrada</returns>
         public async Task<IActionResult> Registrar([FromBody] RegistrarContaPagarRequest request)
         {
-            try
+            var validacao = await _registrarValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _registrarValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _contaPagarService.RegistrarAsync(request);
-                _logger.LogInformation("Conta a pagar {Id} registrada", response.Id);
-                return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _contaPagarService.RegistrarAsync(request);
+            _logger.LogInformation("Conta a pagar {Id} registrada", response.Id);
+            return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
         }
 
         [HttpPut("{id}")]
@@ -140,26 +110,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a conta a pagar atualizada</returns>
         public async Task<IActionResult> Atualizar(int id, [FromBody] AtualizarContaPagarRequest request)
         {
-            try
+            var validacao = await _atualizarValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _atualizarValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _contaPagarService.AtualizarAsync(id, request);
-                _logger.LogInformation("Conta a pagar {Id} atualizada", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _contaPagarService.AtualizarAsync(id, request);
+            _logger.LogInformation("Conta a pagar {Id} atualizada", id);
+            return Ok(response);
         }
 
         [HttpPut("{id}/status")]
@@ -176,26 +135,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a conta a pagar atualizada</returns>
         public async Task<IActionResult> AtualizarStatus(int id, [FromBody] AtualizarStatusContaPagarRequest request)
         {
-            try
+            var validacao = await _statusValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _statusValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _contaPagarService.AtualizarStatusAsync(id, request);
-                _logger.LogInformation("Status da conta a pagar {Id} atualizado para {Status}", id, request.Status);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _contaPagarService.AtualizarStatusAsync(id, request);
+            _logger.LogInformation("Status da conta a pagar {Id} atualizado para {Status}", id, request.Status);
+            return Ok(response);
         }
 
         [HttpPost("{id}/anexo")]
@@ -213,26 +161,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna os metadados do anexo salvo</returns>
         public async Task<IActionResult> AnexarArquivo(int id, IFormFile arquivo)
         {
-            try
+            var erros = _anexoValidator.Validar(arquivo);
+            if (erros.Count > 0)
             {
-                var erros = _anexoValidator.Validar(arquivo);
-                if (erros.Count > 0)
-                {
-                    return BadRequest(erros);
-                }
+                return BadRequest(erros);
+            }
 
-                var response = await _contaPagarService.AnexarArquivoAsync(id, arquivo);
-                _logger.LogInformation("Anexo da conta a pagar {Id} atualizado", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _contaPagarService.AnexarArquivoAsync(id, arquivo);
+            _logger.LogInformation("Anexo da conta a pagar {Id} atualizado", id);
+            return Ok(response);
         }
 
         [HttpGet("{id}/anexo")]
@@ -246,20 +183,13 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o conteudo binario do anexo, identico ao originalmente enviado</returns>
         public async Task<IActionResult> ObterAnexo(int id)
         {
-            try
+            var anexo = await _contaPagarService.ObterArquivoAsync(id);
+            if (anexo is null)
             {
-                var anexo = await _contaPagarService.ObterArquivoAsync(id);
-                if (anexo is null)
-                {
-                    return NotFound();
-                }
+                return NotFound();
+            }
 
-                return File(anexo.Value.Conteudo, anexo.Value.TipoMime, anexo.Value.NomeOriginal);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return File(anexo.Value.Conteudo, anexo.Value.TipoMime, anexo.Value.NomeOriginal);
         }
     }
 }

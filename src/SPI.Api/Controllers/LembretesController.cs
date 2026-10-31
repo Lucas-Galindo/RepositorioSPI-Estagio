@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using SPI.Application.Lembretes.Dtos;
 using SPI.Application.Lembretes.Services;
 using SPI.Domain.Enums;
-using SPI.Domain.Exceptions;
 
 namespace SPI.Api.Controllers
 {
@@ -45,14 +44,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a lista de lembretes que atendem aos filtros</returns>
         public async Task<IActionResult> Listar([FromQuery] int? turmaId, [FromQuery] string? status, [FromQuery] bool? ativo)
         {
-            try
-            {
-                return Ok(await _lembreteService.ListarAsync(turmaId, status, ativo));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _lembreteService.ListarAsync(turmaId, status, ativo));
         }
 
         [HttpGet("{id}")]
@@ -66,18 +58,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o lembrete encontrado</returns>
         public async Task<IActionResult> ObterPorId(int id)
         {
-            try
-            {
-                return Ok(await _lembreteService.ObterPorIdAsync(id));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _lembreteService.ObterPorIdAsync(id));
         }
 
         [HttpPost]
@@ -92,32 +73,22 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o lembrete cadastrado, com a Hora Programada calculada</returns>
         public async Task<IActionResult> Cadastrar([FromBody] LembreteRequest request)
         {
-            try
+            var validacao = await _validator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _validator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _lembreteService.CadastrarAsync(request);
-                _logger.LogInformation("Lembrete {Id} cadastrado para a turma {TurmaId}", response.Id, response.TurmaId);
-                return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _lembreteService.CadastrarAsync(request);
+            _logger.LogInformation("Lembrete {Id} cadastrado para a turma {TurmaId}", response.Id, response.TurmaId);
+            return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
         }
 
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         /// <summary>
         /// Endpoint para atualizar Canal, Antecedencia e/ou Destinatarios de um lembrete
@@ -127,30 +98,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o lembrete atualizado</returns>
         public async Task<IActionResult> Atualizar(int id, [FromBody] LembreteRequest request)
         {
-            try
+            var validacao = await _validator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _validator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _lembreteService.AtualizarAsync(id, request);
-                _logger.LogInformation("Lembrete {Id} atualizado", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _lembreteService.AtualizarAsync(id, request);
+            _logger.LogInformation("Lembrete {Id} atualizado", id);
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
@@ -164,20 +120,9 @@ namespace SPI.Api.Controllers
         /// <returns>Sem conteudo em caso de sucesso</returns>
         public async Task<IActionResult> Excluir(int id)
         {
-            try
-            {
-                await _lembreteService.ExcluirAsync(id);
-                _logger.LogInformation("Lembrete {Id} excluido (logicamente)", id);
-                return Ok();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            await _lembreteService.ExcluirAsync(id);
+            _logger.LogInformation("Lembrete {Id} excluido (logicamente)", id);
+            return Ok();
         }
 
         [HttpGet("pagamento-pendente/regra")]
@@ -189,14 +134,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna ativo, dia da semana (0 = domingo) e horario</returns>
         public async Task<IActionResult> ObterRegraPagamentoPendente()
         {
-            try
-            {
-                return Ok(await _lembretePagamentoService.ObterRegraAsync());
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _lembretePagamentoService.ObterRegraAsync());
         }
 
         [HttpPut("pagamento-pendente/regra")]
@@ -210,22 +148,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a regra salva</returns>
         public async Task<IActionResult> AtualizarRegraPagamentoPendente([FromBody] RegraLembretePagamentoDto regra)
         {
-            try
+            var validacao = await _regraValidator.ValidateAsync(regra);
+            if (!validacao.IsValid)
             {
-                var validacao = await _regraValidator.ValidateAsync(regra);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var resposta = await _lembretePagamentoService.AtualizarRegraAsync(regra);
-                _logger.LogInformation("Regra do lembrete de pagamento pendente atualizada");
-                return Ok(resposta);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var resposta = await _lembretePagamentoService.AtualizarRegraAsync(regra);
+            _logger.LogInformation("Regra do lembrete de pagamento pendente atualizada");
+            return Ok(resposta);
         }
 
         [HttpGet("pagamento-pendente/envios")]
@@ -238,14 +169,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna os envios, mais recentes primeiro</returns>
         public async Task<IActionResult> ListarEnviosPagamentoPendente([FromQuery] int limite = 100)
         {
-            try
-            {
-                return Ok(await _lembretePagamentoService.ListarEnviosAsync(limite));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _lembretePagamentoService.ListarEnviosAsync(limite));
         }
     }
 }

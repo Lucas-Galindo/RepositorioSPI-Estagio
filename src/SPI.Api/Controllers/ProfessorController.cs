@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using SPI.Api.Extensions;
 using SPI.Application.Professores.Dtos;
 using SPI.Application.Professores.Services;
-using SPI.Domain.Exceptions;
 using SPI.Domain.Enums;
 
 namespace SPI.Api.Controllers
@@ -51,30 +50,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o cadastro criado</returns>
         public async Task<IActionResult> CadastroInicial([FromBody] CadastroInicialProfessorRequest request)
         {
-            try
+            var validacao = await _cadastroValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _cadastroValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _professorService.CadastroInicialAsync(request);
-                _logger.LogInformation("Cadastro inicial da professora criado para {Email}", request.Email);
-                return CreatedAtAction(nameof(Me), response);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            var response = await _professorService.CadastroInicialAsync(request);
+            _logger.LogInformation("Cadastro inicial da professora criado para {Email}", request.Email);
+            return CreatedAtAction(nameof(Me), response);
         }
 
         [HttpGet("admin")]
@@ -88,19 +72,8 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna os dados da professora, ou 404 se nenhuma tiver sido cadastrada ainda</returns>
         public async Task<IActionResult> ObterComoAdmin()
         {
-            try
-            {
-                var response = await _professorService.ObterUnicaAsync();
-                return response is null ? NotFound() : Ok(response);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            var response = await _professorService.ObterUnicaAsync();
+            return response is null ? NotFound() : Ok(response);
         }
 
         [HttpPut("admin")]
@@ -117,34 +90,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o perfil atualizado</returns>
         public async Task<IActionResult> AtualizarComoAdmin([FromBody] AtualizarProfessorRequest request)
         {
-            try
+            var validacao = await _atualizarValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _atualizarValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _professorService.AtualizarComoAdminAsync(request);
-                _logger.LogInformation("Perfil da professora {ProfessorId} atualizado pelo Admin", response.Id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            var response = await _professorService.AtualizarComoAdminAsync(request);
+            _logger.LogInformation("Perfil da professora {ProfessorId} atualizado pelo Admin", response.Id);
+            return Ok(response);
         }
 
         [HttpGet("me")]
@@ -158,23 +112,8 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna os dados da professora autenticada</returns>
         public async Task<IActionResult> Me()
         {
-            try
-            {
-                var response = await _professorService.ObterPerfilAsync(User.ObterUsuarioId());
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            var response = await _professorService.ObterPerfilAsync(User.ObterUsuarioId());
+            return Ok(response);
         }
 
         [HttpPut("me")]
@@ -191,34 +130,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o perfil atualizado</returns>
         public async Task<IActionResult> AtualizarMe([FromBody] AtualizarProfessorRequest request)
         {
-            try
+            var validacao = await _atualizarValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _atualizarValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _professorService.AtualizarPerfilAsync(User.ObterUsuarioId(), request);
-                _logger.LogInformation("Perfil da professora {ProfessorId} atualizado", User.ObterUsuarioId());
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            var response = await _professorService.AtualizarPerfilAsync(User.ObterUsuarioId(), request);
+            _logger.LogInformation("Perfil da professora {ProfessorId} atualizado", User.ObterUsuarioId());
+            return Ok(response);
         }
 
         [HttpPut("me/senha")]
@@ -235,34 +155,15 @@ namespace SPI.Api.Controllers
         /// <returns>Sem conteudo em caso de sucesso</returns>
         public async Task<IActionResult> AlterarSenha([FromBody] AlterarSenhaProfessorRequest request)
         {
-            try
+            var validacao = await _alterarSenhaValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _alterarSenhaValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                await _professorService.AlterarSenhaAsync(User.ObterUsuarioId(), request);
-                _logger.LogInformation("Senha alterada pela propria professora {ProfessorId}", User.ObterUsuarioId());
-                return Ok();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            await _professorService.AlterarSenhaAsync(User.ObterUsuarioId(), request);
+            _logger.LogInformation("Senha alterada pela propria professora {ProfessorId}", User.ObterUsuarioId());
+            return Ok();
         }
 
         [HttpPost("admin/excluir/solicitar-codigo")]
@@ -276,24 +177,9 @@ namespace SPI.Api.Controllers
         /// <returns>Sem conteudo em caso de sucesso; o codigo e enviado ao e-mail do proprio Admin autenticado</returns>
         public async Task<IActionResult> SolicitarExclusao()
         {
-            try
-            {
-                await _professorService.SolicitarExclusaoAsync(User.ObterUsuarioId());
-                _logger.LogInformation("Codigo de exclusao da professora solicitado pelo Admin {AdminId}", User.ObterUsuarioId());
-                return Ok();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            await _professorService.SolicitarExclusaoAsync(User.ObterUsuarioId());
+            _logger.LogInformation("Codigo de exclusao da professora solicitado pelo Admin {AdminId}", User.ObterUsuarioId());
+            return Ok();
         }
 
         [HttpPost("admin/excluir/confirmar")]
@@ -310,34 +196,15 @@ namespace SPI.Api.Controllers
         /// <returns>Sem conteudo em caso de sucesso</returns>
         public async Task<IActionResult> ConfirmarExclusao([FromBody] ConfirmarExclusaoProfessorRequest request)
         {
-            try
+            var validacao = await _confirmarExclusaoValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _confirmarExclusaoValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                await _professorService.ConfirmarExclusaoAsync(User.ObterUsuarioId(), request.Codigo);
-                _logger.LogInformation("Professora excluida (logicamente) pelo Admin {AdminId}", User.ObterUsuarioId());
-                return Ok();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            await _professorService.ConfirmarExclusaoAsync(User.ObterUsuarioId(), request.Codigo);
+            _logger.LogInformation("Professora excluida (logicamente) pelo Admin {AdminId}", User.ObterUsuarioId());
+            return Ok();
         }
 
         [HttpPatch("admin/reativar")]
@@ -352,28 +219,9 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna o perfil reativado</returns>
         public async Task<IActionResult> Reativar()
         {
-            try
-            {
-                var response = await _professorService.ReativarAsync();
-                _logger.LogInformation("Professora {ProfessorId} reativada pelo Admin {AdminId}", response.Id, User.ObterUsuarioId());
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            var response = await _professorService.ReativarAsync();
+            _logger.LogInformation("Professora {ProfessorId} reativada pelo Admin {AdminId}", response.Id, User.ObterUsuarioId());
+            return Ok(response);
         }
     }
 }

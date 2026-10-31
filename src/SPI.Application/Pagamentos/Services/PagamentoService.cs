@@ -59,6 +59,8 @@ namespace SPI.Application.Pagamentos.Services
 
         public async Task<PagamentoResponse> RegistrarAsync(RegistrarPagamentoRequest request, CancellationToken cancellationToken = default)
         {
+            // Primeiro confirma que tudo o que o pagamento referencia existe (aluno, forma, categoria
+            // e cada aula); so depois grava, para nao deixar um pagamento parcial por um id invalido.
             if (await _alunoRepository.ObterPorIdAsync(request.AlunoId, cancellationToken) is null)
             {
                 throw new NaoEncontradoException("Aluno nao encontrado.");
@@ -94,9 +96,13 @@ namespace SPI.Application.Pagamentos.Services
                 ValorFinal = request.ValorFinal,
                 Status = request.Status,
                 Observacoes = request.Observacoes,
+                // Pagamento ja registrado como pago nasce com a data de pagamento de hoje (em UTC);
+                // nos demais status ela fica vazia ate a baixa (ver AtualizarStatusAsync).
                 DataPagamento = request.Status == "Pago" ? DateOnly.FromDateTime(DateTime.UtcNow) : null
             };
 
+            // Dois salvamentos: o pagamento precisa existir (ter Id) antes de as aulas serem vinculadas
+            // a ele. Os dois nao rodam na mesma transacao.
             await _pagamentoRepository.AdicionarAsync(pagamento, cancellationToken);
             await _pagamentoRepository.SalvarAlteracoesAsync(cancellationToken);
 

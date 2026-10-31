@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using SPI.Application.Materias.Dtos;
 using SPI.Application.Materias.Services;
 using SPI.Domain.Enums;
-using SPI.Domain.Exceptions;
 
 namespace SPI.Api.Controllers
 {
@@ -36,14 +35,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a lista de materias que atendem aos filtros</returns>
         public async Task<IActionResult> Listar([FromQuery] string? nome, [FromQuery] string? nivel, [FromQuery] bool? ativo)
         {
-            try
-            {
-                return Ok(await _materiaService.ListarAsync(nome, nivel, ativo));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _materiaService.ListarAsync(nome, nivel, ativo));
         }
 
         [HttpGet("{id}")]
@@ -57,18 +49,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a materia encontrada</returns>
         public async Task<IActionResult> ObterPorId(int id)
         {
-            try
-            {
-                return Ok(await _materiaService.ObterPorIdAsync(id));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _materiaService.ObterPorIdAsync(id));
         }
 
         [HttpPost]
@@ -83,26 +64,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a materia cadastrada</returns>
         public async Task<IActionResult> Cadastrar([FromBody] MateriaRequest request)
         {
-            try
+            var validacao = await _validator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _validator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _materiaService.CadastrarAsync(request);
-                _logger.LogInformation("Materia {Nome} cadastrada", request.Nome);
-                return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _materiaService.CadastrarAsync(request);
+            _logger.LogInformation("Materia {Nome} cadastrada", request.Nome);
+            return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
         }
 
         [HttpPut("{id}")]
@@ -119,30 +89,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a materia atualizada</returns>
         public async Task<IActionResult> Atualizar(int id, [FromBody] MateriaRequest request)
         {
-            try
+            var validacao = await _validator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _validator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _materiaService.AtualizarAsync(id, request);
-                _logger.LogInformation("Materia {Id} atualizada", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _materiaService.AtualizarAsync(id, request);
+            _logger.LogInformation("Materia {Id} atualizada", id);
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
@@ -156,20 +111,9 @@ namespace SPI.Api.Controllers
         /// <returns>Sem conteudo em caso de sucesso</returns>
         public async Task<IActionResult> Excluir(int id)
         {
-            try
-            {
-                await _materiaService.ExcluirAsync(id);
-                _logger.LogInformation("Materia {Id} excluida (logicamente)", id);
-                return Ok();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            await _materiaService.ExcluirAsync(id);
+            _logger.LogInformation("Materia {Id} excluida (logicamente)", id);
+            return Ok();
         }
 
         [HttpPatch("{id}/reativar")]
@@ -183,20 +127,9 @@ namespace SPI.Api.Controllers
         /// <returns>A materia reativada</returns>
         public async Task<IActionResult> Reativar(int id)
         {
-            try
-            {
-                var response = await _materiaService.ReativarAsync(id);
-                _logger.LogInformation("Materia {Id} reativada", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _materiaService.ReativarAsync(id);
+            _logger.LogInformation("Materia {Id} reativada", id);
+            return Ok(response);
         }
     }
 }

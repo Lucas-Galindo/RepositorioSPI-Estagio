@@ -48,6 +48,8 @@ namespace SPI.Application.Alunos.Services
 
             var senhaHash = string.IsNullOrWhiteSpace(request.Senha) ? null : _passwordHasher.Hash(request.Senha);
 
+            // A procedure gera o RA (ano + semestre + sequencial, sem repetir mesmo com cadastros
+            // simultaneos) e grava so os dados basicos do aluno; o endereco entra logo abaixo.
             var (id, _) = await _alunoRepository.CadastrarViaProcedureAsync(
                 request.Nome,
                 request.Cpf,
@@ -66,6 +68,8 @@ namespace SPI.Application.Alunos.Services
 
             var aluno = await _alunoRepository.ObterPorIdAsync(id, cancellationToken);
 
+            // O endereco nao e parametro da procedure: completa-se o aluno ja criado e salva de novo.
+            // Se o endereco do responsavel e o mesmo do aluno, os campos dele ficam vazios.
             aluno!.Cep = request.Cep;
             aluno.Rua = request.Rua;
             aluno.Numero = request.Numero;

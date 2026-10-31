@@ -19,6 +19,8 @@
     <ProjectReference Include="..\..\src\SPI.Application\SPI.Application.csproj" />
     <!-- specs/039: primeira suite de teste para um BackgroundService (MensalidadeDispatcherService). -->
     <ProjectReference Include="..\..\src\SPI.Infrastructure\SPI.Infrastructure.csproj" />
+    <!-- specs/065: testes do ErrosDeNegocioFilter, que mora na API. -->
+    <ProjectReference Include="..\..\src\SPI.Api\SPI.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,7 +7,7 @@ namespace SPI.Application.Aulas.Services
     {
         // Aluno com mensalidade: a presenca nao gera cobranca.
         Mensalidade,
-        // Consome o pacote do aluno (ou, se o saldo nunca foi informado, so registra o uso).
+        // Consome o pacote do grupo da aula (ou, se o saldo nunca foi informado, so registra o uso).
         Pacote,
         // Gera conta a receber pelo valor da Avulsa do contexto da aula.
         Avulsa,
@@ -41,10 +41,18 @@ namespace SPI.Application.Aulas.Services
                 return new DecisaoCobranca(TipoCobrancaPresenca.Mensalidade, mensalidade);
             }
 
-            // 2) Pacote do aluno vale em qualquer aula (turma ou individual).
-            //    Primeiro um pacote com saldo; depois um pacote cujo saldo nunca foi
-            //    informado (comportamento antigo preservado: nao cobra nem bloqueia).
-            var pacotes = porAntiguidade.Where(v => v.Modalidade == ModalidadeCobranca.Pacote).ToList();
+            // 2) Pacote so vale no SEU grupo (specs/063): o pacote de uma turma, so em aula
+            //    dessa turma; o pacote de aulas individuais (sem turma), so em aula
+            //    individual. O que decide e a turma da aula, nao a matricula do aluno.
+            //    Fora do grupo o pacote nao interfere (nem consome, nem barra, nem avisa):
+            //    a presenca cai na Avulsa do contexto ou no valor da aula.
+            //    Dentro do grupo: primeiro um pacote com saldo; depois um pacote cujo saldo
+            //    nunca foi informado (comportamento antigo preservado: nao cobra nem
+            //    bloqueia). Ha no maximo um pacote ativo por grupo, entao nao ha escolha
+            //    entre pacotes (dado herdado com duplicado desempata pelo menor Id).
+            var pacotes = porAntiguidade
+                .Where(v => v.Modalidade == ModalidadeCobranca.Pacote && v.TurmaId == turmaIdDaAula)
+                .ToList();
             var pacoteUsavel = pacotes.FirstOrDefault(p => p.SaldoAulas > 0) ?? pacotes.FirstOrDefault(p => p.SaldoAulas is null);
             if (pacoteUsavel is not null)
             {

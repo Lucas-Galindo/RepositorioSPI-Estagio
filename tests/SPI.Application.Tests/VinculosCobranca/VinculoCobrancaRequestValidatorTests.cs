@@ -219,18 +219,24 @@ namespace SPI.Application.Tests.VinculosCobranca
             semTotal.ShouldNotHaveValidationErrorFor(x => x.TotalAulasPacote);
         }
 
-        // specs/056: Mensalidade e Pacote sao do aluno; so Avulsa tem turma.
-        [Theory]
-        [InlineData(ModalidadeCobranca.Mensalidade)]
-        [InlineData(ModalidadeCobranca.Pacote)]
-        public void Deve_rejeitar_turma_em_Mensalidade_e_Pacote(ModalidadeCobranca modalidade)
+        // specs/056 + specs/063: a Mensalidade e do aluno e nao tem turma; a Avulsa e o Pacote
+        // podem ter turma (o pacote de turma pertence a uma turma de pacote).
+        [Fact]
+        public void Deve_rejeitar_turma_em_Mensalidade()
         {
-            var comTurma = _validator.TestValidate(CriarRequestValido(modalidade));
-            var semTurma = _validator.TestValidate(CriarRequestValido(modalidade) with { TurmaId = null });
+            var comTurma = _validator.TestValidate(CriarRequestValido(ModalidadeCobranca.Mensalidade));
+            var semTurma = _validator.TestValidate(CriarRequestValido(ModalidadeCobranca.Mensalidade) with { TurmaId = null });
 
             comTurma.ShouldHaveValidationErrorFor(x => x.TurmaId)
-                .WithErrorMessage("Mensalidade e Pacote valem para todas as aulas do aluno e nao tem turma.");
+                .WithErrorMessage("A Mensalidade vale para todas as aulas do aluno e nao tem turma.");
             semTurma.ShouldNotHaveValidationErrorFor(x => x.TurmaId);
+        }
+
+        [Fact]
+        public void Deve_aceitar_turma_em_Pacote()
+        {
+            _validator.TestValidate(CriarRequestValido(ModalidadeCobranca.Pacote))
+                .ShouldNotHaveValidationErrorFor(x => x.TurmaId);
         }
 
         [Fact]

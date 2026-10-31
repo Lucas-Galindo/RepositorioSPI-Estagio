@@ -136,6 +136,10 @@ namespace SPI.Application.Lembretes.Services
                 return;
             }
 
+            // Atencao: o resultado e um so por aluno/dia. Se um destinatario recebe e outro falha, o
+            // envio fica como Falha e a nova tentativa reenvia para TODOS -- quem ja recebeu pode
+            // receber o e-mail em duplicidade (no maximo MaxTentativas vezes). O registro de envio
+            // e unico por aluno e dia, sem resultado por destinatario.
             var corpo = MontarCorpo(aluno.Nome, pendencias, diaEnvio);
             var falhas = new List<string>();
             foreach (var destinatario in destinatarios)

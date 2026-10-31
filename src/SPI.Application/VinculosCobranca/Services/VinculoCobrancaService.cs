@@ -58,10 +58,16 @@ namespace SPI.Application.VinculosCobranca.Services
                 return;
             }
 
-            var pacotes = ativos.Where(r => r.Modalidade == ModalidadeCobranca.Pacote).ToList();
-            if (pacotes.Count > 1)
+            // specs/063: ter varios pacotes e permitido (um por turma e um de aulas individuais).
+            // So e conflito herdado mais de um pacote ativo do MESMO grupo (a mesma turma, ou
+            // varios de aulas individuais).
+            var pacotes = ativos.Where(r => r.Modalidade == ModalidadeCobranca.Pacote);
+            foreach (var grupo in pacotes.GroupBy(r => r.TurmaId).Where(g => g.Count() > 1))
             {
-                pacotes.ForEach(r => r.Conflito = "Mais de um pacote ativo.");
+                foreach (var r in grupo)
+                {
+                    r.Conflito = "Mais de um pacote ativo do mesmo grupo (mesma turma ou aulas individuais).";
+                }
             }
         }
 
@@ -77,9 +83,10 @@ namespace SPI.Application.VinculosCobranca.Services
         {
             await GarantirAlunoExisteAsync(alunoId, cancellationToken);
 
+            Turma? turmaDePacote = null;
             if (request.TurmaId.HasValue)
             {
-                await ValidarTurmaAsync(alunoId, request.TurmaId.Value, cancellationToken);
+                turmaDePacote = await ValidarTurmaDoVinculoAsync(alunoId, request.Modalidade, request.TurmaId.Value, cancellationToken);
             }
 
             await GarantirRegrasDeCombinacaoAsync(alunoId, request.Modalidade, request.TurmaId, ignorarId: null, cancellationToken);
@@ -100,6 +107,14 @@ namespace SPI.Application.VinculosCobranca.Services
             };
 
             await _vinculoRepository.AdicionarAsync(vinculo, cancellationToken);
+
+            // specs/063 (FR-003): o cadastro do pacote de turma matricula o aluno, na mesma
+            // gravacao do vinculo (repositorios compartilham o contexto do banco).
+            if (turmaDePacote is not null)
+            {
+                await GarantirMatriculaAsync(turmaDePacote, alunoId, cancellationToken);
+            }
+
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
             // Recarrega para trazer a navegacao Turma (nome) no response.
@@ -118,11 +133,21 @@ namespace SPI.Application.VinculosCobranca.Services
                 throw new ConflitoException("Reative o vinculo antes de edita-lo.");
             }
 
+            // specs/063 (FR-005): a turma de um pacote nao muda (para trocar, inativa-se e cadastra-se
+            // outro). A Avulsa continua podendo mudar de turma.
+            if (vinculo.Modalidade == ModalidadeCobranca.Pacote && request.Modalidade == ModalidadeCobranca.Pacote && request.TurmaId != vinculo.TurmaId)
+            {
+                throw new ConflitoException("A turma de um pacote nao pode ser alterada. Inative-o e cadastre outro.");
+            }
+
             // Turma inalterada nao e revalidada (FR-013 so vale ao definir/alterar a turma):
             // editar o Valor de um vinculo cuja turma foi desativada depois continua possivel.
-            if (request.TurmaId != vinculo.TurmaId && request.TurmaId.HasValue)
+            // Excecao: uma Avulsa que vira Pacote de turma e validada como pacote novo.
+            var viraPacote = request.Modalidade == ModalidadeCobranca.Pacote && vinculo.Modalidade != ModalidadeCobranca.Pacote;
+            Turma? turmaDePacote = null;
+            if (request.TurmaId.HasValue && (request.TurmaId != vinculo.TurmaId || viraPacote))
             {
-                await ValidarTurmaAsync(alunoId, request.TurmaId.Value, cancellationToken);
+                turmaDePacote = await ValidarTurmaDoVinculoAsync(alunoId, request.Modalidade, request.TurmaId.Value, cancellationToken);
             }
 
             // Sempre, e nao so quando a turma muda: a modalidade tambem pode mudar
@@ -158,6 +183,11 @@ namespace SPI.Application.VinculosCobranca.Services
             vinculo.AulasIncluidas = request.AulasIncluidas;
             vinculo.SaldoAulas = request.SaldoAulas;
             vinculo.TotalAulasPacote = request.TotalAulasPacote;
+
+            if (turmaDePacote is not null)
+            {
+                await GarantirMatriculaAsync(turmaDePacote, alunoId, cancellationToken);
+            }
 
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
@@ -196,6 +226,15 @@ namespace SPI.Application.VinculosCobranca.Services
             // Reaplica so as regras de combinacao -- nao FR-013 (vinculos orfaos de turma ficam para fatia futura).
             await GarantirRegrasDeCombinacaoAsync(alunoId, vinculo.Modalidade, vinculo.TurmaId, vinculo.Id, cancellationToken);
 
+            // specs/063 (FR-021): reativar um pacote de turma exige a turma EM ANDAMENTO (ativa e
+            // com data de fim vazia ou de hoje em diante) -- nao exige "nao iniciada", porque o
+            // pacote ja pertencia a turma. Rematricula o aluno se ele tiver saido.
+            if (vinculo.Modalidade == ModalidadeCobranca.Pacote && vinculo.TurmaId.HasValue)
+            {
+                var turma = await ValidarTurmaDePacoteAsync(vinculo.TurmaId.Value, exigirNaoIniciada: false, cancellationToken);
+                await GarantirMatriculaAsync(turma, alunoId, cancellationToken);
+            }
+
             vinculo.Ativo = true;
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
@@ -222,6 +261,20 @@ namespace SPI.Application.VinculosCobranca.Services
             return vinculo;
         }
 
+        // Valida a turma informada ao cadastrar/editar um vinculo (mesma regra nos dois fluxos).
+        // Pacote: turma de pacote ativa e ainda nao iniciada (specs/063); devolve a turma, para o
+        // chamador matricular o aluno. Demais modalidades: o aluno ja participa da turma; devolve null.
+        private async Task<Turma?> ValidarTurmaDoVinculoAsync(int alunoId, ModalidadeCobranca modalidade, int turmaId, CancellationToken cancellationToken)
+        {
+            if (modalidade == ModalidadeCobranca.Pacote)
+            {
+                return await ValidarTurmaDePacoteAsync(turmaId, exigirNaoIniciada: true, cancellationToken);
+            }
+
+            await ValidarTurmaAsync(alunoId, turmaId, cancellationToken);
+            return null;
+        }
+
         // FR-013: a turma do vinculo deve existir, estar ativa e ter o aluno como participante.
         // Somente le a turma -- nunca cria nem altera a participacao do aluno (AlunoTurma).
         private async Task ValidarTurmaAsync(int alunoId, int turmaId, CancellationToken cancellationToken)
@@ -235,16 +288,62 @@ namespace SPI.Application.VinculosCobranca.Services
             }
         }
 
+        // specs/063: o pacote de turma exige uma turma de pacote ATIVA e da professora. No cadastro
+        // (exigirNaoIniciada) ela ainda nao pode ter comecado -- a turma e fechada depois do
+        // inicio; na reativacao ela precisa estar em andamento (ainda nao terminou). A turma sem
+        // datas (migrada) nunca e considerada iniciada. Devolve a turma, ja carregada.
+        private async Task<Turma> ValidarTurmaDePacoteAsync(int turmaId, bool exigirNaoIniciada, CancellationToken cancellationToken)
+        {
+            var turma = await _turmaRepository.ObterPorIdAsync(turmaId, cancellationToken)
+                ?? throw new NaoEncontradoException("Turma nao encontrada.");
+
+            if (!turma.Ativo)
+            {
+                throw new ConflitoException("A turma informada esta inativa.");
+            }
+
+            if (turma.Tipo != TipoTurma.Pacote)
+            {
+                throw new ConflitoException("Somente turma do tipo Pacote recebe pacote.");
+            }
+
+            var hoje = DateOnly.FromDateTime(DateTime.Now);
+
+            if (exigirNaoIniciada && turma.EstaIniciada(hoje))
+            {
+                throw new ConflitoException("A turma de pacote ja comecou e esta fechada: ninguem novo entra. Adicione o aluno as aulas como reposicao.");
+            }
+
+            if (!exigirNaoIniciada && !turma.EstaEmAndamento(hoje))
+            {
+                throw new ConflitoException("A turma de pacote ja terminou. Prorrogue a data de fim da turma para reativar o pacote.");
+            }
+
+            return turma;
+        }
+
+        // specs/063: matricula o aluno na turma de pacote se ele ainda nao estiver (sem duplicar).
+        // Nao salva -- o chamador salva junto com o vinculo.
+        private async Task GarantirMatriculaAsync(Turma turma, int alunoId, CancellationToken cancellationToken)
+        {
+            if (!turma.AlunosTurma.Any(at => at.AlunoId == alunoId))
+            {
+                await _turmaRepository.VincularAlunoAsync(turma.Id, alunoId, cancellationToken);
+            }
+        }
+
         // specs/056: quais vinculos podem ficar ativos ao mesmo tempo para o mesmo aluno.
-        // Mensalidade cobre todas as aulas, entao e exclusiva; Pacote e um saldo do aluno
-        // (um so por vez); Avulsa e por contexto (uma por turma e uma individual).
-        // ignorarId = o proprio vinculo, na edicao/reativacao.
+        // Mensalidade cobre todas as aulas, entao e exclusiva; Pacote e por grupo (specs/063: um
+        // por turma e um de aulas individuais); Avulsa e por contexto (uma por turma e uma
+        // individual). ignorarId = o proprio vinculo, na edicao/reativacao.
         private async Task GarantirRegrasDeCombinacaoAsync(int alunoId, ModalidadeCobranca modalidade, int? turmaId, int? ignorarId, CancellationToken cancellationToken)
         {
             var outrosAtivos = (await _vinculoRepository.ListarPorAlunoAsync(alunoId, ativo: true, cancellationToken))
                 .Where(v => v.Id != ignorarId)
                 .ToList();
 
+            // A mensalidade cobre todas as aulas: so existe sozinha (nao pode haver nenhum outro
+            // vinculo ativo, de qualquer modalidade) e, ao contrario, nenhum outro entra com ela ativa.
             if (modalidade == ModalidadeCobranca.Mensalidade)
             {
                 if (outrosAtivos.Count > 0)
@@ -260,9 +359,13 @@ namespace SPI.Application.VinculosCobranca.Services
                 throw new ConflitoException("O aluno tem mensalidade ativa, que ja cobre todas as aulas.");
             }
 
-            if (modalidade == ModalidadeCobranca.Pacote && outrosAtivos.Any(v => v.Modalidade == ModalidadeCobranca.Pacote))
+            // specs/063 (FR-022): o aluno pode ter 0 ou N pacotes de turma ao mesmo tempo (um por
+            // turma) e no maximo um pacote de aulas individuais (sem turma).
+            if (modalidade == ModalidadeCobranca.Pacote && outrosAtivos.Any(v => v.Modalidade == ModalidadeCobranca.Pacote && v.TurmaId == turmaId))
             {
-                throw new ConflitoException("O aluno ja tem um pacote ativo.");
+                throw new ConflitoException(turmaId.HasValue
+                    ? "O aluno ja tem um pacote ativo desta turma."
+                    : "O aluno ja tem um pacote de aulas individuais ativo.");
             }
 
             if (modalidade == ModalidadeCobranca.Avulsa && outrosAtivos.Any(v => v.Modalidade == ModalidadeCobranca.Avulsa && v.TurmaId == turmaId))

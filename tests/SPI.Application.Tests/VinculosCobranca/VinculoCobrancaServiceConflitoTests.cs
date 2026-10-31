@@ -37,17 +37,45 @@ namespace SPI.Application.Tests.VinculosCobranca
             Assert.True(pacote.Ativo);
         }
 
+        // specs/063: so e conflito mais de um pacote ativo do MESMO grupo.
         [Fact]
-        public async Task Dois_pacotes_ativos_marcam_so_os_pacotes()
+        public async Task Dois_pacotes_ativos_do_mesmo_grupo_marcam_so_esses_pacotes()
         {
             Semear(ModalidadeCobranca.Pacote);
             Semear(ModalidadeCobranca.Pacote);
+            var daTurma = Semear(ModalidadeCobranca.Pacote, turmaId: 20);
             var avulsa = Semear(ModalidadeCobranca.Avulsa, turmaId: 10);
 
             var lista = await _servico.ListarPorAlunoAsync(AlunoId, ativo: true);
 
-            Assert.All(lista.Where(v => v.Modalidade == ModalidadeCobranca.Pacote), v => Assert.Equal("Mais de um pacote ativo.", v.Conflito));
+            Assert.All(lista.Where(v => v.Modalidade == ModalidadeCobranca.Pacote && v.TurmaId is null),
+                v => Assert.Equal("Mais de um pacote ativo do mesmo grupo (mesma turma ou aulas individuais).", v.Conflito));
+            Assert.Null(lista.Single(v => v.Id == daTurma.Id).Conflito);
             Assert.Null(lista.Single(v => v.Id == avulsa.Id).Conflito);
+        }
+
+        [Fact]
+        public async Task Dois_pacotes_ativos_da_mesma_turma_marcam_os_dois()
+        {
+            Semear(ModalidadeCobranca.Pacote, turmaId: 20);
+            Semear(ModalidadeCobranca.Pacote, turmaId: 20);
+
+            var lista = await _servico.ListarPorAlunoAsync(AlunoId, ativo: true);
+
+            Assert.All(lista, v => Assert.NotNull(v.Conflito));
+        }
+
+        // specs/063 (FR-022): pacotes de turmas diferentes e o de aulas individuais convivem.
+        [Fact]
+        public async Task Pacotes_de_grupos_diferentes_nao_tem_conflito()
+        {
+            Semear(ModalidadeCobranca.Pacote, turmaId: 20);
+            Semear(ModalidadeCobranca.Pacote, turmaId: 30);
+            Semear(ModalidadeCobranca.Pacote);
+
+            var lista = await _servico.ListarPorAlunoAsync(AlunoId, ativo: true);
+
+            Assert.All(lista, v => Assert.Null(v.Conflito));
         }
 
         [Fact]

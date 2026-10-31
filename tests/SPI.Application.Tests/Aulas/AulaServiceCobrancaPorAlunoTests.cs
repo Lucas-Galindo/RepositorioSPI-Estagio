@@ -6,8 +6,9 @@ using Xunit;
 
 namespace SPI.Application.Tests.Aulas
 {
-    // specs/056 (US1/US2): mensalidade e pacote sao do aluno e valem em qualquer
-    // aula (turma ou individual); avulsa continua por contexto. Exercita o fluxo
+    // specs/056 (US1/US2) + specs/063: mensalidade e do aluno e vale em qualquer
+    // aula (turma ou individual); o pacote so vale no seu grupo (uma turma, ou aulas
+    // individuais); avulsa continua por contexto. Exercita o fluxo
     // completo de RegistrarSessaoAsync -- a ordem de decisao em si e coberta por
     // RegraCobrancaPresencaTests.
     public class AulaServiceCobrancaPorAlunoTests
@@ -103,7 +104,7 @@ namespace SPI.Application.Tests.Aulas
         [Fact]
         public async Task Mensalidade_prevalece_sobre_pacote_herdado_sem_consumir_saldo()
         {
-            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, saldo: 4);
+            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaA, saldo: 4);
             var mensalidade = Vinculo(5, ModalidadeCobranca.Mensalidade, 350m);
 
             var (_, aula) = await RegistrarAsync(1, TurmaA);
@@ -115,25 +116,77 @@ namespace SPI.Application.Tests.Aulas
 
         // ---------- Pacote (US2) ----------
 
+        // specs/063 (FR-008): cada pacote so e consumido em aula do seu grupo. Aula de outra
+        // turma e aula individual nao consomem o pacote da turma A: cobram como avulso.
         [Fact]
-        public async Task Mesmo_pacote_e_consumido_em_turma_A_turma_B_e_individual()
+        public async Task Pacote_da_turma_A_so_e_consumido_na_turma_A()
         {
-            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, saldo: 10);
+            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaA, saldo: 10);
+
+            var (_, naTurmaA) = await RegistrarAsync(1, TurmaA);
+            var (_, naTurmaB) = await RegistrarAsync(2, TurmaB);
+            var (_, individual) = await RegistrarAsync(3, null);
+
+            Assert.Equal(9, pacote.SaldoAulas);
+            Assert.Equal(pacote.Id, naTurmaA.AulaAlunos.Single().VinculoCobrancaId);
+            Assert.Null(naTurmaB.AulaAlunos.Single().VinculoCobrancaId);
+            Assert.Null(individual.AulaAlunos.Single().VinculoCobrancaId);
+            // As duas presencas fora do grupo geram conta a receber (valor da aula do aluno).
+            Assert.Equal(2, _pagamentos.Gerados.Count);
+            Assert.All(_pagamentos.Gerados, p => Assert.Equal(80m, p.ValorFinal));
+        }
+
+        [Fact]
+        public async Task Pacote_de_aulas_individuais_so_e_consumido_em_aula_individual()
+        {
+            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: null, saldo: 10);
+
+            var (_, individual) = await RegistrarAsync(1, null);
+            var (_, naTurma) = await RegistrarAsync(2, TurmaA);
+
+            Assert.Equal(9, pacote.SaldoAulas);
+            Assert.Equal(pacote.Id, individual.AulaAlunos.Single().VinculoCobrancaId);
+            Assert.Null(naTurma.AulaAlunos.Single().VinculoCobrancaId);
+            Assert.Equal(80m, Assert.Single(_pagamentos.Gerados).ValorFinal);
+        }
+
+        // specs/063 (FR-022): o aluno com pacote das turmas A e B e o de aulas individuais
+        // consome o pacote da turma da propria aula.
+        [Fact]
+        public async Task Aluno_com_pacotes_de_duas_turmas_e_individual_consome_cada_um_na_sua_aula()
+        {
+            var pacoteA = Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaA, saldo: 5);
+            var pacoteB = Vinculo(4, ModalidadeCobranca.Pacote, 400m, turmaId: TurmaB, saldo: 5);
+            var pacoteIndividual = Vinculo(5, ModalidadeCobranca.Pacote, 300m, turmaId: null, saldo: 5);
 
             await RegistrarAsync(1, TurmaA);
             await RegistrarAsync(2, TurmaB);
-            var (_, individual) = await RegistrarAsync(3, null);
+            await RegistrarAsync(3, null);
 
-            Assert.Equal(7, pacote.SaldoAulas);
+            Assert.Equal(4, pacoteA.SaldoAulas);
+            Assert.Equal(4, pacoteB.SaldoAulas);
+            Assert.Equal(4, pacoteIndividual.SaldoAulas);
             Assert.Empty(_pagamentos.Gerados);
-            Assert.Equal(pacote.Id, individual.AulaAlunos.Single().VinculoCobrancaId);
+        }
+
+        // specs/063 (FR-008): pacote esgotado FORA do grupo nao barra a presenca nem avisa.
+        [Fact]
+        public async Task Pacote_esgotado_de_outra_turma_nao_bloqueia()
+        {
+            Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaB, saldo: 0);
+
+            var (resposta, _) = await RegistrarAsync(1, TurmaA);
+
+            Assert.True(Assert.Single(resposta.Alunos).Presente);
+            Assert.Empty(resposta.Avisos);
+            Assert.Equal(80m, Assert.Single(_pagamentos.Gerados).ValorFinal);
         }
 
         // FR-010 (MUST NOT): falta nao consome o pacote.
         [Fact]
         public async Task Falta_nao_consome_o_pacote()
         {
-            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, saldo: 10);
+            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaA, saldo: 10);
 
             await RegistrarAsync(1, TurmaA, presente: false);
 
@@ -146,7 +199,7 @@ namespace SPI.Application.Tests.Aulas
         [Fact]
         public async Task So_a_presenca_fica_atribuida_ao_pacote_falta_e_cancelada_nao()
         {
-            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, saldo: 10);
+            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaA, saldo: 10);
 
             var (_, presenca) = await RegistrarAsync(1, TurmaA, presente: true);
             var (_, falta) = await RegistrarAsync(2, TurmaA, presente: false);
@@ -162,7 +215,7 @@ namespace SPI.Application.Tests.Aulas
         [Fact]
         public async Task Pacote_com_saldo_tem_prioridade_sobre_avulsa_do_contexto()
         {
-            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, saldo: 2);
+            var pacote = Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaA, saldo: 2);
             Vinculo(4, ModalidadeCobranca.Avulsa, 90m, turmaId: TurmaA);
 
             await RegistrarAsync(1, TurmaA);
@@ -174,7 +227,7 @@ namespace SPI.Application.Tests.Aulas
         [Fact]
         public async Task Pacote_esgotado_com_avulsa_cobra_avulsa_e_avisa()
         {
-            Vinculo(3, ModalidadeCobranca.Pacote, 500m, saldo: 0);
+            Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaA, saldo: 0);
             var avulsa = Vinculo(4, ModalidadeCobranca.Avulsa, 90m, turmaId: TurmaA);
 
             var (resposta, aula) = await RegistrarAsync(1, TurmaA);
@@ -189,7 +242,7 @@ namespace SPI.Application.Tests.Aulas
         [Fact]
         public async Task Pacote_esgotado_com_avulsa_de_outro_contexto_bloqueia()
         {
-            Vinculo(3, ModalidadeCobranca.Pacote, 500m, saldo: 0);
+            Vinculo(3, ModalidadeCobranca.Pacote, 500m, turmaId: TurmaA, saldo: 0);
             Vinculo(4, ModalidadeCobranca.Avulsa, 90m, turmaId: TurmaB);
 
             var (resposta, _) = await RegistrarAsync(1, TurmaA);

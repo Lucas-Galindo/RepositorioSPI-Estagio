@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SPI.Application.Common;
 using SPI.Application.Notificacoes.Services;
+using SPI.Application.Turmas.Services;
 using SPI.Domain.Repositories;
 using SPI.Infrastructure.BackgroundServices;
 using SPI.Infrastructure.Email;
@@ -72,6 +73,10 @@ namespace SPI.Infrastructure.DependencyInjection
             // specs/060
             services.AddScoped<ILembretePagamentoRepository, LembretePagamentoRepository>();
             services.AddHostedService<LembretePagamentoDispatcherService>();
+
+            // specs/063
+            services.AddSingleton(configuration.GetSection(TurmasOptions.SectionName).Get<TurmasOptions>() ?? new TurmasOptions());
+            services.AddHostedService<TurmaEncerramentoDispatcherService>();
 
             return services;
         }

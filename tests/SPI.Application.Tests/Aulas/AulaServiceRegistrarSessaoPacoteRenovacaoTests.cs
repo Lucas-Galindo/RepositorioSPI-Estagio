@@ -10,7 +10,7 @@ namespace SPI.Application.Tests.Aulas
     // specs/041 (US3): renovar o pacote (editar o SaldoAulas via specs/037) libera
     // o aluno e atualiza o painel -- sem nenhum codigo de producao novo (nota
     // estrutural do tasks.md). Os testes cruzam RegistrarSessaoAsync (bloqueio,
-    // US2) com DashboardService.MontarPacotesEmAtencao (painel, US1) sobre o
+    // US2) com DashboardService.MontarResumoPacotes (painel, US1) sobre o
     // MESMO VinculoCobranca, simulando a edicao do saldo entre duas aulas.
     public class AulaServiceRegistrarSessaoPacoteRenovacaoTests
     {

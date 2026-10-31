@@ -36,14 +36,7 @@ namespace SPI.Api.Controllers
             [FromQuery] DateOnly? periodoInicio, [FromQuery] DateOnly? periodoFim,
             [FromQuery] string? turmaNome, [FromQuery] string? materiaNome, [FromQuery] string? alunoBusca)
         {
-            try
-            {
-                return Ok(await _financeiroService.ObterVisaoGeralAsync(periodoInicio, periodoFim, turmaNome: turmaNome, materiaNome: materiaNome, alunoBusca: alunoBusca));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _financeiroService.ObterVisaoGeralAsync(periodoInicio, periodoFim, turmaNome: turmaNome, materiaNome: materiaNome, alunoBusca: alunoBusca));
         }
     }
 }

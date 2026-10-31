@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SPI.Api.Extensions;
 using SPI.Application.Turmas.Dtos;
+using SPI.Application.Turmas.Validators;
 using SPI.Application.Turmas.Services;
 using SPI.Domain.Enums;
-using SPI.Domain.Exceptions;
 
 namespace SPI.Api.Controllers
 {
@@ -36,14 +36,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a lista de turmas que atendem aos filtros</returns>
         public async Task<IActionResult> Listar([FromQuery] string? nome, [FromQuery] bool? ativo)
         {
-            try
-            {
-                return Ok(await _turmaService.ListarAsync(nome, ativo));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _turmaService.ListarAsync(nome, ativo));
         }
 
         [HttpGet("{id}")]
@@ -57,23 +50,13 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a turma encontrada</returns>
         public async Task<IActionResult> ObterPorId(int id)
         {
-            try
-            {
-                return Ok(await _turmaService.ObterPorIdAsync(id));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _turmaService.ObterPorIdAsync(id));
         }
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         /// <summary>
         /// Endpoint para cadastrar uma nova turma (professora associada automaticamente)
@@ -82,28 +65,25 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a turma cadastrada</returns>
         public async Task<IActionResult> Cadastrar([FromBody] TurmaRequest request)
         {
-            try
+            // specs/063: no cadastro vale tambem o conjunto de regras que exige as datas da
+            // turma de pacote (na edicao, uma turma migrada pode ficar sem datas).
+            var validacao = await _validator.ValidateAsync(request, opcoes =>
+                opcoes.IncludeRuleSets(TurmaRequestValidator.RegrasDeCadastro).IncludeRulesNotInRuleSet());
+            if (!validacao.IsValid)
             {
-                var validacao = await _validator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _turmaService.CadastrarAsync(User.ObterUsuarioId(), request);
-                _logger.LogInformation("Turma {Nome} cadastrada", request.Nome);
-                return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _turmaService.CadastrarAsync(User.ObterUsuarioId(), request);
+            _logger.LogInformation("Turma {Nome} cadastrada", request.Nome);
+            return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
         }
 
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         /// <summary>
         /// Endpoint para atualizar o nome de uma turma
@@ -113,26 +93,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a turma atualizada</returns>
         public async Task<IActionResult> Atualizar(int id, [FromBody] TurmaRequest request)
         {
-            try
+            var validacao = await _validator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _validator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _turmaService.AtualizarAsync(id, request);
-                _logger.LogInformation("Turma {Id} atualizada", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _turmaService.AtualizarAsync(id, request);
+            _logger.LogInformation("Turma {Id} atualizada", id);
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
@@ -146,20 +115,9 @@ namespace SPI.Api.Controllers
         /// <returns>Sem conteudo em caso de sucesso</returns>
         public async Task<IActionResult> Excluir(int id)
         {
-            try
-            {
-                await _turmaService.ExcluirAsync(id);
-                _logger.LogInformation("Turma {Id} excluida (logicamente)", id);
-                return Ok();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            await _turmaService.ExcluirAsync(id);
+            _logger.LogInformation("Turma {Id} excluida (logicamente)", id);
+            return Ok();
         }
 
         [HttpPatch("{id}/reativar")]
@@ -173,20 +131,9 @@ namespace SPI.Api.Controllers
         /// <returns>A turma reativada</returns>
         public async Task<IActionResult> Reativar(int id)
         {
-            try
-            {
-                var response = await _turmaService.ReativarAsync(id);
-                _logger.LogInformation("Turma {Id} reativada", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _turmaService.ReativarAsync(id);
+            _logger.LogInformation("Turma {Id} reativada", id);
+            return Ok(response);
         }
 
         [HttpPost("{id}/alunos/{alunoId}")]
@@ -202,24 +149,9 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a turma atualizada com o novo aluno</returns>
         public async Task<IActionResult> VincularAluno(int id, int alunoId)
         {
-            try
-            {
-                var response = await _turmaService.VincularAlunoAsync(id, alunoId);
-                _logger.LogInformation("Aluno {AlunoId} vinculado a turma {TurmaId}", alunoId, id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _turmaService.VincularAlunoAsync(id, alunoId);
+            _logger.LogInformation("Aluno {AlunoId} vinculado a turma {TurmaId}", alunoId, id);
+            return Ok(response);
         }
 
         [HttpDelete("{id}/alunos/{alunoId}")]
@@ -234,20 +166,9 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a turma atualizada</returns>
         public async Task<IActionResult> DesvincularAluno(int id, int alunoId)
         {
-            try
-            {
-                var response = await _turmaService.DesvincularAlunoAsync(id, alunoId);
-                _logger.LogInformation("Aluno {AlunoId} desvinculado da turma {TurmaId}", alunoId, id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _turmaService.DesvincularAlunoAsync(id, alunoId);
+            _logger.LogInformation("Aluno {AlunoId} desvinculado da turma {TurmaId}", alunoId, id);
+            return Ok(response);
         }
     }
 }

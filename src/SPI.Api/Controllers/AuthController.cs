@@ -72,14 +72,6 @@ namespace SPI.Api.Controllers
                 _logger.LogWarning("Tentativa de login falhou para {Login}", request.Login);
                 return Unauthorized(e.Message);
             }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
         }
 
         [HttpPost("refresh")]
@@ -110,14 +102,6 @@ namespace SPI.Api.Controllers
             {
                 _logger.LogWarning("Tentativa de refresh com token invalido (fragmento {Fragmento})", FragmentoToken(request.RefreshToken));
                 return Unauthorized(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
             }
         }
 
@@ -150,14 +134,6 @@ namespace SPI.Api.Controllers
                 _logger.LogWarning("Tentativa de logout com token invalido (fragmento {Fragmento})", FragmentoToken(request.RefreshToken));
                 return Unauthorized(e.Message);
             }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
         }
 
         [HttpPost("esqueci-senha")]
@@ -173,26 +149,15 @@ namespace SPI.Api.Controllers
         /// <returns>Sempre uma mensagem generica, para nao revelar se o e-mail existe</returns>
         public async Task<IActionResult> EsqueciSenha([FromBody] EsqueciSenhaRequest request)
         {
-            try
+            var validacao = await _esqueciSenhaValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _esqueciSenhaValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                await _recuperacaoSenhaService.EsqueciSenhaAsync(request);
-                _logger.LogInformation("Solicitacao de recuperacao de senha processada para {Email}", request.Email);
-                return Ok(new { mensagem = "Se o e-mail informado estiver cadastrado, enviaremos instrucoes de recuperacao." });
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
-            }
+            await _recuperacaoSenhaService.EsqueciSenhaAsync(request);
+            _logger.LogInformation("Solicitacao de recuperacao de senha processada para {Email}", request.Email);
+            return Ok(new { mensagem = "Se o e-mail informado estiver cadastrado, enviaremos instrucoes de recuperacao." });
         }
 
         [HttpPost("redefinir-senha")]
@@ -222,14 +187,6 @@ namespace SPI.Api.Controllers
             {
                 _logger.LogWarning("Tentativa de redefinicao de senha com token invalido (fragmento {Fragmento})", FragmentoToken(request.Token));
                 return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(
-                    title: "Erro inesperado",
-                    detail: e.Message,
-                    statusCode: StatusCodes.Status500InternalServerError
-                );
             }
         }
 

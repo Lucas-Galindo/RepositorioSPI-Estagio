@@ -29,14 +29,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna os indicadores consolidados em tempo real</returns>
         public async Task<IActionResult> Obter([FromQuery] DateOnly? periodoInicio, [FromQuery] DateOnly? periodoFim, [FromQuery] int? alunoId)
         {
-            try
-            {
-                return Ok(await _dashboardService.ObterAsync(periodoInicio, periodoFim, alunoId));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _dashboardService.ObterAsync(periodoInicio, periodoFim, alunoId));
         }
     }
 }

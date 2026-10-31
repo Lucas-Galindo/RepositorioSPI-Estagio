@@ -66,6 +66,28 @@ namespace SPI.Application.Tests.VinculosCobranca
         public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(SPI.Domain.Enums.ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos.Where(v => v.Ativo && v.Modalidade == modalidade).ToList());
 
+        // specs/063
+        public Task<List<VinculoCobranca>> ListarPacotesAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Vinculos
+                .Where(v => v.Ativo && v.Modalidade == SPI.Domain.Enums.ModalidadeCobranca.Pacote && v.TurmaId == turmaId)
+                .ToList());
+
+        public Task<List<VinculoCobranca>> ListarPacotesAtivosDeTurmasEncerradasAsync(DateOnly hoje, CancellationToken cancellationToken = default)
+        {
+            var lista = new List<VinculoCobranca>();
+            foreach (var v in Vinculos.Where(v => v.Ativo && v.Modalidade == SPI.Domain.Enums.ModalidadeCobranca.Pacote && v.TurmaId != null))
+            {
+                var turma = TurmasConhecidas.FirstOrDefault(t => t.Id == v.TurmaId);
+                if (turma is not null && (!turma.Ativo || (turma.DataFim.HasValue && turma.DataFim.Value < hoje)))
+                {
+                    v.Turma = turma;
+                    lista.Add(v);
+                }
+            }
+
+            return Task.FromResult(lista);
+        }
+
         public Task AdicionarAsync(VinculoCobranca vinculo, CancellationToken cancellationToken = default)
         {
             vinculo.Id = _proximoId++;
@@ -83,6 +105,9 @@ namespace SPI.Application.Tests.VinculosCobranca
     public class FakeTurmaRepositoryParaVinculo : ITurmaRepository
     {
         public List<Turma> Turmas { get; } = new();
+
+        // Alunos que o Include do EF preencheria na matricula (AlunoTurma.Aluno).
+        public Dictionary<int, Aluno> AlunosConhecidos { get; } = new();
 
         // Prova do requisito negativo FR-013: o servico de vinculo de cobranca nunca
         // pode criar nem remover a participacao de um aluno em uma turma.
@@ -104,12 +129,26 @@ namespace SPI.Application.Tests.VinculosCobranca
         public Task VincularAlunoAsync(int turmaId, int alunoId, CancellationToken cancellationToken = default)
         {
             ChamadasVincularAluno++;
+            var turma = Turmas.FirstOrDefault(t => t.Id == turmaId);
+            if (turma is not null && !turma.AlunosTurma.Any(at => at.AlunoId == alunoId))
+            {
+                turma.AlunosTurma.Add(new AlunoTurma
+                {
+                    TurmaId = turmaId,
+                    AlunoId = alunoId,
+                    Turma = turma,
+                    Aluno = AlunosConhecidos.TryGetValue(alunoId, out var aluno) ? aluno : new Aluno { Id = alunoId, Nome = "Aluno " + alunoId, Ativo = true }
+                });
+            }
+
             return Task.CompletedTask;
         }
 
         public Task DesvincularAlunoAsync(int turmaId, int alunoId, CancellationToken cancellationToken = default)
         {
             ChamadasDesvincularAluno++;
+            var turma = Turmas.FirstOrDefault(t => t.Id == turmaId);
+            turma?.AlunosTurma.Remove(turma.AlunosTurma.FirstOrDefault(at => at.AlunoId == alunoId)!);
             return Task.CompletedTask;
         }
 

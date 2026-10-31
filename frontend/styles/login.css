@@ -344,20 +344,6 @@
   margin-left: 4px;
 }
 
-.spi-login .proto-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--c-accent3-tint);
-  color: var(--c-accent3-text);
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 6px 13px;
-  border-radius: 100px;
-  margin-top: 22px;
-  align-self: flex-start;
-}
-
 .spi-login .err-banner {
   display: none;
   align-items: center;

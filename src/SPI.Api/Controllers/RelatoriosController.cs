@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SPI.Application.Relatorios.Services;
 using SPI.Domain.Enums;
-using SPI.Domain.Exceptions;
 
 namespace SPI.Api.Controllers
 {
@@ -34,14 +33,7 @@ namespace SPI.Api.Controllers
             [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] string? status,
             [FromQuery] int? turmaId, [FromQuery] int? alunoId)
         {
-            try
-            {
-                return Ok(await _relatorioService.ObterAgendaAsync(inicio, fim, status, turmaId, alunoId));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _relatorioService.ObterAgendaAsync(inicio, fim, status, turmaId, alunoId));
         }
 
         [HttpGet("historico-aluno/{alunoId}")]
@@ -60,18 +52,7 @@ namespace SPI.Api.Controllers
         public async Task<IActionResult> HistoricoAluno(
             int alunoId, [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] string? status, [FromQuery] int? turmaId)
         {
-            try
-            {
-                return Ok(await _relatorioService.ObterHistoricoAlunoAsync(alunoId, inicio, fim, status, turmaId));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _relatorioService.ObterHistoricoAlunoAsync(alunoId, inicio, fim, status, turmaId));
         }
 
         [HttpGet("pagamentos")]
@@ -88,14 +69,7 @@ namespace SPI.Api.Controllers
         public async Task<IActionResult> Pagamentos(
             [FromQuery] int? alunoId, [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] string? status)
         {
-            try
-            {
-                return Ok(await _relatorioService.ObterPagamentosAsync(alunoId, inicio, fim, status));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _relatorioService.ObterPagamentosAsync(alunoId, inicio, fim, status));
         }
 
         [HttpGet("financeiro")]
@@ -115,14 +89,7 @@ namespace SPI.Api.Controllers
             [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] int? formaPagamentoId, [FromQuery] int? alunoId,
             [FromQuery] int? turmaId, [FromQuery] int? materiaId)
         {
-            try
-            {
-                return Ok(await _relatorioService.ObterFinanceiroAsync(inicio, fim, formaPagamentoId, alunoId, turmaId, materiaId));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _relatorioService.ObterFinanceiroAsync(inicio, fim, formaPagamentoId, alunoId, turmaId, materiaId));
         }
 
         [HttpGet("indicadores-financeiros")]
@@ -140,14 +107,7 @@ namespace SPI.Api.Controllers
         public async Task<IActionResult> IndicadoresFinanceiros(
             [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] int? turmaId, [FromQuery] int? materiaId, [FromQuery] int? alunoId)
         {
-            try
-            {
-                return Ok(await _relatorioService.ObterIndicadoresFinanceirosAsync(inicio, fim, turmaId, materiaId, alunoId));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _relatorioService.ObterIndicadoresFinanceirosAsync(inicio, fim, turmaId, materiaId, alunoId));
         }
 
         [HttpGet("periodo-agenda")]
@@ -164,18 +124,11 @@ namespace SPI.Api.Controllers
         public async Task<IActionResult> PeriodoAgenda(
             [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim, [FromQuery] int? turmaId, [FromQuery] int? materiaId)
         {
-            try
-            {
-                var hoje = DateOnly.FromDateTime(DateTime.Now);
-                var periodoInicio = inicio ?? new DateOnly(hoje.Year, hoje.Month, 1);
-                var periodoFim = fim ?? periodoInicio.AddMonths(1).AddDays(-1);
+            var hoje = DateOnly.FromDateTime(DateTime.Now);
+            var periodoInicio = inicio ?? new DateOnly(hoje.Year, hoje.Month, 1);
+            var periodoFim = fim ?? periodoInicio.AddMonths(1).AddDays(-1);
 
-                return Ok(await _relatorioService.ObterPeriodoAgendaAsync(periodoInicio, periodoFim, turmaId, materiaId));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _relatorioService.ObterPeriodoAgendaAsync(periodoInicio, periodoFim, turmaId, materiaId));
         }
 
         [HttpGet("alunos")]
@@ -190,14 +143,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna os alunos que atendem aos filtros, com dados de contato, turmas, valor e frequencia</returns>
         public async Task<IActionResult> Alunos([FromQuery] string? nome, [FromQuery] int? turmaId, [FromQuery] bool? ativo)
         {
-            try
-            {
-                return Ok(await _relatorioService.ObterAlunosAsync(nome, turmaId, ativo));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _relatorioService.ObterAlunosAsync(nome, turmaId, ativo));
         }
 
         [HttpGet("materias")]
@@ -212,14 +158,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna as materias com a quantidade de aulas e de alunos atendidos no periodo</returns>
         public async Task<IActionResult> Materias([FromQuery] string? nivel, [FromQuery] DateOnly? inicio, [FromQuery] DateOnly? fim)
         {
-            try
-            {
-                return Ok(await _relatorioService.ObterMateriasAsync(nivel, inicio, fim));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _relatorioService.ObterMateriasAsync(nivel, inicio, fim));
         }
     }
 }

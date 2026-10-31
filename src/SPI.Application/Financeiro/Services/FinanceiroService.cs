@@ -32,6 +32,8 @@ namespace SPI.Application.Financeiro.Services
             var inicio = periodoInicio ?? new DateOnly(hoje.Year, hoje.Month, 1);
             var fim = periodoFim ?? inicio.AddMonths(1).AddDays(-1);
 
+            // Os filtros de turma/materia/aluno valem so para a receita; despesa (contas a pagar)
+            // nao tem ligacao com aluno, turma ou materia e nunca e filtrada.
             var recebidoNoPeriodo = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(
                 inicio, fim, cancellationToken, turmaNome: turmaNome, materiaNome: materiaNome, alunoBusca: alunoBusca);
             var pagoNoPeriodo = await _relatorioRepository.ObterValorPagoNoPeriodoAsync(inicio, fim, cancellationToken);
@@ -43,6 +45,7 @@ namespace SPI.Application.Financeiro.Services
                 DiasProximosVencimentos, cancellationToken, turmaNome, materiaNome, alunoBusca);
             var proximasPagar = await _relatorioRepository.ObterProximasContasAPagarAsync(DiasProximosVencimentos, cancellationToken);
 
+            // Uma lista so, com o que vence a receber e a pagar, da data mais proxima para a mais distante.
             var proximosVencimentos = proximasReceber
                 .Select(p => new ProximoVencimentoItem
                 {

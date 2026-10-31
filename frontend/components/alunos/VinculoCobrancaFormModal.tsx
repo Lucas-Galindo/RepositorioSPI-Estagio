@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Icon } from "@/components/shared/Icon";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { ApiError } from "@/lib/api/client";
 import type { TurmaResumo } from "@/lib/api/alunos";
+import { listarTurmas, type Turma } from "@/lib/api/turmas";
 import {
   atualizarVinculoCobranca,
   cadastrarVinculoCobranca,
@@ -48,12 +49,23 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
 
+  // specs/063: turmas que podem receber um pacote novo. E so um filtro de exibicao -- o servidor
+  // decide (turma de pacote, ativa e ainda nao iniciada) e devolve o erro quando nao serve.
+  const [turmasDePacote, setTurmasDePacote] = useState<Turma[]>([]);
+  useEffect(() => {
+    if (!sessao || editando || modalidade !== "Pacote") return;
+    listarTurmas(sessao.accessToken, { ativo: true })
+      .then((lista) => setTurmasDePacote(lista.filter((t) => t.tipo === "Pacote" && !t.fechada)))
+      .catch(() => setTurmasDePacote([]));
+  }, [sessao, editando, modalidade]);
+
   // Conveniencia de UI: ao trocar a modalidade, limpa o campo que deixou de se
   // aplicar. A regra de negocio (rejeitar campo nao aplicavel) e do backend.
-  // specs/056: so a Avulsa e por turma; Mensalidade e Pacote valem para todas as aulas.
+  // specs/063: a Mensalidade nao tem turma; a Avulsa usa as turmas do aluno e o Pacote usa as
+  // turmas de pacote -- listas diferentes, entao trocar entre elas limpa a turma.
   const handleModalidade = (nova: ModalidadeCobranca) => {
     setModalidade(nova);
-    if (nova !== "Avulsa") setTurmaId("");
+    setTurmaId("");
     if (nova !== "Mensalidade") setAulasIncluidas("");
     if (nova !== "Pacote") {
       setSaldoAulas("");
@@ -131,6 +143,29 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
                       </option>
                     ))}
                   </select>
+                </div>
+              ) : modalidade === "Pacote" ? (
+                // specs/063: todo pacote pertence a um grupo -- uma turma de pacote ou as aulas
+                // individuais. A turma de um pacote nao muda depois de salva.
+                <div className="field">
+                  <label>Turma do pacote</label>
+                  {editando ? (
+                    <input disabled value={vinculo?.turmaNome ?? "Atendimento individual"} />
+                  ) : (
+                    <select value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
+                      <option value="">Atendimento individual</option>
+                      {turmasDePacote.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.nome}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <span className="hint">
+                    {editando
+                      ? "A turma de um pacote não muda. Para trocar, exclua o pacote e cadastre outro."
+                      : "O pacote só vale nas aulas deste grupo. Na turma de pacote o cadastro matricula o aluno."}
+                  </span>
                 </div>
               ) : (
                 <div className="field">

@@ -45,7 +45,7 @@ export interface VinculoCobranca {
 
 /** Espelha SPI.Application.VinculosCobranca.Dtos.VinculoCobrancaRequest. */
 export interface VinculoCobrancaRequest {
-  /** Somente com Avulsa; nulo = atendimento individual (Mensalidade e Pacote sempre nulo). */
+  /** Avulsa: turma ou nulo (atendimento individual). Pacote (specs/063): turma de pacote ou nulo (pacote de aulas individuais). Mensalidade: sempre nulo. */
   turmaId: number | null;
   modalidade: ModalidadeCobranca;
   valor: number;

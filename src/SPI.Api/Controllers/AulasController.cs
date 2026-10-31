@@ -5,7 +5,6 @@ using SPI.Api.Extensions;
 using SPI.Application.Aulas.Dtos;
 using SPI.Application.Aulas.Services;
 using SPI.Domain.Enums;
-using SPI.Domain.Exceptions;
 
 namespace SPI.Api.Controllers
 {
@@ -50,14 +49,7 @@ namespace SPI.Api.Controllers
             [FromQuery] DateOnly? dataInicio,
             [FromQuery] DateOnly? dataFim)
         {
-            try
-            {
-                return Ok(await _aulaService.ListarAsync(status, turmaId, alunoId, dataInicio, dataFim));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _aulaService.ListarAsync(status, turmaId, alunoId, dataInicio, dataFim));
         }
 
         [HttpGet("{id}")]
@@ -71,18 +63,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a aula encontrada</returns>
         public async Task<IActionResult> ObterPorId(int id)
         {
-            try
-            {
-                return Ok(await _aulaService.ObterPorIdAsync(id));
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _aulaService.ObterPorIdAsync(id));
         }
 
         [HttpPost]
@@ -98,30 +79,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a aula cadastrada com Status = Agendada</returns>
         public async Task<IActionResult> Cadastrar([FromBody] AulaRequest request)
         {
-            try
+            var validacao = await _aulaValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _aulaValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _aulaService.CadastrarAsync(User.ObterUsuarioId(), request);
-                _logger.LogInformation("Aula {Id} cadastrada para {Data} {HoraInicio}-{HoraFim}", response.Id, response.DataInicio, response.HoraInicio, response.HoraFim);
-                return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _aulaService.CadastrarAsync(User.ObterUsuarioId(), request);
+            _logger.LogInformation("Aula {Id} cadastrada para {Data} {HoraInicio}-{HoraFim}", response.Id, response.DataInicio, response.HoraInicio, response.HoraFim);
+            return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
         }
 
         [HttpPut("{id}")]
@@ -138,30 +104,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a aula atualizada</returns>
         public async Task<IActionResult> Atualizar(int id, [FromBody] AulaRequest request)
         {
-            try
+            var validacao = await _aulaValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _aulaValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _aulaService.AtualizarAsync(id, request);
-                _logger.LogInformation("Aula {Id} atualizada", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _aulaService.AtualizarAsync(id, request);
+            _logger.LogInformation("Aula {Id} atualizada", id);
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
@@ -175,20 +126,9 @@ namespace SPI.Api.Controllers
         /// <returns>Sem conteudo em caso de sucesso</returns>
         public async Task<IActionResult> Excluir(int id)
         {
-            try
-            {
-                await _aulaService.ExcluirAsync(id);
-                _logger.LogInformation("Aula {Id} excluida (logicamente)", id);
-                return Ok();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            await _aulaService.ExcluirAsync(id);
+            _logger.LogInformation("Aula {Id} excluida (logicamente)", id);
+            return Ok();
         }
 
         [HttpPost("{id}/registrar-sessao")]
@@ -205,30 +145,15 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a aula com Status = Realizada e a frequencia atualizada</returns>
         public async Task<IActionResult> RegistrarSessao(int id, [FromBody] RegistrarSessaoRequest request)
         {
-            try
+            var validacao = await _sessaoValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
             {
-                var validacao = await _sessaoValidator.ValidateAsync(request);
-                if (!validacao.IsValid)
-                {
-                    return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
-                }
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
 
-                var response = await _aulaService.RegistrarSessaoAsync(id, request);
-                _logger.LogInformation("Sessao da aula {Id} registrada", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _aulaService.RegistrarSessaoAsync(id, request);
+            _logger.LogInformation("Sessao da aula {Id} registrada", id);
+            return Ok(response);
         }
 
         [HttpPost("{id}/cancelar")]
@@ -243,24 +168,9 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a aula com Status = Cancelada</returns>
         public async Task<IActionResult> Cancelar(int id)
         {
-            try
-            {
-                var response = await _aulaService.CancelarAsync(id);
-                _logger.LogInformation("Aula {Id} cancelada", id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _aulaService.CancelarAsync(id);
+            _logger.LogInformation("Aula {Id} cancelada", id);
+            return Ok(response);
         }
 
         [HttpPost("{id}/participantes")]
@@ -276,24 +186,9 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a aula com o aluno marcado como reposicao</returns>
         public async Task<IActionResult> AdicionarParticipante(int id, [FromBody] AdicionarParticipanteRequest request)
         {
-            try
-            {
-                var response = await _aulaService.AdicionarParticipanteAsync(id, request.AlunoId);
-                _logger.LogInformation("Aluno {AlunoId} adicionado como reposicao na aula {Id}", request.AlunoId, id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _aulaService.AdicionarParticipanteAsync(id, request.AlunoId);
+            _logger.LogInformation("Aluno {AlunoId} adicionado como reposicao na aula {Id}", request.AlunoId, id);
+            return Ok(response);
         }
 
         [HttpDelete("{id}/participantes/{alunoId}")]
@@ -309,24 +204,9 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a aula sem o aluno</returns>
         public async Task<IActionResult> RemoverParticipante(int id, int alunoId)
         {
-            try
-            {
-                var response = await _aulaService.RemoverParticipanteAsync(id, alunoId);
-                _logger.LogInformation("Aluno {AlunoId} removido da aula {Id}", alunoId, id);
-                return Ok(response);
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (ConflitoException e)
-            {
-                return Conflict(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var response = await _aulaService.RemoverParticipanteAsync(id, alunoId);
+            _logger.LogInformation("Aluno {AlunoId} removido da aula {Id}", alunoId, id);
+            return Ok(response);
         }
     }
 }

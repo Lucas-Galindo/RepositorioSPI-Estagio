@@ -31,9 +31,10 @@ function detalheDaModalidade(v: VinculoCobranca): string | null {
   return null;
 }
 
-// specs/056: Mensalidade e Pacote sao do aluno; so a Avulsa e por turma/individual.
+// specs/056 + specs/063: a Mensalidade e do aluno; a Avulsa e o Pacote pertencem a um grupo --
+// uma turma ou, sem turma, o atendimento individual.
 function contextoDoVinculo(v: VinculoCobranca): string {
-  if (v.modalidade !== "Avulsa") return "Todas as aulas do aluno";
+  if (v.modalidade === "Mensalidade") return "Todas as aulas do aluno";
   return v.turmaNome ?? "Atendimento individual";
 }
 
@@ -123,7 +124,7 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
           <span>
             Este aluno tem vínculos que não combinam mais pela regra atual (
             {[...new Set(vinculos.map((v) => v.conflito).filter(Boolean))].join(" ")}). Exclua os que não valem mais. Até lá, a
-            mensalidade prevalece e o pacote mais antigo com saldo é usado primeiro.
+            mensalidade prevalece e, entre pacotes do mesmo grupo, o mais antigo com saldo é usado primeiro.
           </span>
         </div>
       )}

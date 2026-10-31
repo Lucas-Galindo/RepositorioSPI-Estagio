@@ -26,15 +26,8 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna a lista de formas de pagamento ativas</returns>
         public async Task<IActionResult> Listar()
         {
-            try
-            {
-                var formas = await _formaPagamentoRepository.ListarAtivasAsync();
-                return Ok(formas.Select(f => new { f.Id, f.Forma, f.Descricao }));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            var formas = await _formaPagamentoRepository.ListarAtivasAsync();
+            return Ok(formas.Select(f => new { f.Id, f.Forma, f.Descricao }));
         }
     }
 }

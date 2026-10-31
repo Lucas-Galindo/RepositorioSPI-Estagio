@@ -66,6 +66,9 @@ namespace SPI.Infrastructure.BackgroundServices
 
         // Logica testavel sem IServiceScopeFactory/BackgroundService (mesmo padrao
         // de MensalidadeDispatcherService.GerarCobrancasDoMesAsync).
+        // Avisa uma unica vez cada mensalidade pendente (a que nasce de um vinculo de cobranca) cujo
+        // vencimento chega ate hoje + antecedencia -- "ate", nao "igual": uma que ja venceu sem nunca
+        // ter recebido o aviso tambem entra. O aviso vai para o aluno e o responsavel.
         public static async Task ProcessarLembretesVencimentoAsync(
             IPagamentoRepository pagamentoRepository,
             IEmailSender emailSender,

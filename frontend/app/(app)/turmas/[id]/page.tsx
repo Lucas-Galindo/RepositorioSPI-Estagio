@@ -11,7 +11,7 @@ import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
-import { obterTurma, excluirTurma, reativarTurma, vincularAluno, desvincularAluno, type Turma } from "@/lib/api/turmas";
+import { obterTurma, excluirTurma, reativarTurma, vincularAluno, desvincularAluno, type AlunoResumo, type Turma } from "@/lib/api/turmas";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { avatarColor, initials, fmtData, fmtHora } from "@/lib/format";
@@ -26,7 +26,7 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
 
   const [turma, setTurma] = useState<Turma | null>(null);
   const [aulas, setAulas] = useState<Aula[]>([]);
-  const [alunosDisponiveis, setAlunosDisponiveis] = useState<Aluno[]>([]);
+  const [alunosDisponiveis, setAlunosDisponiveis] = useState<AlunoResumo[]>([]);
   const [alunoParaVincular, setAlunoParaVincular] = useState("");
   const [erro, setErro] = useState("");
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
@@ -46,7 +46,11 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
       .then(([t, aulasT, todosAlunos]) => {
         setTurma(t);
         setAulas(aulasT);
-        setAlunosDisponiveis(todosAlunos.filter((a) => !t.alunos.some((ta) => ta.id === a.id)));
+        // specs/063: na turma de pacote so voltam os alunos que sairam e ainda tem o pacote dela ativo
+        // (lista calculada no servidor); na de mensalidade, qualquer aluno ativo ainda nao matriculado.
+        setAlunosDisponiveis(
+          t.tipo === "Pacote" ? t.alunosComPacoteForaDaTurma : todosAlunos.filter((a) => !t.alunos.some((ta) => ta.id === a.id))
+        );
       })
       .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Turma não encontrada."));
   };
@@ -127,7 +131,21 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
         <div>
           <h2>{turma.nome}</h2>
           <div className="meta">
-            <span>{turma.alunos.length} aluno(s)</span>·<StatusPill status={turma.ativo ? "Ativo" : "Inativo"} />
+            <span>{turma.alunos.length} aluno(s)</span>·<StatusPill status={turma.ativo ? "Ativo" : "Inativo"} />·
+            <span>Turma de {turma.tipo === "Pacote" ? "pacote" : "mensalidade"}</span>
+            {turma.tipo === "Pacote" && (turma.dataInicio || turma.dataFim) && (
+              <>
+                ·
+                <span>
+                  {turma.dataInicio ? fmtData(turma.dataInicio) : "sem início"} a {turma.dataFim ? fmtData(turma.dataFim) : "sem fim"}
+                </span>
+              </>
+            )}
+            {turma.fechada && (
+              <>
+                ·<span className="status-pill status-pendente">Fechada</span>
+              </>
+            )}
           </div>
         </div>
         <div className="actions">
@@ -175,7 +193,22 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             ))
           ) : (
-            <EmptyState title="Nenhum aluno vinculado" desc="Vincule alunos a esta turma usando o campo abaixo." />
+            <EmptyState
+              title="Nenhum aluno vinculado"
+              desc={
+                turma.tipo === "Pacote"
+                  ? "Na turma de pacote o aluno entra pelo cadastro do pacote dele (ficha do aluno, Vínculos de cobrança)."
+                  : "Vincule alunos a esta turma usando o campo abaixo."
+              }
+            />
+          )}
+
+          {turma.tipo === "Pacote" && (
+            <p className="count-text" style={{ marginTop: 14 }}>
+              {turma.fechada
+                ? "Turma fechada: ninguém novo entra. Abaixo só aparecem, para voltar, os alunos que saíram e ainda têm o pacote desta turma ativo."
+                : "Na turma de pacote o aluno entra pelo cadastro do pacote dele (ficha do aluno, Vínculos de cobrança). Abaixo só aparecem, para voltar, os alunos que saíram e ainda têm o pacote desta turma ativo."}
+            </p>
           )}
 
           {alunosDisponiveis.length > 0 && (

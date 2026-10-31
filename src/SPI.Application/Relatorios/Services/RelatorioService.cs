@@ -207,10 +207,14 @@ namespace SPI.Application.Relatorios.Services
             var valorFaturado = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(
                 periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
 
+            // Inadimplencia = valor ainda pendente e ja vencido, em % do total das contas (nao
+            // canceladas) com vencimento no periodo; zero quando nao ha conta no periodo.
             var (totalVencido, valorInadimplente) = await _relatorioRepository.ObterInadimplenciaNoPeriodoAsync(
                 periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
             var taxaInadimplencia = totalVencido == 0 ? 0m : Math.Round(valorInadimplente / totalVencido * 100, 1);
 
+            // Prazo medio de atraso = media de dias entre o vencimento e o pagamento dos que foram
+            // pagos depois de vencer; sem nenhum pago em atraso, fica vazio (nao zero).
             var atrasos = await _relatorioRepository.ObterPagamentosComAtrasoNoPeriodoAsync(
                 periodoInicio, periodoFim, cancellationToken, turmaId, materiaId, alunoId);
             decimal? prazoMedioAtraso = atrasos.Count == 0
@@ -241,6 +245,8 @@ namespace SPI.Application.Relatorios.Services
                 }
             };
 
+            // Serie fixa dos ultimos 6 meses (o mes corrente e os 5 anteriores), do mais antigo para o
+            // mais novo; ela nao acompanha o periodo escolhido, so os filtros de receita.
             var fluxoCaixaMensal = new List<FluxoCaixaMensalItem>();
             for (var i = 5; i >= 0; i--)
             {

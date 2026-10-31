@@ -212,7 +212,7 @@ export function tokensDoTema(prefs: PreferenciasTema): Record<string, string> {
 // ---------- Preferencias salvas ----------
 
 /** Amostra de menor distancia RGB a `hex`; no empate, a primeira da lista. */
-export function amostraMaisProxima(hex: string): string {
+function amostraMaisProxima(hex: string): string {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return DESTAQUE_PADRAO;
   const alvo = rgb(hex);
   let melhor: string = DESTAQUE_PADRAO;

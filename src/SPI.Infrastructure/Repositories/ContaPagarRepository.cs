@@ -22,6 +22,8 @@ namespace SPI.Infrastructure.Repositories
                 .Include(c => c.FormaPagamento)
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
+        // Todos os filtros sao opcionais e se somam (E). O periodo e sobre o VENCIMENTO, com as duas
+        // pontas incluidas; favorecido e busca parcial. Ordem: vencimento mais recente primeiro.
         public async Task<List<ContaPagar>> ListarAsync(
             int? categoriaDespesaId,
             string? status,

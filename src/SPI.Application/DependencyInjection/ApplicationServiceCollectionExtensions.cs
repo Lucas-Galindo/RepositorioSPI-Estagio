@@ -31,6 +31,7 @@ namespace SPI.Application.DependencyInjection
             services.AddScoped<IRecuperacaoSenhaService, RecuperacaoSenhaService>();
             services.AddScoped<IProfessorService, ProfessorService>();
             services.AddScoped<IMateriaService, MateriaService>();
+            services.AddScoped<IEncerramentoTurmaPacoteService, EncerramentoTurmaPacoteService>();
             services.AddScoped<ITurmaService, TurmaService>();
             services.AddScoped<IVinculoCobrancaService, VinculoCobrancaService>();
             services.AddScoped<IAlunoService, AlunoService>();

@@ -139,6 +139,58 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
   if (erro) return <EmptyState title="Não foi possível carregar" desc={erro} />;
   if (!aula) return <p className="count-text">Carregando...</p>;
 
+  // specs/063: a chamada mostra os alunos da turma e, abaixo, os "Outros alunos" (reposicao). Todos
+  // usam o mesmo estado de presenca e as mesmas regras de cobranca (do backend).
+  const alunosDaTurma = aula.alunos.filter((al) => !al.reposicao);
+  const outrosAlunos = aula.alunos.filter((al) => al.reposicao);
+
+  const linhaDoAluno = (al: (typeof aula.alunos)[number]) => (
+    <div className="lesson-item" key={al.alunoId} style={{ cursor: "default" }}>
+      <div className="mini-avatar" style={{ background: avatarColor(al.alunoId) }}>
+        {initials(al.nome)}
+      </div>
+      <div className="lesson-info">
+        <Link href={`/alunos/${al.alunoId}`} className="subj" style={{ textDecoration: "none", color: "inherit" }}>
+          {al.nome}
+        </Link>
+        <div className="who">RA {al.ra}</div>
+      </div>
+
+      {al.reposicao && aula.status === "Agendada" && (
+        <button
+          className="btn btn-ghost btn-sm"
+          type="button"
+          title="Retirar da aula"
+          disabled={processando}
+          onClick={() => handleRemoverReposicao(al.alunoId)}
+        >
+          <Icon name="x" size={13} />
+        </button>
+      )}
+
+      {aula.status === "Agendada" ? (
+        <label className="chk-pill">
+          <input
+            type="checkbox"
+            checked={presencas[al.alunoId] ?? true}
+            onChange={(e) => setPresencas({ ...presencas, [al.alunoId]: e.target.checked })}
+          />
+          Presente
+        </label>
+      ) : al.presente === null ? (
+        <span className="status-pill status-inativo">—</span>
+      ) : al.motivoNaoRegistro === "PacoteEsgotado" ? (
+        <span className="status-pill status-atrasado" title="Presença não registrada: pacote de aulas esgotado">
+          Pacote esgotado
+        </span>
+      ) : (
+        <span className={`status-pill ${al.presente ? "status-ativo" : "status-atrasado"}`}>
+          {al.presente ? "Presente" : "Faltou"}
+        </span>
+      )}
+    </div>
+  );
+
   return (
     <>
       <Link href="/aulas" className="breadcrumb">
@@ -182,53 +234,21 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
             <Icon name="users" size={15} /> {aula.turmaNome ? `Turma: ${aula.turmaNome}` : "Aula individual"}
           </h4>
 
-          {aula.alunos.map((al) => (
-            <div className="lesson-item" key={al.alunoId} style={{ cursor: "default" }}>
-              <div className="mini-avatar" style={{ background: avatarColor(al.alunoId) }}>
-                {initials(al.nome)}
-              </div>
-              <div className="lesson-info">
-                <Link href={`/alunos/${al.alunoId}`} className="subj" style={{ textDecoration: "none", color: "inherit" }}>
-                  {al.nome}
-                </Link>
-                <div className="who">RA {al.ra}</div>
-              </div>
+          {/* specs/063: quem veio por reposicao fica numa secao propria, abaixo. O agrupamento usa so o
+              indicador `reposicao` que a API devolve -- a tela nao decide quem e "outro aluno". */}
+          {alunosDaTurma.map(linhaDoAluno)}
 
-              {al.reposicao && <span className="status-pill status-pendente">Reposição</span>}
-              {al.reposicao && aula.status === "Agendada" && (
-                <button
-                  className="btn btn-ghost btn-sm"
-                  type="button"
-                  title="Retirar da aula"
-                  disabled={processando}
-                  onClick={() => handleRemoverReposicao(al.alunoId)}
-                >
-                  <Icon name="x" size={13} />
-                </button>
-              )}
-
-              {aula.status === "Agendada" ? (
-                <label className="chk-pill">
-                  <input
-                    type="checkbox"
-                    checked={presencas[al.alunoId] ?? true}
-                    onChange={(e) => setPresencas({ ...presencas, [al.alunoId]: e.target.checked })}
-                  />
-                  Presente
-                </label>
-              ) : al.presente === null ? (
-                <span className="status-pill status-inativo">—</span>
-              ) : al.motivoNaoRegistro === "PacoteEsgotado" ? (
-                <span className="status-pill status-atrasado" title="Presença não registrada: pacote de aulas esgotado">
-                  Pacote esgotado
-                </span>
-              ) : (
-                <span className={`status-pill ${al.presente ? "status-ativo" : "status-atrasado"}`}>
-                  {al.presente ? "Presente" : "Faltou"}
-                </span>
-              )}
-            </div>
-          ))}
+          {outrosAlunos.length > 0 && (
+            <>
+              <div
+                className="who"
+                style={{ marginTop: 18, marginBottom: 6, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" }}
+              >
+                Outros alunos
+              </div>
+              {outrosAlunos.map(linhaDoAluno)}
+            </>
+          )}
 
           {aceitaReposicao && (
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>

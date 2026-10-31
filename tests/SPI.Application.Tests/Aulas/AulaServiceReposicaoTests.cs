@@ -218,10 +218,12 @@ namespace SPI.Application.Tests.Aulas
 
         // ---------- Cobranca (FR-019) ----------
 
+        // specs/063: o aluno de reposicao so consome o pacote se a aula for do grupo dele (aqui,
+        // o pacote da propria turma da aula).
         [Fact]
-        public async Task Presenca_do_aluno_de_reposicao_consome_o_pacote_dele()
+        public async Task Presenca_do_aluno_de_reposicao_consome_o_pacote_da_turma_da_aula()
         {
-            var pacote = new VinculoCobranca { Id = 7, AlunoId = VisitanteId, Modalidade = ModalidadeCobranca.Pacote, Valor = 500m, SaldoAulas = 3, Ativo = true };
+            var pacote = new VinculoCobranca { Id = 7, AlunoId = VisitanteId, TurmaId = CenarioCadastroAula.TurmaId, Modalidade = ModalidadeCobranca.Pacote, Valor = 500m, SaldoAulas = 3, Ativo = true };
             _cenario.Vinculos.Vinculos.Add(pacote);
             var aulaId = await NovaAulaAgendadaAsync();
             await _cenario.Servico.AdicionarParticipanteAsync(aulaId, VisitanteId);

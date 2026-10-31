@@ -24,6 +24,8 @@ namespace SPI.Infrastructure.Repositories
                 .Include(p => p.PagamentosAula).ThenInclude(pa => pa.Aula)
                 .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
+        // Todos os filtros sao opcionais e se somam (E). O periodo e sobre o VENCIMENTO, com as duas
+        // pontas incluidas. Ordem: vencimento mais recente primeiro.
         public async Task<List<Pagamento>> ListarAsync(
             int? alunoId,
             string? status,

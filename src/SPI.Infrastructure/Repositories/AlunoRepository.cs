@@ -58,6 +58,10 @@ namespace SPI.Infrastructure.Repositories
         public Task<bool> ExisteCpfAsync(string cpf, int? ignorarId = null, CancellationToken cancellationToken = default) =>
             _dbContext.Alunos.AnyAsync(a => a.Cpf == cpf && (ignorarId == null || a.Id != ignorarId), cancellationToken);
 
+        // Cadastro pela procedure sp_cadastrar_aluno (database/04_procedures.sql), que gera o RA
+        // (ano + semestre + sequencial) numa transacao propria, sem repetir mesmo com chamadas
+        // simultaneas -- por isso nao e um simples Add do EF. Usa a conexao do DbContext e so a
+        // abre (e fecha) se ela ainda estiver fechada.
         public async Task<(int Id, string Ra)> CadastrarViaProcedureAsync(
             string nome,
             string? cpf,

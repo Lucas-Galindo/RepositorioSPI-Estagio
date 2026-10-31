@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using SPI.Api.Extensions;
 using SPI.Application.Notificacoes.Services;
 using SPI.Domain.Enums;
-using SPI.Domain.Exceptions;
 
 namespace SPI.Api.Controllers
 {
@@ -29,14 +28,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna as notificacoes ativas, mais recentes primeiro</returns>
         public async Task<IActionResult> Listar()
         {
-            try
-            {
-                return Ok(await _notificacaoService.ListarAtivasAsync(User.ObterUsuarioId(), DateTime.Now));
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(await _notificacaoService.ListarAtivasAsync(User.ObterUsuarioId(), DateTime.Now));
         }
 
         [HttpPatch("{id}/lida")]
@@ -49,19 +41,8 @@ namespace SPI.Api.Controllers
         /// <param name="id">Id da notificacao</param>
         public async Task<IActionResult> MarcarComoLida(int id)
         {
-            try
-            {
-                await _notificacaoService.MarcarComoLidaAsync(User.ObterUsuarioId(), id, DateTime.Now);
-                return NoContent();
-            }
-            catch (NaoEncontradoException e)
-            {
-                return NotFound(e.Message);
-            }
-            catch (Exception e)
-            {
-                return Problem(title: "Erro inesperado", detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
-            }
+            await _notificacaoService.MarcarComoLidaAsync(User.ObterUsuarioId(), id, DateTime.Now);
+            return NoContent();
         }
     }
 }
