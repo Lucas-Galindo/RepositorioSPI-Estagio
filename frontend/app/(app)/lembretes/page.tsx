@@ -175,6 +175,16 @@ export default function LembretesPage() {
 
   return (
     <>
+      {/* specs/066: a aba tem duas mensagerias. Esta e a de aula; os indicadores, filtros e a tabela abaixo
+          valem so para ela. A de pagamento pendente vem depois, separada. */}
+      <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Icon name="cal" size={15} /> Lembretes de aula
+      </div>
+      <p className="section-sub">
+        E-mails enviados aos alunos e responsáveis antes de cada aula da turma. Os indicadores e filtros abaixo valem só
+        para estes lembretes.
+      </p>
+
       <div className="kpi-row">
         <div className="kpi">
           <div className="label">Pendentes</div>
@@ -315,8 +325,17 @@ export default function LembretesPage() {
         )}
       </div>
 
-      {/* specs/060: e-mail semanal de pagamento pendente (regra + historico). */}
-      <LembretePagamentoSection />
+      {/* specs/066: segunda mensageria, separada da de aula por uma divisoria. */}
+      <div style={{ height: 1, marginTop: 32, background: "var(--c-text-muted)", opacity: 0.3 }} role="separator" />
+      <div style={{ marginTop: 24 }}>
+        <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="money" size={15} /> Lembretes de pagamento
+        </div>
+        <p className="section-sub">E-mail semanal para alunos e responsáveis com os pagamentos vencidos sem baixa.</p>
+
+        {/* specs/060: e-mail semanal de pagamento pendente (regra + historico). */}
+        <LembretePagamentoSection />
+      </div>
 
       {exclusaoPendente && (
         <ConfirmModal
