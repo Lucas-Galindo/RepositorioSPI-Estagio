@@ -20,3 +20,21 @@
 **Fora do escopo (visto, não alterado)**: o bloco "Pagamento pendente" (`LembretePagamentoSection`, spec 060) repete o ícone e fica com um título aninhado sob "Lembretes de pagamento"; é da spec 060, não do 066.
 
 **Validação**: `tsc` e `eslint` limpos; o CSS aplicado é o mesmo de antes (a captura visual da spec 066 continua válida).
+
+---
+
+## Card 064 — Chamada só nos detalhes da aula e aviso de aula sem frequência
+
+**Escopo revisado**: o que a spec 064 criou ou mudou: `RegraChamada`, `RelogioExtensions`, `AulaService` (criar, registrar chamada, `Mapear`), notificações sem corte, `aulas/[id]/page.tsx`, `AulaForm` e os testes novos.
+
+| # | Tipo | Achado | Ação |
+|---|---|---|---|
+| 1 | Redundância / lógica frágil | `Mapear` lia o relógio **duas vezes** por aula (podia sair com dois instantes diferentes na mesma resposta) e, na lista de aulas, uma vez por aula | `MapearEm(aula, agora)`: o relógio é lido **uma vez** por resposta; a lista inteira usa o mesmo instante |
+| 2 | Redundância | `RegraChamada.Liberada` e `SegundosParaLiberar` repetiam a checagem "ativa e Agendada" | Extraída para `AguardaChamada` (um lugar só) |
+| 3 | Redundância na tela | A tela repetia `aula.status === "Agendada"` onde `chamadaLiberada` já implica isso | Removido; o checkbox e o botão dependem só de `chamadaLiberada` |
+| 4 | Lógica errada (borda) | A mensagem "A chamada ficará disponível…" aparecia para qualquer aula Agendada sem chamada liberada, inclusive uma aula **excluída** aberta pelo endereço | A mensagem agora aparece só quando o servidor informa `segundosParaChamada` (o caso "ainda não começou"); para aula excluída nada é mostrado |
+| 5 | Nome obsoleto | Dois testes ainda se chamavam `Aula_retroativa_…` | Renomeados para `Aula_antiga_…` (o comportamento retroativo não existe mais) |
+
+**Sem achado**: nenhum código morto (nada sobrou do desenho antigo: `retroativ…`, corte de vigência e `AulasPendentesDesde` só aparecem em comentários históricos de testes e nas notas das specs 055/059); a migração 26, a consulta de auditoria e o fuso estão como especificados.
+
+**Validação**: 507 testes (com build), `tsc` e `eslint` limpos. As mudanças 1 a 3 e 5 preservam o comportamento; a 4 só muda o caso de aula excluída (coberto por `RegraChamadaTests` e `AulaServiceChamadaTests`, que já fixam `segundosParaChamada` nulo para aula excluída).

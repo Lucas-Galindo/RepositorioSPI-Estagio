@@ -173,7 +173,7 @@ namespace SPI.Application.Tests.Aulas
         // ---- FR-023: aula antiga (criada Agendada, chamada feita depois nos detalhes -- specs/064) segue a mesma regra ----
 
         [Fact]
-        public async Task Aula_retroativa_gera_conta_para_pacote_de_outra_turma_e_consome_o_da_propria()
+        public async Task Aula_antiga_gera_conta_para_pacote_de_outra_turma_e_consome_o_da_propria()
         {
             var pacoteOutra = Vinculo(MatriculadoId, ModalidadeCobranca.Pacote, OutraTurma, saldo: 5);
 
@@ -186,7 +186,7 @@ namespace SPI.Application.Tests.Aulas
         }
 
         [Fact]
-        public async Task Aula_retroativa_consome_o_pacote_da_propria_turma_sem_conta()
+        public async Task Aula_antiga_consome_o_pacote_da_propria_turma_sem_conta()
         {
             var pacote = Vinculo(MatriculadoId, ModalidadeCobranca.Pacote, TurmaDaAula, saldo: 5);
 

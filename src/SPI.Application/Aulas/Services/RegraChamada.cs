@@ -14,12 +14,12 @@ namespace SPI.Application.Aulas.Services
         // comparados JUNTOS (nao so a data: uma aula de hoje as 15h nao pode ter chamada as 10h).
         // No minuto exato do inicio ja esta liberada. Aula em andamento tambem esta liberada.
         public static bool Liberada(Aula aula, DateTime agora) =>
-            aula.Ativo && aula.Status == "Agendada" && agora >= InicioDaAula(aula);
+            AguardaChamada(aula) && agora >= InicioDaAula(aula);
 
         // Segundos ate o inicio, so quando a unica coisa que falta e o horario chegar; senao nulo.
         public static int? SegundosParaLiberar(Aula aula, DateTime agora)
         {
-            if (!aula.Ativo || aula.Status != "Agendada")
+            if (!AguardaChamada(aula))
             {
                 return null;
             }
@@ -27,6 +27,9 @@ namespace SPI.Application.Aulas.Services
             var falta = InicioDaAula(aula) - agora;
             return falta > TimeSpan.Zero ? (int)Math.Ceiling(falta.TotalSeconds) : null;
         }
+
+        // So a aula ativa e ainda Agendada pode ter a chamada (realizada, cancelada e excluida nao).
+        private static bool AguardaChamada(Aula aula) => aula.Ativo && aula.Status == "Agendada";
 
         public static string MensagemBloqueio(Aula aula)
         {

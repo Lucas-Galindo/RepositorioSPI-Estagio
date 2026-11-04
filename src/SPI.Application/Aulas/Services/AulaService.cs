@@ -51,7 +51,9 @@ namespace SPI.Application.Aulas.Services
             CancellationToken cancellationToken = default)
         {
             var aulas = await _aulaRepository.ListarAsync(status, turmaId, alunoId, dataInicio, dataFim, cancellationToken);
-            return aulas.Select(Mapear).ToList();
+            // Uma leitura do relogio para a lista inteira: todas as aulas usam o mesmo instante.
+            var agora = _relogio.AgoraEmSaoPaulo();
+            return aulas.Select(a => MapearEm(a, agora)).ToList();
         }
 
         public async Task<AulaResponse> ObterPorIdAsync(int id, CancellationToken cancellationToken = default)
@@ -490,12 +492,14 @@ namespace SPI.Application.Aulas.Services
             }
         }
 
-        // Instancia (nao estatico) porque a resposta informa se a chamada esta liberada, o que
-        // depende do relogio do servidor (specs/064).
-        private AulaResponse Mapear(Aula aula) => new()
+        // A resposta informa se a chamada esta liberada, o que depende do relogio do servidor
+        // (specs/064): quem mapeia uma aula so le o relogio uma vez.
+        private AulaResponse Mapear(Aula aula) => MapearEm(aula, _relogio.AgoraEmSaoPaulo());
+
+        private static AulaResponse MapearEm(Aula aula, DateTime agora) => new()
         {
-            ChamadaLiberada = RegraChamada.Liberada(aula, _relogio.AgoraEmSaoPaulo()),
-            SegundosParaChamada = RegraChamada.SegundosParaLiberar(aula, _relogio.AgoraEmSaoPaulo()),
+            ChamadaLiberada = RegraChamada.Liberada(aula, agora),
+            SegundosParaChamada = RegraChamada.SegundosParaLiberar(aula, agora),
             Id = aula.Id,
             Descricao = aula.Descricao,
             MateriaId = aula.MateriaId,

@@ -183,7 +183,7 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
         </button>
       )}
 
-      {aula.status === "Agendada" && aula.chamadaLiberada ? (
+      {aula.chamadaLiberada ? (
         <label className="chk-pill">
           <input
             type="checkbox"
@@ -288,14 +288,14 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {/* specs/064: antes do inicio a chamada fica bloqueada; quem decide e o servidor (chamadaLiberada). */}
-          {aula.status === "Agendada" && !aula.chamadaLiberada && (
+          {/* specs/064: antes do inicio a chamada fica bloqueada; quem decide e o servidor (segundosParaChamada so vem preenchido nesse caso). */}
+          {aula.segundosParaChamada !== null && (
             <p className="hint" style={{ marginTop: 14 }}>
               A chamada ficará disponível a partir das {fmtHora(aula.horaInicio)} de {fmtData(aula.dataInicio)}.
             </p>
           )}
 
-          {aula.status === "Agendada" && aula.chamadaLiberada && aula.alunos.length > 0 && (
+          {aula.chamadaLiberada && aula.alunos.length > 0 && (
             <button
               className="btn btn-primary btn-sm"
               type="button"
