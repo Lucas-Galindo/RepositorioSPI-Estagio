@@ -1522,6 +1522,13 @@ tbody tr.row-link:hover {
 .field input.invalid {
   box-shadow: var(--shadow-press), 0 0 0 3px var(--c-danger-tint);
 }
+/* Texto de apoio (dica) em qualquer tela: discreto, com a cor de texto secundario do tema (claro e
+   escuro vem do token). Dentro de um .field a regra mais especifica abaixo mantem a dica menor. */
+.hint {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--c-text-muted);
+}
 .field .hint {
   font-size: 10px;
   color: var(--c-text-muted);

@@ -414,7 +414,7 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
             )}
 
             {aula.aceitaLinkAula && (
-              <p style={{ marginTop: 10, fontSize: 12, color: "var(--c-text-muted)" }}>
+              <p className="hint" style={{ marginTop: 10 }}>
                 Este link fica guardado só até o fim da aula e se perde se o sistema reiniciar.
               </p>
             )}
