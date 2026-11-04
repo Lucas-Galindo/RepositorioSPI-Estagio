@@ -61,3 +61,37 @@
 **Vistos e não alterados**
 - `Program.cs` tem um `using System.Threading.RateLimiting` sem uso (anterior ao 065, não é do escopo).
 - **Sugestão (muda comportamento, por isso não feita)**: o 500 devolve a mensagem da exceção em `detail` (igual a antes do 065). Em produção isso pode vazar texto interno (por exemplo de banco). Vale um card: mostrar o detalhe só em Development e registrar a exceção em log.
+
+---
+
+## Card 063 — Alunos de pacote fora do cadastro fixo das turmas (turma de pacote e pacote por grupo)
+
+**Escopo revisado**: o que a spec 063 criou ou mudou: `Turma` (tipo, datas, `EstaIniciada`/`EstaEmAndamento`), `TurmaService`, validador de turma, `EncerramentoTurmaPacoteService` e a rotina `TurmaEncerramentoDispatcherService`, as regras de pacote em `VinculoCobrancaService`, as consultas de pacote do repositório, `RegraCobrancaPresenca` (pacote só no seu grupo) e as telas de turma, vínculo e "Outros alunos". Lidos os arquivos principais; o comportamento foi preservado.
+
+| # | Tipo | Achado | Ação |
+|---|---|---|---|
+| 1 | Redundância | `TurmaService` repetia duas vezes o par "ler a turma de novo e mapear" (vincular e desvincular aluno) | Extraído para `RecarregarEMapearAsync` |
+| 2 | Complexidade | `MapearComPacotesAsync` fazia `turma.AlunosTurma.Any(...)` dentro de um `Where` (varredura por pacote) | Usa um `HashSet` das matrículas (uma passada) |
+| 3 | Redundância | `EncerramentoTurmaPacoteService` tinha o mesmo laço "inativar pacotes e contar" nos dois métodos | Extraído para `Inativar` (só a coluna `Ativo` muda, como na spec) |
+
+**Conferido e sem achado**: o critério de "turma encerrada" da rotina (`DataFim < hoje` ou turma inativa) coincide com `Turma.EstaEmAndamento`; a rotina é idempotente e só grava `Ativo`; as consultas de pacote são em lote e filtradas por ativo; a regra "pacote só no seu grupo" está em um lugar só (`RegraCobrancaPresenca.Decidir`); nenhum código morto do desenho anterior ao 063.
+
+**Vistos e não alterados (sugestões)**
+- A validação de turma existe no validador **e** no serviço (datas por tipo). É deliberado (o serviço é chamado direto pelos testes e precisa mesclar com as datas já gravadas na edição), mas é o ponto mais próximo de duplicar regra; manter até haver um motivo para unificar.
+- A página da turma busca **todos os alunos ativos** mesmo em turma de pacote, onde o resultado não é usado (a lista vem de `alunosComPacoteForaDaTurma`). Evitar a chamada exigiria carregar a turma antes ou devolver "alunos disponíveis" pelo servidor (que também tiraria o filtro da tela): vale como card pequeno.
+- `DateTime.Now` na rotina de fim de turma, em `Turma`/`TurmaService` e na validação do pacote (fuso do servidor, não o de São Paulo): é o mesmo ponto já listado como sugestão de card na spec 064.
+
+**Validação**: 507 testes (com build), cobrindo vincular/desvincular, pacote fora da turma e encerramento.
+
+---
+
+## Resumo geral
+
+| Card | Mudanças de código | Resultado |
+|---|---|---|
+| 066 Lembretes em duas seções | 1 (estilo repetido) | `tsc`/`eslint` limpos |
+| 064 Chamada nos detalhes | 5 + 1 `using` | 507 testes; corrigida a mensagem de bloqueio para aula excluída |
+| 065 Melhoria de código | 0 | sem sobra; sugestão de não devolver a mensagem da exceção em produção |
+| 063 Pacote fora da turma | 3 | 507 testes |
+
+Nenhum comportamento foi quebrado; o único ajuste de comportamento é o do item 4 do 064 (aula excluída).

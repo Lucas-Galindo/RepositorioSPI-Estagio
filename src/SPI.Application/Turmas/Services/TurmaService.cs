@@ -196,8 +196,7 @@ namespace SPI.Application.Turmas.Services
             await _turmaRepository.VincularAlunoAsync(turmaId, alunoId, cancellationToken);
             await _turmaRepository.SalvarAlteracoesAsync(cancellationToken);
 
-            var turmaAtualizada = await _turmaRepository.ObterPorIdAsync(turmaId, cancellationToken);
-            return await MapearComPacotesAsync(turmaAtualizada!, cancellationToken);
+            return await RecarregarEMapearAsync(turmaId, cancellationToken);
         }
 
         public async Task<TurmaResponse> DesvincularAlunoAsync(int turmaId, int alunoId, CancellationToken cancellationToken = default)
@@ -213,8 +212,14 @@ namespace SPI.Application.Turmas.Services
             await _turmaRepository.DesvincularAlunoAsync(turmaId, alunoId, cancellationToken);
             await _turmaRepository.SalvarAlteracoesAsync(cancellationToken);
 
-            var turmaAtualizada = await _turmaRepository.ObterPorIdAsync(turmaId, cancellationToken);
-            return await MapearComPacotesAsync(turmaAtualizada!, cancellationToken);
+            return await RecarregarEMapearAsync(turmaId, cancellationToken);
+        }
+
+        // Depois de gravar uma mudanca de matricula, le a turma de novo (com os alunos) e a mapeia.
+        private async Task<TurmaResponse> RecarregarEMapearAsync(int turmaId, CancellationToken cancellationToken)
+        {
+            var turma = await _turmaRepository.ObterPorIdAsync(turmaId, cancellationToken);
+            return await MapearComPacotesAsync(turma!, cancellationToken);
         }
 
         // specs/063: em turma de pacote acrescenta quem saiu mas ainda tem o pacote ativo dela (so esses
@@ -226,8 +231,9 @@ namespace SPI.Application.Turmas.Services
             if (turma.Tipo == TipoTurma.Pacote)
             {
                 var pacotes = await _vinculoRepository.ListarPacotesAtivosDaTurmaAsync(turma.Id, cancellationToken);
+                var matriculados = turma.AlunosTurma.Select(at => at.AlunoId).ToHashSet();
                 resposta.AlunosComPacoteForaDaTurma = pacotes
-                    .Where(p => p.Aluno is { Ativo: true } && !turma.AlunosTurma.Any(at => at.AlunoId == p.AlunoId))
+                    .Where(p => p.Aluno is { Ativo: true } && !matriculados.Contains(p.AlunoId))
                     .Select(p => new AlunoResumoResponse { Id = p.Aluno.Id, Ra = p.Aluno.Ra, Nome = p.Aluno.Nome })
                     .ToList();
             }

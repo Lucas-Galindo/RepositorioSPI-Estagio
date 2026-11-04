@@ -1,3 +1,4 @@
+using SPI.Domain.Entities;
 using SPI.Domain.Repositories;
 
 namespace SPI.Application.Turmas.Services
@@ -18,12 +19,7 @@ namespace SPI.Application.Turmas.Services
         {
             var pacotes = await _vinculoRepository.ListarPacotesAtivosDaTurmaAsync(turmaId, cancellationToken);
 
-            foreach (var pacote in pacotes)
-            {
-                pacote.Ativo = false;
-            }
-
-            return pacotes.Count;
+            return Inativar(pacotes);
         }
 
         public async Task<int> EncerrarPacotesDeTurmasEncerradasAsync(DateOnly hoje, CancellationToken cancellationToken = default)
@@ -35,12 +31,18 @@ namespace SPI.Application.Turmas.Services
                 return 0;
             }
 
+            var inativados = Inativar(pacotes);
+            await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
+            return inativados;
+        }
+
+        private static int Inativar(IReadOnlyCollection<VinculoCobranca> pacotes)
+        {
             foreach (var pacote in pacotes)
             {
                 pacote.Ativo = false;
             }
 
-            await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
             return pacotes.Count;
         }
     }
