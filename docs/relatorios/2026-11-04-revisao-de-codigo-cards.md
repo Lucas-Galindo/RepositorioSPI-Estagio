@@ -38,3 +38,26 @@
 **Sem achado**: nenhum código morto (nada sobrou do desenho antigo: `retroativ…`, corte de vigência e `AulasPendentesDesde` só aparecem em comentários históricos de testes e nas notas das specs 055/059); a migração 26, a consulta de auditoria e o fuso estão como especificados.
 
 **Validação**: 507 testes (com build), `tsc` e `eslint` limpos. As mudanças 1 a 3 e 5 preservam o comportamento; a 4 só muda o caso de aula excluída (coberto por `RegraChamadaTests` e `AulaServiceChamadaTests`, que já fixam `segundosParaChamada` nulo para aula excluída).
+
+> Adendo ao 064: o analisador IDE0005 achou um `using SPI.Domain.Enums` sem uso em `AulaService.cs`; removido (commit à parte).
+
+---
+
+## Card 065 — Melhoria do código sem mudar o comportamento (segunda passada)
+
+**Escopo revisado**: `ErrosDeNegocioFilter`, a remoção dos `try/catch` dos 17 controllers, o CSS removido, os exports de `jwt.ts`/`paleta.ts`, o `PackageReference`, `ValidarTurmaDoVinculoAsync` e os 43 comentários de regra.
+
+**Como**: leitura do filtro e dos controllers, varredura de sobras (campos `_logger` e `using`) e o analisador IDE0005 (`using` sem uso) ligado temporariamente por um `.editorconfig` descartável.
+
+| # | Tipo | Resultado |
+|---|---|---|
+| 1 | Sobras nos controllers | Nenhum `_logger` ficou só declarado: todos os controllers que o têm ainda o usam (login, refresh, logout e demais registros). Nenhum campo morto |
+| 2 | `using` sem uso | O analisador não acusou nada nos arquivos que o 065 tocou (os `using SPI.Domain.Exceptions` sem uso já tinham saído) |
+| 3 | Filtro de erros | A lógica confere com o contrato: 404/409 só quando a ação declara o status, senão 500 com o mesmo corpo de `ControllerBase.Problem`; o teste compara os dois. Nada a simplificar |
+| 4 | Comentários | Os comentários continuam explicando o porquê e nenhum repete o código |
+
+**Nada alterado neste card** (a segunda passada não achou o que corrigir).
+
+**Vistos e não alterados**
+- `Program.cs` tem um `using System.Threading.RateLimiting` sem uso (anterior ao 065, não é do escopo).
+- **Sugestão (muda comportamento, por isso não feita)**: o 500 devolve a mensagem da exceção em `detail` (igual a antes do 065). Em produção isso pode vazar texto interno (por exemplo de banco). Vale um card: mostrar o detalhe só em Development e registrar a exceção em log.
