@@ -12,5 +12,9 @@ namespace SPI.Application.Notificacoes.Services
         // da aula, a partir de AulaFuturaHora (decisao do usuario: ajustavel sem codigo).
         public int AulaFuturaDiasAntes { get; set; } = 1;
         public TimeOnly AulaFuturaHora { get; set; } = new(8, 0);
+
+        // specs/062: o aviso de renovacao do plano Semestral/Anual aparece quando o fim esta a ate este numero
+        // de dias (e continua depois do fim, ate renovar ou excluir).
+        public int RenovacaoDiasAntes { get; set; } = 15;
     }
 }

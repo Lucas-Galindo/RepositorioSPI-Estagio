@@ -5,8 +5,9 @@ namespace SPI.Application.Aulas.Services
 {
     public enum TipoCobrancaPresenca
     {
-        // Aluno com mensalidade: a presenca nao gera cobranca.
-        Mensalidade,
+        // Aluno com um plano que cobre a aula (Mensalidade, ou Semestral/Anual vigente na data da aula): a
+        // presenca nao gera cobranca (specs/062; antes deste valor se chamava Mensalidade).
+        PlanoPeriodico,
         // Consome o pacote do grupo da aula (ou, se o saldo nunca foi informado, so registra o uso).
         Pacote,
         // Gera conta a receber pelo valor da Avulsa do contexto da aula.
@@ -27,18 +28,22 @@ namespace SPI.Application.Aulas.Services
     // AulaService so busca os vinculos ativos do aluno e executa o efeito decidido.
     public static class RegraCobrancaPresenca
     {
-        public static DecisaoCobranca Decidir(IReadOnlyCollection<VinculoCobranca> ativosDoAluno, int? turmaIdDaAula)
+        public static DecisaoCobranca Decidir(IReadOnlyCollection<VinculoCobranca> ativosDoAluno, int? turmaIdDaAula, DateOnly dataDaAula)
         {
             // Com conflito herdado da regra antiga pode haver mais de um vinculo do
             // mesmo tipo; nesse caso vale sempre o mais antigo (menor Id).
             var porAntiguidade = ativosDoAluno.Where(v => v.Ativo).OrderBy(v => v.Id).ToList();
 
-            // 1) Mensalidade cobre tudo, e prevalece ate sobre um pacote herdado,
-            //    para nunca cobrar o aluno duas vezes.
-            var mensalidade = porAntiguidade.FirstOrDefault(v => v.Modalidade == ModalidadeCobranca.Mensalidade);
-            if (mensalidade is not null)
+            // 1) Um plano periodico cobre tudo, e prevalece ate sobre um pacote herdado, para nunca cobrar o
+            //    aluno duas vezes. A Mensalidade vale sempre; o Semestral/Anual so vale para aulas dentro do
+            //    seu periodo (specs/062, FR-009): fora dele o plano e ignorado e a decisao segue para pacote,
+            //    avulsa ou o valor da aula. Nenhuma rotina precisa "desativar" o plano ao fim do periodo.
+            var plano = porAntiguidade.FirstOrDefault(v =>
+                v.Modalidade == ModalidadeCobranca.Mensalidade
+                || (v.Modalidade.ComPeriodo() && v.DataInicio <= dataDaAula && dataDaAula <= v.DataFim));
+            if (plano is not null)
             {
-                return new DecisaoCobranca(TipoCobrancaPresenca.Mensalidade, mensalidade);
+                return new DecisaoCobranca(TipoCobrancaPresenca.PlanoPeriodico, plano);
             }
 
             // 2) Pacote so vale no SEU grupo (specs/063): o pacote de uma turma, so em aula

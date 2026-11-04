@@ -178,3 +178,7 @@ Os pacotes e mensalidades que hoje estão amarrados a uma turma passam a ser do 
 ## Nota de alteração (2026-11-04, Princípio V): selo de cobrança nas telas
 
 A cobrança do aluno (e, no caso do pacote, o progresso das aulas restantes) agora também aparece como **selo** na lista de alunos, na página da turma e na chamada da aula, sem mudar nenhuma regra desta spec: o selo é calculado no servidor pela mesma regra que cobra a presença (`RegraCobrancaPresenca.Decidir`) e pelo mesmo progresso (`ProgressoPacote.Calcular`). Ver [specs/068-badge-cobranca-aluno/spec.md](../068-badge-cobranca-aluno/spec.md).
+
+## Nota de alteração (2026-11-04, Princípio V): Semestralidade e Anuidade
+
+A decisão de cobrança da presença agora recebe a **data da aula**: um plano Semestral/Anual vale (sem cobrar) só dentro do seu período; a Mensalidade continua valendo sempre. O resultado antes chamado `Mensalidade` passou a se chamar `PlanoPeriodico` (spec 062). Ver [specs/062-semestralidade-anuidade/spec.md](../062-semestralidade-anuidade/spec.md).

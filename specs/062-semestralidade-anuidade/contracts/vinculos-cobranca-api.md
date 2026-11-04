@@ -46,7 +46,7 @@ Cada item de Semestral/Anual traz `dataInicio`, `dataFim` e `parcelas[]`, ordena
 ## `DELETE {id}` — excluir (alterado)
 
 - Para Semestral/Anual, na mesma transação: `Ativo = false` e as parcelas do vínculo com `Status = Pendente` e `vencimento > hoje` passam a `Cancelado`. As pagas, as já vencidas e as demais ficam intactas. Nenhum pagamento é apagado.
-- **204**, também quando o vínculo já estava excluído (idempotente).
+- **200**, também quando o vínculo já estava excluído (idempotente).
 
 ## `PATCH {id}/reativar` — reativar (alterado)
 

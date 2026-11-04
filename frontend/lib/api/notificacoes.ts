@@ -1,6 +1,6 @@
 import { apiGet, apiPatch } from "./client";
 
-export type TipoNotificacao = "AulaPendente" | "AulaFutura" | "PagamentoPendente";
+export type TipoNotificacao = "AulaPendente" | "AulaFutura" | "PagamentoPendente" | "RenovacaoPlano";
 
 /** Espelha SPI.Application.Notificacoes.Dtos.NotificacaoAulaResponse. */
 export interface NotificacaoAula {
@@ -29,7 +29,16 @@ export interface NotificacaoPagamento {
   pendencias: PendenciaPagamento[];
 }
 
-/** Espelha SPI.Application.Notificacoes.Dtos.NotificacaoResponse (specs/059/060). */
+/** Espelha SPI.Application.Notificacoes.Dtos.NotificacaoRenovacaoResponse (specs/062): o plano de maior fim do aluno. */
+export interface NotificacaoRenovacao {
+  alunoId: number;
+  alunoNome: string;
+  /** "Semestral" ou "Anual". */
+  modalidade: string;
+  dataFim: string;
+}
+
+/** Espelha SPI.Application.Notificacoes.Dtos.NotificacaoResponse (specs/059/060/062). */
 export interface Notificacao {
   id: number;
   tipo: TipoNotificacao;
@@ -40,6 +49,8 @@ export interface Notificacao {
   aula: NotificacaoAula | null;
   /** Tipo PagamentoPendente. */
   pagamento: NotificacaoPagamento | null;
+  /** Tipo RenovacaoPlano (specs/062). */
+  renovacao: NotificacaoRenovacao | null;
 }
 
 /** Notificacoes ativas da professora (a API sincroniza todos os tipos antes de listar). */

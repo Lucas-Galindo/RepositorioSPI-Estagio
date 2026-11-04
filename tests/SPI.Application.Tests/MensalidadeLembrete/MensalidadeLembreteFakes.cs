@@ -38,6 +38,9 @@ namespace SPI.Application.Tests.MensalidadeLembrete
         public Task<bool> ExisteMensalidadeGeradaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
+        public Task<List<Pagamento>> ListarPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<Pagamento>> ListarPendentesFuturosDoVinculoAsync(int vinculoId, DateOnly hoje, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task AtualizarStatusViaProcedureAsync(int pagamentoId, string novoStatus, CancellationToken cancellationToken = default) =>
@@ -47,6 +50,9 @@ namespace SPI.Application.Tests.MensalidadeLembrete
     public class FakeEmailSenderParaLembreteVencimento : IEmailSender
     {
         public List<string> Enviados { get; } = new();
+
+        // specs/062: assunto e corpo de cada envio (para conferir o texto).
+        public List<(string Assunto, string Corpo)> Mensagens { get; } = new();
 
         // Hook opcional para simular falha de envio pra um destinatario especifico.
         public Func<string, bool>? FalharPara { get; set; }
@@ -59,6 +65,7 @@ namespace SPI.Application.Tests.MensalidadeLembrete
             }
 
             Enviados.Add(destinatario);
+            Mensagens.Add((assunto, corpoHtml));
             return Task.CompletedTask;
         }
     }

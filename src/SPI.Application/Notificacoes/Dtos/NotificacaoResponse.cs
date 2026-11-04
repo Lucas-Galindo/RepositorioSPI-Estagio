@@ -13,6 +13,18 @@ namespace SPI.Application.Notificacoes.Dtos
         public bool Lida { get; set; }
         public NotificacaoAulaResponse? Aula { get; set; }
         public NotificacaoPagamentoResponse? Pagamento { get; set; }
+        // specs/062: so no tipo RenovacaoPlano.
+        public NotificacaoRenovacaoResponse? Renovacao { get; set; }
+    }
+
+    // specs/062: o plano (Semestral/Anual) do aluno que precisa de renovacao: o de maior data de fim.
+    public record NotificacaoRenovacaoResponse
+    {
+        public int AlunoId { get; set; }
+        public string AlunoNome { get; set; } = string.Empty;
+        // "Semestral" ou "Anual".
+        public string Modalidade { get; set; } = string.Empty;
+        public DateOnly DataFim { get; set; }
     }
 
     public record NotificacaoAulaResponse

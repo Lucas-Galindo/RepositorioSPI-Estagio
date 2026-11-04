@@ -28,6 +28,11 @@ namespace SPI.Domain.Entities
         // pacote e restantes = total - dadas (specs/058, ProgressoPacote).
         public int? TotalAulasPacote { get; set; }
 
+        // specs/062: periodo do plano Semestral/Anual (inicio e fim = inicio + 6 ou 12 meses - 1 dia).
+        // O plano so vale para aulas com data dentro do periodo. Nulos nas demais modalidades.
+        public DateOnly? DataInicio { get; set; }
+        public DateOnly? DataFim { get; set; }
+
         public bool Ativo { get; set; }
 
         public Aluno Aluno { get; set; } = null!;

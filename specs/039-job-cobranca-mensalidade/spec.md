@@ -127,3 +127,7 @@ Como professora, quero que, se eu excluir (desativar) o Vínculo de Cobrança Me
 - Esta feature é majoritariamente de backend (job em segundo plano); a única mudança de tela é a remoção/ajuste do aviso "ainda não afeta a cobrança automática" para vínculos Mensalidade (FR-013, ver Constitution/EX-001 em plan.md) — nenhum indicador visual novo (ex.: "mensalidade já cobrada este mês") é adicionado nesta fatia.
 - Fora de escopo, reafirmando o pedido original: geração de cobrança para Modalidade Pacote ou Avulsa (specs/038 já cobre essas duas por presença), e qualquer tratamento de Pacote esgotado.
 - A criação da categoria de receita "Mensalidade" (FR-012) é um script de dados pequeno (padrão já usado no projeto para categorias fixas, `database/10_financeiro_contas.sql`), não uma mudança de schema — só uma nova linha em `categoria_receita`.
+
+## Nota de alteração (2026-11-04, Princípio V): Semestralidade e Anuidade
+
+O lembrete por e-mail de vencimento (5 dias antes) passou a valer também para as **parcelas dos planos Semestral/Anual**, com texto que cita a descrição do pagamento em vez de falar só em "mensalidade" (spec 062). O job de geração de mensalidade em si não mudou. Ver [specs/062-semestralidade-anuidade/spec.md](../062-semestralidade-anuidade/spec.md).

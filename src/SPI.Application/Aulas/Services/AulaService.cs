@@ -330,7 +330,7 @@ namespace SPI.Application.Aulas.Services
                 }
 
                 var vinculosAtivos = await _vinculoCobrancaRepository.ListarPorAlunoAsync(aulaAluno.AlunoId, ativo: true, cancellationToken);
-                var decisao = RegraCobrancaPresenca.Decidir(vinculosAtivos, aula.TurmaId);
+                var decisao = RegraCobrancaPresenca.Decidir(vinculosAtivos, aula.TurmaId, aula.DataInicio);
 
                 // specs/041: pacote esgotado sem Avulsa para cair barra so este aluno --
                 // a aula continua Realizada para os demais. O motivo fica gravado para
@@ -435,8 +435,9 @@ namespace SPI.Application.Aulas.Services
                         await _pagamentoRepository.VincularAulaAsync(pagamento.Id, aula.Id, cancellationToken);
                         break;
 
-                    case TipoCobrancaPresenca.Mensalidade:
-                        // A mensalidade ja cobre a aula; a cobranca mensal e do job (specs/039).
+                    case TipoCobrancaPresenca.PlanoPeriodico:
+                        // O plano ja cobre a aula: a Mensalidade e cobrada todo mes pelo job (specs/039) e o
+                        // Semestral/Anual, pelas parcelas geradas no cadastro (specs/062). A presenca so fica ligada ao plano.
                         break;
 
                     case TipoCobrancaPresenca.Pacote:
@@ -560,7 +561,7 @@ namespace SPI.Application.Aulas.Services
                 return;
             }
 
-            var selos = await _cobranca.ResumirParaGrupoAsync(aula.AulaAlunos.Select(aa => aa.Aluno).ToList(), aula.TurmaId, cancellationToken);
+            var selos = await _cobranca.ResumirParaGrupoAsync(aula.AulaAlunos.Select(aa => aa.Aluno).ToList(), aula.TurmaId, aula.DataInicio, cancellationToken);
             foreach (var aluno in resposta.Alunos)
             {
                 aluno.Cobranca = selos.GetValueOrDefault(aluno.AlunoId);

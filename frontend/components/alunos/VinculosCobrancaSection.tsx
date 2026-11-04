@@ -24,9 +24,15 @@ import { currency, fmtData, fmtHora } from "@/lib/format";
 import { ProgressoPacoteBarra } from "@/components/shared/ProgressoPacoteBarra";
 import { VinculoCobrancaFormModal } from "./VinculoCobrancaFormModal";
 
+// specs/062: Semestral/Anual nao se editam nem se reativam (as parcelas ja foram geradas / canceladas).
+const ehPlano = (v: VinculoCobranca) => v.modalidade === "Semestral" || v.modalidade === "Anual";
+
 function detalheDaModalidade(v: VinculoCobranca): string | null {
   if (v.modalidade === "Mensalidade" && v.aulasIncluidas !== null) {
     return `${v.aulasIncluidas} aula(s) incluída(s)`;
+  }
+  if (ehPlano(v) && v.dataInicio && v.dataFim) {
+    return `${fmtData(v.dataInicio)} a ${fmtData(v.dataFim)}`;
   }
   return null;
 }
@@ -34,7 +40,7 @@ function detalheDaModalidade(v: VinculoCobranca): string | null {
 // specs/056 + specs/063: a Mensalidade e do aluno; a Avulsa e o Pacote pertencem a um grupo --
 // uma turma ou, sem turma, o atendimento individual.
 function contextoDoVinculo(v: VinculoCobranca): string {
-  if (v.modalidade === "Mensalidade") return "Todas as aulas do aluno";
+  if (v.modalidade === "Mensalidade" || ehPlano(v)) return "Todas as aulas do aluno";
   return v.turmaNome ?? "Atendimento individual";
 }
 
@@ -148,20 +154,40 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
               {!v.ativo && <StatusPill status="Inativo" />}
               {/* specs/058: o progresso (contado pelas presencas) substitui o "Saldo: N". */}
               {v.progresso && <PacoteDetalhe alunoId={aluno.id} vinculoId={v.id} progresso={v.progresso} />}
+              {/* specs/062: parcelas do plano (contas a receber); o status vem pronto do servidor. */}
+              {v.parcelas && v.parcelas.length > 0 && (
+                <div className="pacote-detalhe">
+                  <ul className="pacote-aulas">
+                    {v.parcelas.map((p) => (
+                      <li key={p.pagamentoId}>
+                        <Link href={`/financeiro/contas-a-receber/${p.pagamentoId}`}>{fmtData(p.vencimento)}</Link>
+                        <span>
+                          {p.descricao ?? "Parcela"} · {currency(p.valor)}
+                        </span>
+                        <StatusPill status={p.status} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div style={{ display: "flex", gap: 8 }}>
                 {v.ativo ? (
                   <>
-                    <button className="btn btn-ghost btn-sm" type="button" onClick={() => setModal(v)}>
-                      <Icon name="edit" size={13} /> Editar
-                    </button>
+                    {!ehPlano(v) && (
+                      <button className="btn btn-ghost btn-sm" type="button" onClick={() => setModal(v)}>
+                        <Icon name="edit" size={13} /> Editar
+                      </button>
+                    )}
                     <button className="btn btn-danger btn-sm" type="button" onClick={() => setExclusaoPendente(v)}>
                       <Icon name="trash" size={13} /> Excluir
                     </button>
                   </>
                 ) : (
-                  <button className="btn btn-success btn-sm" type="button" onClick={() => handleReativar(v)} disabled={reativandoId === v.id}>
-                    <Icon name="check" size={13} /> Reativar
-                  </button>
+                  !ehPlano(v) && (
+                    <button className="btn btn-success btn-sm" type="button" onClick={() => handleReativar(v)} disabled={reativandoId === v.id}>
+                      <Icon name="check" size={13} /> Reativar
+                    </button>
+                  )
                 )}
               </div>
             </div>
@@ -187,7 +213,11 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
       {exclusaoPendente && (
         <ConfirmModal
           titulo="Excluir vínculo de cobrança"
-          descricao="O vínculo deixa de valer para este aluno, mas o registro é preservado e pode ser reativado."
+          descricao={
+            ehPlano(exclusaoPendente)
+              ? "As parcelas futuras ainda pendentes serão canceladas; as pagas e as vencidas não mudam. O plano não pode ser reativado depois."
+              : "O vínculo deixa de valer para este aluno, mas o registro é preservado e pode ser reativado."
+          }
           onConfirmar={handleExcluir}
           onCancelar={() => setExclusaoPendente(null)}
           confirmando={excluindo}

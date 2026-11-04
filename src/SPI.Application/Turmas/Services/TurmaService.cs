@@ -237,7 +237,7 @@ namespace SPI.Application.Turmas.Services
             // (AlunosComPacoteForaDaTurma) nao recebe.
             if (_cobranca is not null && turma.AlunosTurma.Count > 0)
             {
-                var selos = await _cobranca.ResumirParaGrupoAsync(turma.AlunosTurma.Select(at => at.Aluno).ToList(), turma.Id, cancellationToken);
+                var selos = await _cobranca.ResumirParaGrupoAsync(turma.AlunosTurma.Select(at => at.Aluno).ToList(), turma.Id, cancellationToken: cancellationToken);
                 foreach (var aluno in resposta.Alunos)
                 {
                     aluno.Cobranca = selos.GetValueOrDefault(aluno.Id);

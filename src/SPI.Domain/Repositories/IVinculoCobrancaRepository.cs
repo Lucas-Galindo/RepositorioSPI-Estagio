@@ -28,6 +28,9 @@ namespace SPI.Domain.Repositories
         // fim anterior a `hoje` (com a Turma). A rotina de fim de turma os inativa.
         Task<List<VinculoCobranca>> ListarPacotesAtivosDeTurmasEncerradasAsync(DateOnly hoje, CancellationToken cancellationToken = default);
 
+        // specs/062: planos Semestral/Anual ATIVOS de todos os alunos (com o Aluno). Base do aviso de renovacao.
+        Task<List<VinculoCobranca>> ListarPlanosAtivosAsync(CancellationToken cancellationToken = default);
+
         // specs/068: vinculos ATIVOS de varios alunos de uma vez (com a Turma), ordenados por Id. Uma consulta
         // so, para o resumo de cobranca nao fazer uma busca por aluno. Lista vazia devolve vazio sem consultar.
         Task<List<VinculoCobranca>> ListarAtivosDosAlunosAsync(IReadOnlyCollection<int> alunoIds, CancellationToken cancellationToken = default);

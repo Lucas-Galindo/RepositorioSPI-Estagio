@@ -17,6 +17,8 @@ namespace SPI.Application.VinculosCobranca.Services
         private static readonly ModalidadeCobranca[] OrdemDoPrincipal =
         {
             ModalidadeCobranca.Mensalidade,
+            ModalidadeCobranca.Semestral,
+            ModalidadeCobranca.Anual,
             ModalidadeCobranca.Pacote,
             ModalidadeCobranca.Avulsa,
         };
@@ -59,19 +61,20 @@ namespace SPI.Application.VinculosCobranca.Services
             return resultado;
         }
 
-        public async Task<Dictionary<int, SeloCobrancaResponse>> ResumirParaGrupoAsync(IReadOnlyCollection<Aluno> alunos, int? turmaId, CancellationToken cancellationToken = default)
+        public async Task<Dictionary<int, SeloCobrancaResponse>> ResumirParaGrupoAsync(IReadOnlyCollection<Aluno> alunos, int? turmaId, DateOnly? dataDaAula = null, CancellationToken cancellationToken = default)
         {
+            var data = dataDaAula ?? DateOnly.FromDateTime(DateTime.Now);
             var (ativosPorAluno, presencas) = await CarregarAsync(alunos, cancellationToken);
             var resultado = new Dictionary<int, SeloCobrancaResponse>();
 
             foreach (var aluno in alunos)
             {
                 var ativos = ativosPorAluno.GetValueOrDefault(aluno.Id) ?? new List<VinculoCobranca>();
-                var decisao = RegraCobrancaPresenca.Decidir(ativos, turmaId);
+                var decisao = RegraCobrancaPresenca.Decidir(ativos, turmaId, data);
 
                 resultado[aluno.Id] = decisao.Tipo switch
                 {
-                    TipoCobrancaPresenca.Mensalidade or TipoCobrancaPresenca.Pacote => SeloDoVinculo(decisao.Vinculo!, presencas, incluirTurma: false),
+                    TipoCobrancaPresenca.PlanoPeriodico or TipoCobrancaPresenca.Pacote => SeloDoVinculo(decisao.Vinculo!, presencas, incluirTurma: false),
                     TipoCobrancaPresenca.Avulsa => ComAviso(SeloDoVinculo(decisao.Vinculo!, presencas, incluirTurma: false), decisao.PacoteEsgotado),
                     // A presenca sera barrada: o pacote do grupo esta esgotado e nao ha avulsa para cair.
                     TipoCobrancaPresenca.Bloqueada => PacoteEsgotado(decisao.Vinculo!, presencas),

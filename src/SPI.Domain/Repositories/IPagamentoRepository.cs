@@ -34,6 +34,14 @@ namespace SPI.Domain.Repositories
         // vence hoje nao e pendencia), com Aluno e VinculoCobranca.
         Task<List<Pagamento>> ListarPendentesVencidosAsync(DateOnly hoje, CancellationToken cancellationToken = default);
 
+        // specs/062: parcelas de VARIOS vinculos numa consulta so (ordenadas por vencimento), para a listagem de
+        // vinculos nao fazer uma consulta por plano.
+        Task<List<Pagamento>> ListarPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, CancellationToken cancellationToken = default);
+
+        // specs/062: parcelas do vinculo ainda Pendentes com vencimento DEPOIS de `hoje` (rastreadas, para a
+        // exclusao do plano cancelar so essas). O que vence hoje, o que ja venceu e o que foi pago nao entra.
+        Task<List<Pagamento>> ListarPendentesFuturosDoVinculoAsync(int vinculoId, DateOnly hoje, CancellationToken cancellationToken = default);
+
         Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default);
 
         // Chama sp_atualizar_status_pagamento (04_procedures.sql): preenche

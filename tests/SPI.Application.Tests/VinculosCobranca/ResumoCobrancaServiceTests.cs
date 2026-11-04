@@ -156,12 +156,12 @@ namespace SPI.Application.Tests.VinculosCobranca
                 foreach (var aluno in alunos)
                 {
                     var ativos = _vinculos.Vinculos.Where(v => v.AlunoId == aluno.Id && v.Ativo).ToList();
-                    var decisao = RegraCobrancaPresenca.Decidir(ativos, turmaId);
+                    var decisao = RegraCobrancaPresenca.Decidir(ativos, turmaId, DateOnly.FromDateTime(DateTime.Now));
                     var selo = selos[aluno.Id];
 
                     var categoriaEsperada = decisao.Tipo switch
                     {
-                        TipoCobrancaPresenca.Mensalidade => "Mensalidade",
+                        TipoCobrancaPresenca.PlanoPeriodico => "Mensalidade",
                         TipoCobrancaPresenca.Pacote or TipoCobrancaPresenca.Bloqueada => "Pacote",
                         TipoCobrancaPresenca.Avulsa => "Avulsa",
                         _ => "SemVinculo",

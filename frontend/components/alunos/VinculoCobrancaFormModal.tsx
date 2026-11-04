@@ -7,6 +7,8 @@ import { useToast } from "@/contexts/ToastContext";
 import { ApiError } from "@/lib/api/client";
 import type { TurmaResumo } from "@/lib/api/alunos";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
+import { sugerirParcelas } from "@/lib/parcelas";
+import { currency } from "@/lib/format";
 import {
   atualizarVinculoCobranca,
   cadastrarVinculoCobranca,
@@ -26,6 +28,16 @@ interface VinculoCobrancaFormModalProps {
 }
 
 const MODALIDADES: ModalidadeCobranca[] = ["Avulsa", "Mensalidade", "Pacote"];
+// specs/062: os planos so existem no cadastro (um plano salvo nao e editado).
+const MODALIDADES_NO_CADASTRO: ModalidadeCobranca[] = [...MODALIDADES, "Semestral", "Anual"];
+const ROTULO_DA_MODALIDADE: Partial<Record<ModalidadeCobranca, string>> = { Semestral: "Semestral (6 meses)", Anual: "Anual (12 meses)" };
+
+const ehPlano = (m: ModalidadeCobranca) => m === "Semestral" || m === "Anual";
+
+interface ParcelaDoFormulario {
+  vencimento: string;
+  valor: string;
+}
 
 export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSalvo, onCancelar }: VinculoCobrancaFormModalProps) {
   const editando = Boolean(vinculo);
@@ -39,6 +51,11 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
   const [aulasIncluidas, setAulasIncluidas] = useState(vinculo?.aulasIncluidas?.toString() ?? "");
   const [saldoAulas, setSaldoAulas] = useState(vinculo?.saldoAulas?.toString() ?? "");
   const [totalAulasPacote, setTotalAulasPacote] = useState(vinculo?.totalAulasPacote?.toString() ?? "");
+  // specs/062: plano Semestral/Anual -- inicio, numero de parcelas, 1o vencimento e as parcelas (editaveis).
+  const [dataInicio, setDataInicio] = useState("");
+  const [quantidadeDeParcelas, setQuantidadeDeParcelas] = useState("1");
+  const [primeiroVencimento, setPrimeiroVencimento] = useState("");
+  const [parcelas, setParcelas] = useState<ParcelaDoFormulario[]>([]);
 
   // Se a turma atual do vinculo nao esta entre as ativas do aluno (foi desativada
   // depois), mantem-na como opcao para nao forcar a troca ao editar so o valor.
@@ -59,6 +76,12 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
       .catch(() => setTurmasDePacote([]));
   }, [sessao, editando, modalidade]);
 
+  // specs/062: sugere parcelas mensais iguais quando o total, o numero de parcelas ou o 1o vencimento mudam (chamado
+  // pelos proprios campos). E so preenchimento: a professora ajusta data e valor de cada parcela, e o servidor
+  // revalida tudo.
+  const regerarParcelas = (total: string, quantidade: string, primeiro: string) =>
+    setParcelas(sugerirParcelas(Number(total), Number(quantidade), primeiro).map((p) => ({ vencimento: p.vencimento, valor: p.valor.toFixed(2) })));
+
   // Conveniencia de UI: ao trocar a modalidade, limpa o campo que deixou de se
   // aplicar. A regra de negocio (rejeitar campo nao aplicavel) e do backend.
   // specs/063: a Mensalidade nao tem turma; a Avulsa usa as turmas do aluno e o Pacote usa as
@@ -66,6 +89,8 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
   const handleModalidade = (nova: ModalidadeCobranca) => {
     setModalidade(nova);
     setTurmaId("");
+    if (ehPlano(nova)) regerarParcelas(valor, quantidadeDeParcelas, primeiroVencimento);
+    else setParcelas([]);
     if (nova !== "Mensalidade") setAulasIncluidas("");
     if (nova !== "Pacote") {
       setSaldoAulas("");
@@ -87,6 +112,9 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
       aulasIncluidas: aulasIncluidas ? Number(aulasIncluidas) : null,
       saldoAulas: saldoAulas ? Number(saldoAulas) : null,
       totalAulasPacote: totalAulasPacote ? Number(totalAulasPacote) : null,
+      ...(ehPlano(modalidade)
+        ? { dataInicio: dataInicio || null, parcelas: parcelas.map((p) => ({ vencimento: p.vencimento, valor: Number(p.valor) || 0 })) }
+        : {}),
     };
 
     try {
@@ -124,9 +152,9 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
                   Modalidade<span className="req">*</span>
                 </label>
                 <select required value={modalidade} onChange={(e) => handleModalidade(e.target.value as ModalidadeCobranca)}>
-                  {MODALIDADES.map((m) => (
+                  {(editando ? MODALIDADES : MODALIDADES_NO_CADASTRO).map((m) => (
                     <option key={m} value={m}>
-                      {m}
+                      {ROTULO_DA_MODALIDADE[m] ?? m}
                     </option>
                   ))}
                 </select>
@@ -175,10 +203,78 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
               )}
               <div className="field">
                 <label>
-                  Valor<span className="req">*</span>
+                  {ehPlano(modalidade) ? "Valor total do período" : "Valor"}
+                  <span className="req">*</span>
                 </label>
-                <input required type="number" step="0.01" min="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="80.00" />
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={valor}
+                  onChange={(e) => {
+                    setValor(e.target.value);
+                    if (ehPlano(modalidade)) regerarParcelas(e.target.value, quantidadeDeParcelas, primeiroVencimento);
+                  }}
+                  placeholder="80.00"
+                />
               </div>
+              {/* specs/062: plano Semestral/Anual. O desconto e a taxa da maquininha ja vem dentro do valor das parcelas:
+                  nao ha campo para eles, e o total e so a referencia do contrato (pode diferir da soma das parcelas). */}
+              {ehPlano(modalidade) && (
+                <>
+                  <div className="field">
+                    <label>
+                      Data de início<span className="req">*</span>
+                    </label>
+                    <input
+                      required
+                      type="date"
+                      value={dataInicio}
+                      onChange={(e) => {
+                        setDataInicio(e.target.value);
+                        if (!primeiroVencimento) {
+                          setPrimeiroVencimento(e.target.value);
+                          regerarParcelas(valor, quantidadeDeParcelas, e.target.value);
+                        }
+                      }}
+                    />
+                    <span className="hint">O plano vale para as aulas do período: {modalidade === "Semestral" ? "6" : "12"} meses a partir desta data.</span>
+                  </div>
+                  <div className="field">
+                    <label>
+                      Número de parcelas<span className="req">*</span>
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      step="1"
+                      min="1"
+                      max="24"
+                      value={quantidadeDeParcelas}
+                      onChange={(e) => {
+                        setQuantidadeDeParcelas(e.target.value);
+                        regerarParcelas(valor, e.target.value, primeiroVencimento);
+                      }}
+                    />
+                    <span className="hint">1 = à vista. Até 24.</span>
+                  </div>
+                  <div className="field">
+                    <label>
+                      Vencimento da 1ª parcela<span className="req">*</span>
+                    </label>
+                    <input
+                      required
+                      type="date"
+                      value={primeiroVencimento}
+                      onChange={(e) => {
+                        setPrimeiroVencimento(e.target.value);
+                        regerarParcelas(valor, quantidadeDeParcelas, e.target.value);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
               {modalidade === "Mensalidade" && (
                 <div className="field">
                   <label>Aulas incluídas (opcional)</label>
@@ -200,6 +296,44 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
                 </div>
               )}
             </div>
+
+            {/* specs/062: parcelas sugeridas (mensais e iguais), editaveis uma a uma. A diferenca para o total e so um aviso. */}
+            {ehPlano(modalidade) && parcelas.length > 0 && (
+              <div className="field" style={{ marginTop: 6 }}>
+                <label>Parcelas (ajuste a data e o valor de cada uma, se precisar)</label>
+                {parcelas.map((p, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
+                    <span className="hint" style={{ width: 48 }}>
+                      {i + 1}/{parcelas.length}
+                    </span>
+                    <input
+                      type="date"
+                      required
+                      aria-label={`Vencimento da parcela ${i + 1}`}
+                      value={p.vencimento}
+                      onChange={(e) => setParcelas((lista) => lista.map((x, j) => (j === i ? { ...x, vencimento: e.target.value } : x)))}
+                      style={{ flex: 1, minWidth: 140 }}
+                    />
+                    <input
+                      type="number"
+                      required
+                      step="0.01"
+                      min="0.01"
+                      aria-label={`Valor da parcela ${i + 1}`}
+                      value={p.valor}
+                      onChange={(e) => setParcelas((lista) => lista.map((x, j) => (j === i ? { ...x, valor: e.target.value } : x)))}
+                      style={{ flex: 1, minWidth: 110 }}
+                    />
+                  </div>
+                ))}
+                {Math.abs(parcelas.reduce((soma, p) => soma + (Number(p.valor) || 0), 0) - (Number(valor) || 0)) >= 0.005 && (
+                  <span className="hint">
+                    A soma das parcelas ({currency(parcelas.reduce((soma, p) => soma + (Number(p.valor) || 0), 0))}) é diferente do valor total (
+                    {currency(Number(valor) || 0)}). Você pode salvar assim.
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="form-actions">
               <button type="button" className="btn btn-ghost" onClick={onCancelar}>

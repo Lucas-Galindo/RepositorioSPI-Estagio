@@ -121,3 +121,7 @@ Como professora, eu quero corrigir ou atualizar um Vínculo de Cobrança já cad
 - O Saldo de Aulas de um vínculo Pacote é um número informado e editável manualmente nesta fatia — nenhum mecanismo automático o decrementa ainda (Regra 4 do pedido original: "sem nenhum efeito automático").
 - Esta feature não introduz nenhuma página/rota nova além da seção "Vínculos de Cobrança" (com seu modal ou formulário inline) na tela de detalhe do Aluno já existente.
 - Não há limite máximo de Vínculos de Cobrança ativos por aluno além das restrições de FR-005/FR-006 (um por turma, um sem turma) — um aluno em 3 turmas pode ter até 4 vínculos ativos (3 por turma + 1 individual).
+
+## Nota de alteração (2026-11-04, Princípio V): Semestralidade e Anuidade
+
+Foram acrescentadas as modalidades **Semestral** e **Anual** (planos de 6 e 12 meses, com início, fim e parcelas geradas como contas a receber; sem turma, exclusivos como a Mensalidade, não editáveis). A regra vigente de combinação, edição e exclusão desses planos está na spec 062. Ver [specs/062-semestralidade-anuidade/spec.md](../062-semestralidade-anuidade/spec.md).

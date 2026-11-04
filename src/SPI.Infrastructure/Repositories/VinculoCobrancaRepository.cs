@@ -37,6 +37,12 @@ namespace SPI.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public Task<List<VinculoCobranca>> ListarPlanosAtivosAsync(CancellationToken cancellationToken = default) =>
+            _dbContext.VinculosCobranca
+                .Include(v => v.Aluno)
+                .Where(v => v.Ativo && (v.Modalidade == ModalidadeCobranca.Semestral || v.Modalidade == ModalidadeCobranca.Anual))
+                .ToListAsync(cancellationToken);
+
         public Task<List<VinculoCobranca>> ListarAtivosDosAlunosAsync(IReadOnlyCollection<int> alunoIds, CancellationToken cancellationToken = default) =>
             alunoIds.Count == 0
                 ? Task.FromResult(new List<VinculoCobranca>())
@@ -81,9 +87,10 @@ namespace SPI.Infrastructure.Repositories
             }
             catch (DbUpdateException e) when (e.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry })
             {
-                // Corrida entre duas requisicoes: o indice unico de Avulsas ativas
-                // (uq_vinculocobranca_chave_avulsa_ativa, specs/056) barrou a segunda gravacao.
-                throw new ConflitoException("Ja existe um vinculo Avulsa ativo para este contexto.");
+                // Corrida entre duas requisicoes: um indice unico barrou a segunda gravacao -- o de Avulsas
+                // ativas (uq_vinculocobranca_chave_avulsa_ativa, specs/056) ou o de uma parcela por mes no
+                // vinculo (uq_pagamento_vinculo_competencia, specs/062). A mensagem nao aponta qual.
+                throw new ConflitoException("Ja existe um vinculo ativo ou parcela duplicada para este contexto.");
             }
         }
     }

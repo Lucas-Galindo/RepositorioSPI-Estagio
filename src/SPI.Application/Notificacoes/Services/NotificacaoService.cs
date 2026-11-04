@@ -13,14 +13,17 @@ namespace SPI.Application.Notificacoes.Services
         private readonly IPagamentoRepository _pagamentoRepository;
         private readonly IProfessorRepository _professorRepository;
         private readonly NotificacoesOptions _opcoes;
+        private readonly IVinculoCobrancaRepository? _vinculoRepository;
 
         public NotificacaoService(
             INotificacaoRepository notificacaoRepository,
             IAulaRepository aulaRepository,
             IPagamentoRepository pagamentoRepository,
             IProfessorRepository professorRepository,
-            NotificacoesOptions opcoes)
+            NotificacoesOptions opcoes,
+            IVinculoCobrancaRepository? vinculoRepository = null)
         {
+            _vinculoRepository = vinculoRepository;
             _notificacaoRepository = notificacaoRepository;
             _aulaRepository = aulaRepository;
             _pagamentoRepository = pagamentoRepository;
@@ -41,6 +44,7 @@ namespace SPI.Application.Notificacoes.Services
             await SincronizarPorAulaAsync(TipoNotificacao.AulaFutura, futuras, agora, professorId, cancellationToken);
 
             await SincronizarPagamentosAsync(agora, professorId, cancellationToken);
+            await SincronizarRenovacoesAsync(agora, professorId, cancellationToken);
 
             try
             {
@@ -110,6 +114,50 @@ namespace SPI.Application.Notificacoes.Services
             }
         }
 
+        // specs/062: uma notificacao por (professora, aluno ativo) cujo plano Semestral/Anual mais recente (maior data de
+        // fim) termina a ate RenovacaoDiasAntes dias ou ja terminou. Um plano de renovacao com inicio depois do fim do
+        // atual passa a ser o de maior fim e tira o aluno do conjunto; excluir o plano tambem. Mesma trava de unicidade
+        // (tipo, professora, aluno) das demais: nunca duplica entre verificacoes.
+        private async Task SincronizarRenovacoesAsync(DateTime agora, int? professorId, CancellationToken cancellationToken)
+        {
+            if (_vinculoRepository is null)
+            {
+                return;
+            }
+
+            var destinataria = professorId ?? (await _professorRepository.ObterUnicaAsync(cancellationToken))?.Id;
+            if (destinataria is null)
+            {
+                return;
+            }
+
+            var limite = DateOnly.FromDateTime(agora).AddDays(_opcoes.RenovacaoDiasAntes);
+            var alunosComRenovacao = (await _vinculoRepository.ListarPlanosAtivosAsync(cancellationToken))
+                .Where(p => p.Aluno is { Ativo: true } && p.DataFim.HasValue)
+                .GroupBy(p => p.AlunoId)
+                .Where(g => g.Max(p => p.DataFim!.Value) <= limite)
+                .Select(g => g.Key)
+                .ToHashSet();
+
+            var existentesPorAluno = (await _notificacaoRepository.ListarPorAlunosAsync(TipoNotificacao.RenovacaoPlano, destinataria.Value, alunosComRenovacao, cancellationToken))
+                .ToDictionary(n => n.AlunoId!.Value);
+
+            foreach (var alunoId in alunosComRenovacao)
+            {
+                await CriarOuReativarAsync(existentesPorAluno.GetValueOrDefault(alunoId),
+                    () => new Notificacao { ProfessorId = destinataria.Value, Tipo = TipoNotificacao.RenovacaoPlano, AlunoId = alunoId, CriadaEm = agora },
+                    agora, cancellationToken);
+            }
+
+            foreach (var ativa in await _notificacaoRepository.ListarAtivasPorTipoAsync(TipoNotificacao.RenovacaoPlano, destinataria, cancellationToken))
+            {
+                if (!alunosComRenovacao.Contains(ativa.AlunoId!.Value))
+                {
+                    ativa.ResolvidaEm = agora;
+                }
+            }
+        }
+
         // Sem notificacao: cria. Resolvida: a referencia voltou a precisar de aviso,
         // entao a MESMA notificacao volta como nova e nao lida (nunca duplica).
         private async Task CriarOuReativarAsync(Notificacao? existente, Func<Notificacao> nova, DateTime agora, CancellationToken cancellationToken)
@@ -138,7 +186,15 @@ namespace SPI.Application.Notificacoes.Services
                 ? (await _pagamentoRepository.ListarPendentesVencidosAsync(hoje, cancellationToken)).ToLookup(p => p.AlunoId)
                 : Enumerable.Empty<Pagamento>().ToLookup(p => p.AlunoId);
 
-            return notificacoes.Select(n => Mapear(n, pendenciasPorAluno, hoje)).ToList();
+            // specs/062: plano de maior fim de cada aluno com aviso de renovacao (uma consulta so).
+            var planoPorAluno = notificacoes.Any(n => n.Tipo == TipoNotificacao.RenovacaoPlano) && _vinculoRepository is not null
+                ? (await _vinculoRepository.ListarPlanosAtivosAsync(cancellationToken))
+                    .Where(p => p.DataFim.HasValue)
+                    .GroupBy(p => p.AlunoId)
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.DataFim).First())
+                : new Dictionary<int, VinculoCobranca>();
+
+            return notificacoes.Select(n => Mapear(n, pendenciasPorAluno, planoPorAluno, hoje)).ToList();
         }
 
         public async Task MarcarComoLidaAsync(int professorId, int id, DateTime agora, CancellationToken cancellationToken = default)
@@ -159,7 +215,7 @@ namespace SPI.Application.Notificacoes.Services
             }
         }
 
-        private static NotificacaoResponse Mapear(Notificacao n, ILookup<int, Pagamento> pendenciasPorAluno, DateOnly hoje) => new()
+        private static NotificacaoResponse Mapear(Notificacao n, ILookup<int, Pagamento> pendenciasPorAluno, IReadOnlyDictionary<int, VinculoCobranca> planoPorAluno, DateOnly hoje) => new()
         {
             Id = n.Id,
             Tipo = n.Tipo,
@@ -167,6 +223,7 @@ namespace SPI.Application.Notificacoes.Services
             {
                 TipoNotificacao.AulaPendente => "Esta aula já terminou e está sem frequência registrada. Registre a chamada para corrigir.",
                 TipoNotificacao.AulaFutura => "Você tem uma aula agendada em breve.",
+                TipoNotificacao.RenovacaoPlano => MensagemDeRenovacao(n, planoPorAluno, hoje),
                 _ => $"{n.Aluno?.Nome} tem pagamento vencido sem baixa.",
             },
             CriadaEm = n.CriadaEm,
@@ -180,6 +237,15 @@ namespace SPI.Application.Notificacoes.Services
                 MateriaNome = n.Aula.Materia.Nome,
                 Contexto = Contexto(n.Aula),
             },
+            Renovacao = n.Tipo != TipoNotificacao.RenovacaoPlano || n.AlunoId is null || !planoPorAluno.TryGetValue(n.AlunoId.Value, out var plano)
+                ? null
+                : new NotificacaoRenovacaoResponse
+                {
+                    AlunoId = n.AlunoId.Value,
+                    AlunoNome = n.Aluno?.Nome ?? string.Empty,
+                    Modalidade = plano.Modalidade.ToString(),
+                    DataFim = plano.DataFim!.Value,
+                },
             Pagamento = n.Tipo != TipoNotificacao.PagamentoPendente || n.AlunoId is null ? null : new NotificacaoPagamentoResponse
             {
                 AlunoId = n.AlunoId.Value,
@@ -194,6 +260,17 @@ namespace SPI.Application.Notificacoes.Services
                 }).ToList(),
             },
         };
+
+        private static string MensagemDeRenovacao(Notificacao n, IReadOnlyDictionary<int, VinculoCobranca> planoPorAluno, DateOnly hoje)
+        {
+            if (n.AlunoId is null || !planoPorAluno.TryGetValue(n.AlunoId.Value, out var plano) || !plano.DataFim.HasValue)
+            {
+                return $"O plano de {n.Aluno?.Nome} precisa de renovação.";
+            }
+
+            var verbo = plano.DataFim.Value < hoje ? "terminou" : "termina";
+            return $"O plano {plano.Modalidade} de {n.Aluno?.Nome} {verbo} em {plano.DataFim.Value:dd/MM/yyyy}.";
+        }
 
         // Turma da aula; na aula individual, "Atendimento individual" com o aluno.
         private static string Contexto(Aula aula)

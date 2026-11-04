@@ -31,7 +31,7 @@ namespace SPI.Application.Tests.Alunos
                 return Task.FromResult(alunos.ToDictionary(a => a.Id, a => new SeloCobrancaResponse { Categoria = "Avulsa", Valor = a.Id }));
             }
 
-            public Task<Dictionary<int, SeloCobrancaResponse>> ResumirParaGrupoAsync(IReadOnlyCollection<Aluno> alunos, int? turmaId, CancellationToken cancellationToken = default) =>
+            public Task<Dictionary<int, SeloCobrancaResponse>> ResumirParaGrupoAsync(IReadOnlyCollection<Aluno> alunos, int? turmaId, DateOnly? dataDaAula = null, CancellationToken cancellationToken = default) =>
                 throw new NotImplementedException();
         }
 

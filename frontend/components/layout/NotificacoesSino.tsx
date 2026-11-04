@@ -11,16 +11,18 @@ import { currency, fmtData, fmtDataHora, fmtHora } from "@/lib/format";
 const INTERVALO_MS = 60_000;
 
 // specs/060: rotulo na lista e titulo do popup de cada tipo.
-const TIPOS: Record<TipoNotificacao, { rotulo: string; titulo: string; grupo: "Aulas" | "Pagamentos" }> = {
+const TIPOS: Record<TipoNotificacao, { rotulo: string; titulo: string; grupo: "Aulas" | "Pagamentos" | "Planos" }> = {
   AulaPendente: { rotulo: "Aula", titulo: "Aula sem frequência", grupo: "Aulas" },
   AulaFutura: { rotulo: "Próxima aula", titulo: "Aula em breve", grupo: "Aulas" },
   PagamentoPendente: { rotulo: "Pagamento", titulo: "Pagamento pendente", grupo: "Pagamentos" },
+  RenovacaoPlano: { rotulo: "Plano", titulo: "Renovação de plano", grupo: "Planos" },
 };
 
 const FILTROS = [
   { id: "Todas", rotulo: "Todas" },
   { id: "Aulas", rotulo: "Aulas" },
   { id: "Pagamentos", rotulo: "Pagamentos" },
+  { id: "Planos", rotulo: "Planos" },
 ] as const;
 
 // specs/059/060: centro de notificacoes do cabecalho. So exibe o que a API
@@ -82,6 +84,12 @@ export function NotificacoesSino() {
     setSelecionada(null);
   };
 
+  const irParaAluno = () => {
+    if (!selecionada?.renovacao) return;
+    router.push(`/alunos/${selecionada.renovacao.alunoId}`);
+    setSelecionada(null);
+  };
+
   const irParaAula = () => {
     if (!selecionada?.aula) return;
     router.push(`/aulas/${selecionada.aula.id}`);
@@ -125,12 +133,13 @@ export function NotificacoesSino() {
                 <span className={`notif-tag${n.pagamento ? " pagamento" : ""}`}>{TIPOS[n.tipo].rotulo}</span>
                 <span className="notif-text">
                   <span className="notif-title">
-                    {n.aula ? `${n.aula.materiaNome} · ${fmtData(n.aula.data)}` : n.pagamento?.alunoNome ?? n.mensagem}
+                    {n.aula ? `${n.aula.materiaNome} · ${fmtData(n.aula.data)}` : n.pagamento?.alunoNome ?? n.renovacao?.alunoNome ?? n.mensagem}
                   </span>
                   <span className="notif-sub">
                     {n.aula?.contexto ??
                       (n.pagamento &&
-                        `${n.pagamento.pendencias.length} ${n.pagamento.pendencias.length === 1 ? "pagamento vencido" : "pagamentos vencidos"}`)}
+                        `${n.pagamento.pendencias.length} ${n.pagamento.pendencias.length === 1 ? "pagamento vencido" : "pagamentos vencidos"}`) ??
+                      (n.renovacao && `Plano ${n.renovacao.modalidade} · fim em ${fmtData(n.renovacao.dataFim)}`)}
                   </span>
                 </span>
               </button>
@@ -143,7 +152,7 @@ export function NotificacoesSino() {
         <div className="modal-overlay" onClick={() => setSelecionada(null)}>
           <div className={`modal notif-modal${selecionada.pagamento ? " notif-modal-wide" : ""}`} onClick={(e) => e.stopPropagation()}>
             <div className="ic">
-              <Icon name={selecionada.pagamento ? "money" : "bell"} size={18} />
+              <Icon name={selecionada.pagamento || selecionada.renovacao ? "money" : "bell"} size={18} />
             </div>
             <h3>{TIPOS[selecionada.tipo].titulo}</h3>
             <p>{selecionada.mensagem}</p>
@@ -171,6 +180,18 @@ export function NotificacoesSino() {
                 </table>
               </div>
             )}
+            {selecionada.renovacao && (
+              <dl className="notif-detalhes">
+                <dt>Aluno</dt>
+                <dd>{selecionada.renovacao.alunoNome}</dd>
+                <dt>Plano</dt>
+                <dd>{selecionada.renovacao.modalidade}</dd>
+                <dt>Fim do plano</dt>
+                <dd>{fmtData(selecionada.renovacao.dataFim)}</dd>
+                <dt>Aviso desde</dt>
+                <dd>{fmtDataHora(selecionada.criadaEm)}</dd>
+              </dl>
+            )}
             {selecionada.aula && (
               <dl className="notif-detalhes">
                 <dt>Data</dt>
@@ -189,6 +210,11 @@ export function NotificacoesSino() {
               <button type="button" className="btn btn-ghost" onClick={() => setSelecionada(null)}>
                 Fechar
               </button>
+              {selecionada.renovacao && (
+                <button type="button" className="btn btn-primary" onClick={irParaAluno}>
+                  Ir para a ficha do aluno
+                </button>
+              )}
               {selecionada.aula && (
                 <button type="button" className="btn btn-primary" onClick={irParaAula}>
                   {selecionada.tipo === "AulaFutura" ? "Abrir aula" : "Ir para a aula"}

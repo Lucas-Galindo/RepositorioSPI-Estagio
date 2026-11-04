@@ -13,6 +13,8 @@ namespace SPI.Application.VinculosCobranca.Services
 
         // Turma e chamada: o vinculo que VALE naquele grupo (turmaId nulo = aula individual), decidido pela
         // mesma regra que cobra a presenca (RegraCobrancaPresenca.Decidir).
-        Task<Dictionary<int, SeloCobrancaResponse>> ResumirParaGrupoAsync(IReadOnlyCollection<Aluno> alunos, int? turmaId, CancellationToken cancellationToken = default);
+        // dataDaAula: a data da aula (chamada); nula = hoje (pagina da turma). Um plano Semestral/Anual so vale
+        // dentro do seu periodo (specs/062).
+        Task<Dictionary<int, SeloCobrancaResponse>> ResumirParaGrupoAsync(IReadOnlyCollection<Aluno> alunos, int? turmaId, DateOnly? dataDaAula = null, CancellationToken cancellationToken = default);
     }
 }

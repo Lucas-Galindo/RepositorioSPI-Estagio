@@ -8,6 +8,10 @@ namespace SPI.Domain.Enums
     {
         Avulsa = 1,
         Mensalidade = 2,
-        Pacote = 3
+        Pacote = 3,
+        // specs/062: plano de 6 meses, com inicio, fim e parcelas; sem turma; cobre todas as aulas do periodo.
+        Semestral = 4,
+        // specs/062: plano de 12 meses (mesmas regras do Semestral).
+        Anual = 5
     }
 }

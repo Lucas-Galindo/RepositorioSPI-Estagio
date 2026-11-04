@@ -17,7 +17,7 @@ function classeDaPilula(selo: SeloCobrancaDados): string {
     if (selo.progresso?.estado === "Atencao") return "status-pendente";
     return "status-ativo";
   }
-  if (selo.categoria === "Mensalidade") return "status-ativo";
+  if (selo.categoria === "Mensalidade" || selo.categoria === "Semestral" || selo.categoria === "Anual") return "status-ativo";
   return "status-inativo";
 }
 

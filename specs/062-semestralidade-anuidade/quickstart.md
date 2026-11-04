@@ -22,7 +22,7 @@ Contrato em [contracts/vinculos-cobranca-api.md](./contracts/vinculos-cobranca-a
 | 8 | `PUT` no Semestral | 409 |
 | 9 | Presença em aula dentro do período (turma e individual) | nenhuma conta nova; presença ligada ao plano |
 | 10 | Presença em aula depois do fim do período | cobra o valor da aula |
-| 11 | Excluir o plano com 1 parcela paga, 1 vencida pendente e 4 futuras pendentes | 204; só as 4 futuras ficam "Cancelado"; a paga e a vencida intactas; nenhum pagamento apagado |
+| 11 | Excluir o plano com 1 parcela paga, 1 vencida pendente e 4 futuras pendentes | 200; só as 4 futuras ficam "Cancelado"; a paga e a vencida intactas; nenhum pagamento apagado |
 | 12 | `PATCH reativar` no plano excluído | 409 |
 | 13 | Plano que termina em 10 dias | `GET /api/notificacoes` traz 1 `RenovacaoPlano`; repetir o `GET` mantém 1 só |
 | 14 | Cadastrar a renovação (início depois do fim) | o aviso some |

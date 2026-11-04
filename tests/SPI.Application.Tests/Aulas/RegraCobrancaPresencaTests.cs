@@ -18,7 +18,7 @@ namespace SPI.Application.Tests.Aulas
             new() { Id = id, AlunoId = 1, Modalidade = modalidade, TurmaId = turmaId, SaldoAulas = saldo, Valor = 100m, Ativo = true };
 
         private static DecisaoCobranca Decidir(int? turma, params VinculoCobranca[] vinculos) =>
-            RegraCobrancaPresenca.Decidir(vinculos, turma);
+            RegraCobrancaPresenca.Decidir(vinculos, turma, new DateOnly(2026, 11, 10));
 
         [Fact]
         public void Mensalidade_vence_tudo()
@@ -27,7 +27,7 @@ namespace SPI.Application.Tests.Aulas
 
             var d = Decidir(TurmaDaAula, V(1, ModalidadeCobranca.Pacote, TurmaDaAula, saldo: 5), mensalidade, V(3, ModalidadeCobranca.Avulsa, TurmaDaAula));
 
-            Assert.Equal(TipoCobrancaPresenca.Mensalidade, d.Tipo);
+            Assert.Equal(TipoCobrancaPresenca.PlanoPeriodico, d.Tipo);
             Assert.Same(mensalidade, d.Vinculo);
         }
 

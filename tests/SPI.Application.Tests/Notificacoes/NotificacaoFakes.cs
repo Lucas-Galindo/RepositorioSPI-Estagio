@@ -124,6 +124,9 @@ namespace SPI.Application.Tests.Notificacoes
         public Task<List<Pagamento>> ListarAsync(int? alunoId, string? status, DateOnly? vencimentoInicio, DateOnly? vencimentoFim, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task AdicionarAsync(Pagamento pagamento, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<bool> ExisteMensalidadeGeradaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<Pagamento>> ListarPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<Pagamento>> ListarPendentesFuturosDoVinculoAsync(int vinculoId, DateOnly hoje, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task AtualizarStatusViaProcedureAsync(int pagamentoId, string novoStatus, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }

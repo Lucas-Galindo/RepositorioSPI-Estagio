@@ -12,13 +12,19 @@ namespace SPI.Application.VinculosCobranca.Services
         private readonly IAlunoRepository _alunoRepository;
         private readonly ITurmaRepository _turmaRepository;
         private readonly IAulaRepository _aulaRepository;
+        private readonly IPagamentoRepository? _pagamentoRepository;
+        private readonly ICategoriaReceitaRepository? _categoriaRepository;
 
         public VinculoCobrancaService(
             IVinculoCobrancaRepository vinculoRepository,
             IAlunoRepository alunoRepository,
             ITurmaRepository turmaRepository,
-            IAulaRepository aulaRepository)
+            IAulaRepository aulaRepository,
+            IPagamentoRepository? pagamentoRepository = null,
+            ICategoriaReceitaRepository? categoriaRepository = null)
         {
+            _pagamentoRepository = pagamentoRepository;
+            _categoriaRepository = categoriaRepository;
             _vinculoRepository = vinculoRepository;
             _alunoRepository = alunoRepository;
             _turmaRepository = turmaRepository;
@@ -32,12 +38,14 @@ namespace SPI.Application.VinculosCobranca.Services
             var vinculos = await _vinculoRepository.ListarPorAlunoAsync(alunoId, ativo, cancellationToken);
             // specs/058: aulas dadas de todos os pacotes numa consulta so.
             var presencasPorPacote = await ContarPresencasDosPacotesAsync(vinculos, cancellationToken);
+            // specs/062: parcelas de todos os planos da lista numa consulta so.
+            var parcelasPorVinculo = await CarregarParcelasAsync(vinculos, cancellationToken);
             var respostas = new List<VinculoCobrancaResponse>();
             // A Mensalidade ainda faz 1 consulta por vinculo (aulas do mes) --
             // aceitavel porque sao os vinculos de UM aluno so.
             foreach (var vinculo in vinculos)
             {
-                respostas.Add(await MapearAsync(vinculo, presencasPorPacote, cancellationToken));
+                respostas.Add(await MapearAsync(vinculo, presencasPorPacote, parcelasPorVinculo, cancellationToken));
             }
 
             MarcarConflitosHerdados(respostas);
@@ -58,6 +66,20 @@ namespace SPI.Application.VinculosCobranca.Services
                 return;
             }
 
+            // specs/062: Semestral/Anual tambem cobrem todas as aulas: nao convivem com Pacote/Avulsa (dado antigo);
+            // dois planos so conflitam se o periodo se sobrepoe (renovacao antecipada e permitida).
+            var planos = ativos.Where(r => r.Modalidade.ComPeriodo()).ToList();
+            if (planos.Count > 0 && ativos.Any(r => !r.Modalidade.ComPeriodo()))
+            {
+                ativos.ForEach(r => r.Conflito = "Semestralidade e anuidade nao podem coexistir com outros vinculos ativos.");
+                return;
+            }
+
+            foreach (var plano in planos.Where(p => planos.Any(o => o.Id != p.Id && p.DataInicio <= o.DataFim && p.DataFim >= o.DataInicio)))
+            {
+                plano.Conflito = "Ja existe um plano com periodo sobreposto para este aluno.";
+            }
+
             // specs/063: ter varios pacotes e permitido (um por turma e um de aulas individuais).
             // So e conflito herdado mais de um pacote ativo do MESMO grupo (a mesma turma, ou
             // varios de aulas individuais).
@@ -76,12 +98,18 @@ namespace SPI.Application.VinculosCobranca.Services
             await GarantirAlunoExisteAsync(alunoId, cancellationToken);
 
             var vinculo = await ObterDoAlunoAsync(alunoId, id, cancellationToken);
-            return await MapearAsync(vinculo, presencasPorPacote: null, cancellationToken);
+            return await MapearAsync(vinculo, presencasPorPacote: null, parcelasPorVinculo: null, cancellationToken);
         }
 
         public async Task<VinculoCobrancaResponse> CadastrarAsync(int alunoId, VinculoCobrancaRequest request, CancellationToken cancellationToken = default)
         {
             await GarantirAlunoExisteAsync(alunoId, cancellationToken);
+
+            // specs/062: o plano Semestral/Anual tem um cadastro proprio (vinculo + parcelas, de uma vez).
+            if (request.Modalidade.ComPeriodo())
+            {
+                return await CadastrarPlanoAsync(alunoId, request, cancellationToken);
+            }
 
             Turma? turmaDePacote = null;
             if (request.TurmaId.HasValue)
@@ -119,14 +147,77 @@ namespace SPI.Application.VinculosCobranca.Services
 
             // Recarrega para trazer a navegacao Turma (nome) no response.
             var salvo = await _vinculoRepository.ObterPorIdAsync(vinculo.Id, cancellationToken);
-            return await MapearAsync(salvo ?? vinculo, presencasPorPacote: null, cancellationToken);
+            return await MapearAsync(salvo ?? vinculo, presencasPorPacote: null, parcelasPorVinculo: null, cancellationToken);
         }
+
+        // specs/062: cadastra o plano Semestral/Anual e TODAS as parcelas de uma vez. O vinculo e as parcelas entram no
+        // mesmo contexto do banco e saem num UNICO SalvarAlteracoesAsync: ou grava tudo ou nao grava nada (FR-006).
+        // Este e o unico lugar que cria Pagamento a partir de um vinculo de plano, uma vez por parcela pedida, com a
+        // competencia no mes do vencimento (a trava uq_pagamento_vinculo_competencia barra duplicidade, FR-007).
+        private async Task<VinculoCobrancaResponse> CadastrarPlanoAsync(int alunoId, VinculoCobrancaRequest request, CancellationToken cancellationToken)
+        {
+            var pagamentos = _pagamentoRepository ?? throw new InvalidOperationException("Repositorio de pagamentos nao configurado.");
+            var categorias = _categoriaRepository ?? throw new InvalidOperationException("Repositorio de categorias nao configurado.");
+
+            var inicio = request.DataInicio!.Value;
+            var fim = inicio.AddMonths(request.Modalidade.MesesDoPeriodo()).AddDays(-1);
+
+            await GarantirRegrasDeCombinacaoAsync(alunoId, request.Modalidade, null, ignorarId: null, cancellationToken, inicio, fim);
+
+            var nomeDoPlano = NomeDoPlano(request.Modalidade);
+            var categoria = await categorias.ObterPorNomeAsync(nomeDoPlano, cancellationToken)
+                ?? throw new ConflitoException($"A categoria de receita \"{nomeDoPlano}\" nao existe. Aplique a migracao 24 do banco.");
+
+            var vinculo = new VinculoCobranca
+            {
+                AlunoId = alunoId,
+                TurmaId = null,
+                Modalidade = request.Modalidade,
+                Valor = request.Valor,
+                DataInicio = inicio,
+                DataFim = fim,
+                Ativo = true
+            };
+
+            await _vinculoRepository.AdicionarAsync(vinculo, cancellationToken);
+
+            var parcelas = request.Parcelas!.OrderBy(p => p.Vencimento).ToList();
+            for (var i = 0; i < parcelas.Count; i++)
+            {
+                await pagamentos.AdicionarAsync(new Pagamento
+                {
+                    AlunoId = alunoId,
+                    Descricao = $"{nomeDoPlano} - parcela {i + 1}/{parcelas.Count}",
+                    CategoriaReceitaId = categoria.Id,
+                    DataVencimento = parcelas[i].Vencimento,
+                    Competencia = new DateOnly(parcelas[i].Vencimento.Year, parcelas[i].Vencimento.Month, 1),
+                    ValorFinal = parcelas[i].Valor,
+                    Status = "Pendente",
+                    VinculoCobranca = vinculo,
+                }, cancellationToken);
+            }
+
+            await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            var salvo = await _vinculoRepository.ObterPorIdAsync(vinculo.Id, cancellationToken);
+            return await MapearAsync(salvo ?? vinculo, presencasPorPacote: null, parcelasPorVinculo: null, cancellationToken);
+        }
+
+        private static string NomeDoPlano(ModalidadeCobranca modalidade) =>
+            modalidade == ModalidadeCobranca.Semestral ? "Semestralidade" : "Anuidade";
 
         public async Task<VinculoCobrancaResponse> AtualizarAsync(int alunoId, int id, VinculoCobrancaRequest request, CancellationToken cancellationToken = default)
         {
             await GarantirAlunoExisteAsync(alunoId, cancellationToken);
 
             var vinculo = await ObterDoAlunoAsync(alunoId, id, cancellationToken);
+
+            // specs/062 (FR-011): o plano salvo nao e editado (inicio, tipo, valor e parcelas ficam como foram
+            // contratados); ajustes de cada conta ficam em Contas a Receber. Tambem nao se vira plano por edicao.
+            if (vinculo.Modalidade.ComPeriodo() || request.Modalidade.ComPeriodo())
+            {
+                throw new ConflitoException("Semestralidade e anuidade nao podem ser editadas: exclua e cadastre outro vinculo.");
+            }
 
             if (!vinculo.Ativo)
             {
@@ -192,7 +283,7 @@ namespace SPI.Application.VinculosCobranca.Services
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
             var salvo = await _vinculoRepository.ObterPorIdAsync(vinculo.Id, cancellationToken);
-            return await MapearAsync(salvo ?? vinculo, presencasPorPacote: null, cancellationToken);
+            return await MapearAsync(salvo ?? vinculo, presencasPorPacote: null, parcelasPorVinculo: null, cancellationToken);
         }
 
         // Exclusao logica (Constituicao I): nunca remove o registro fisicamente.
@@ -208,6 +299,19 @@ namespace SPI.Application.VinculosCobranca.Services
             }
 
             vinculo.Ativo = false;
+
+            // specs/062 (FR-012): ao excluir um plano, as parcelas ainda PENDENTES com vencimento DEPOIS de hoje
+            // passam a Cancelado -- no mesmo salvamento. As pagas, as ja vencidas e o que vence hoje ficam como
+            // estao, e nenhum pagamento e apagado.
+            if (vinculo.Modalidade.ComPeriodo() && _pagamentoRepository is not null)
+            {
+                var hoje = DateOnly.FromDateTime(DateTime.Now);
+                foreach (var parcela in await _pagamentoRepository.ListarPendentesFuturosDoVinculoAsync(vinculo.Id, hoje, cancellationToken))
+                {
+                    parcela.Status = "Cancelado";
+                }
+            }
+
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
         }
 
@@ -219,7 +323,13 @@ namespace SPI.Application.VinculosCobranca.Services
 
             if (vinculo.Ativo)
             {
-                return await MapearAsync(vinculo, presencasPorPacote: null, cancellationToken);
+                return await MapearAsync(vinculo, presencasPorPacote: null, parcelasPorVinculo: null, cancellationToken);
+            }
+
+            // specs/062 (FR-013): as parcelas do plano excluido foram canceladas e nao sao recriadas.
+            if (vinculo.Modalidade.ComPeriodo())
+            {
+                throw new ConflitoException("Este plano foi encerrado e suas parcelas canceladas. Cadastre um novo vinculo.");
             }
 
             // FR-014: em conflito rejeita sem desativar nem alterar o vinculo ativo existente.
@@ -238,7 +348,7 @@ namespace SPI.Application.VinculosCobranca.Services
             vinculo.Ativo = true;
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
-            return await MapearAsync(vinculo, presencasPorPacote: null, cancellationToken);
+            return await MapearAsync(vinculo, presencasPorPacote: null, parcelasPorVinculo: null, cancellationToken);
         }
 
         private async Task GarantirAlunoExisteAsync(int alunoId, CancellationToken cancellationToken)
@@ -336,7 +446,7 @@ namespace SPI.Application.VinculosCobranca.Services
         // Mensalidade cobre todas as aulas, entao e exclusiva; Pacote e por grupo (specs/063: um
         // por turma e um de aulas individuais); Avulsa e por contexto (uma por turma e uma
         // individual). ignorarId = o proprio vinculo, na edicao/reativacao.
-        private async Task GarantirRegrasDeCombinacaoAsync(int alunoId, ModalidadeCobranca modalidade, int? turmaId, int? ignorarId, CancellationToken cancellationToken)
+        private async Task GarantirRegrasDeCombinacaoAsync(int alunoId, ModalidadeCobranca modalidade, int? turmaId, int? ignorarId, CancellationToken cancellationToken, DateOnly? inicio = null, DateOnly? fim = null)
         {
             var outrosAtivos = (await _vinculoRepository.ListarPorAlunoAsync(alunoId, ativo: true, cancellationToken))
                 .Where(v => v.Id != ignorarId)
@@ -354,9 +464,31 @@ namespace SPI.Application.VinculosCobranca.Services
                 return;
             }
 
+            // specs/062: Semestral/Anual tambem cobrem todas as aulas e sao exclusivos como a Mensalidade, com uma
+            // excecao: outro plano cujo periodo NAO se sobreponha e aceito (renovacao antecipada).
+            if (modalidade.ComPeriodo())
+            {
+                if (outrosAtivos.Any(v => !v.Modalidade.ComPeriodo()))
+                {
+                    throw new ConflitoException("O aluno ja tem outros vinculos ativos. Desative-os antes de cadastrar a semestralidade ou a anuidade, que cobre todas as aulas.");
+                }
+
+                if (inicio.HasValue && fim.HasValue && outrosAtivos.Any(v => inicio <= v.DataFim && fim >= v.DataInicio))
+                {
+                    throw new ConflitoException("Ja existe um plano com periodo sobreposto para este aluno.");
+                }
+
+                return;
+            }
+
             if (outrosAtivos.Any(v => v.Modalidade == ModalidadeCobranca.Mensalidade))
             {
                 throw new ConflitoException("O aluno tem mensalidade ativa, que ja cobre todas as aulas.");
+            }
+
+            if (outrosAtivos.Any(v => v.Modalidade.ComPeriodo()))
+            {
+                throw new ConflitoException("O aluno tem um plano (mensalidade, semestralidade ou anuidade) ativo, que ja cobre todas as aulas.");
             }
 
             // specs/063 (FR-022): o aluno pode ter 0 ou N pacotes de turma ao mesmo tempo (um por
@@ -385,6 +517,27 @@ namespace SPI.Application.VinculosCobranca.Services
                 : await _aulaRepository.ContarPresencasPorVinculosAsync(idsPacote, null, null, cancellationToken);
         }
 
+        // specs/062: parcelas dos planos da lista, agrupadas por vinculo, numa consulta so (nada de uma consulta por plano).
+        private async Task<IReadOnlyDictionary<int, List<Pagamento>>> CarregarParcelasAsync(IEnumerable<VinculoCobranca> vinculos, CancellationToken cancellationToken)
+        {
+            var idsDePlano = vinculos.Where(v => v.Modalidade.ComPeriodo()).Select(v => v.Id).ToList();
+            if (idsDePlano.Count == 0 || _pagamentoRepository is null)
+            {
+                return new Dictionary<int, List<Pagamento>>();
+            }
+
+            var parcelas = await _pagamentoRepository.ListarPorVinculosAsync(idsDePlano, cancellationToken);
+            return parcelas
+                .Where(p => p.VinculoCobrancaId.HasValue)
+                .GroupBy(p => p.VinculoCobrancaId!.Value)
+                .ToDictionary(g => g.Key, g => g.OrderBy(p => p.DataVencimento).ToList());
+        }
+
+        // "Atrasado" nao e gravado: e uma parcela Pendente ja vencida, calculada como em Contas a Receber
+        // (PagamentoService), para a ficha do aluno mostrar o mesmo status.
+        private static string StatusDaParcela(Pagamento parcela) =>
+            parcela.Status == "Pendente" && parcela.DataVencimento < DateOnly.FromDateTime(DateTime.UtcNow) ? "Atrasado" : parcela.Status;
+
         // specs/058: aulas que contaram como dadas no pacote (a mesma fonte do progresso).
         public async Task<List<AulaDoPacoteResponse>> ListarAulasDoPacoteAsync(int alunoId, int id, CancellationToken cancellationToken = default)
         {
@@ -407,10 +560,30 @@ namespace SPI.Application.VinculosCobranca.Services
         // specs/052: assincrono porque AulasDadasNoMes (Mensalidade) depende
         // de uma contagem de presencas via IAulaRepository. presencasPorPacote
         // vem pronto na listagem (lote); nulo = conta so este vinculo.
-        private async Task<VinculoCobrancaResponse> MapearAsync(VinculoCobranca vinculo, IReadOnlyDictionary<int, int>? presencasPorPacote, CancellationToken cancellationToken)
+        private async Task<VinculoCobrancaResponse> MapearAsync(
+            VinculoCobranca vinculo,
+            IReadOnlyDictionary<int, int>? presencasPorPacote,
+            IReadOnlyDictionary<int, List<Pagamento>>? parcelasPorVinculo,
+            CancellationToken cancellationToken)
         {
             ProgressoPacoteResponse? progresso = null;
             int? aulasDadasNoMes = null;
+            List<ParcelaResponse>? parcelas = null;
+
+            if (vinculo.Modalidade.ComPeriodo())
+            {
+                parcelasPorVinculo ??= await CarregarParcelasAsync(new[] { vinculo }, cancellationToken);
+                parcelas = parcelasPorVinculo.GetValueOrDefault(vinculo.Id, new List<Pagamento>())
+                    .Select(p => new ParcelaResponse
+                    {
+                        PagamentoId = p.Id,
+                        Descricao = p.Descricao,
+                        Vencimento = p.DataVencimento,
+                        Valor = p.ValorFinal,
+                        Status = StatusDaParcela(p),
+                    })
+                    .ToList();
+            }
 
             if (vinculo.Modalidade == ModalidadeCobranca.Pacote)
             {
@@ -436,6 +609,9 @@ namespace SPI.Application.VinculosCobranca.Services
                 TotalAulasPacote = vinculo.TotalAulasPacote,
                 Progresso = progresso,
                 AulasDadasNoMes = aulasDadasNoMes,
+                DataInicio = vinculo.DataInicio,
+                DataFim = vinculo.DataFim,
+                Parcelas = parcelas,
                 Ativo = vinculo.Ativo
             };
         }

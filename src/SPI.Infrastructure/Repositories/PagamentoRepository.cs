@@ -112,6 +112,19 @@ namespace SPI.Infrastructure.Repositories
                 .OrderBy(p => p.DataVencimento)
                 .ToListAsync(cancellationToken);
 
+        public Task<List<Pagamento>> ListarPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, CancellationToken cancellationToken = default) =>
+            vinculoIds.Count == 0
+                ? Task.FromResult(new List<Pagamento>())
+                : _dbContext.Pagamentos
+                    .Where(p => p.VinculoCobrancaId.HasValue && vinculoIds.Contains(p.VinculoCobrancaId.Value))
+                    .OrderBy(p => p.DataVencimento)
+                    .ToListAsync(cancellationToken);
+
+        public Task<List<Pagamento>> ListarPendentesFuturosDoVinculoAsync(int vinculoId, DateOnly hoje, CancellationToken cancellationToken = default) =>
+            _dbContext.Pagamentos
+                .Where(p => p.VinculoCobrancaId == vinculoId && p.Status == "Pendente" && p.DataVencimento > hoje)
+                .ToListAsync(cancellationToken);
+
         public async Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) =>
             await _dbContext.PagamentosAula.AddAsync(new PagamentoAula { PagamentoId = pagamentoId, AulaId = aulaId }, cancellationToken);
 

@@ -15,6 +15,8 @@ namespace SPI.Application.Tests.Mensalidade
 
         public Task<List<VinculoCobranca>> ListarAtivosDosAlunosAsync(IReadOnlyCollection<int> alunoIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
+        public Task<List<VinculoCobranca>> ListarPlanosAtivosAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public Task<List<VinculoCobranca>> ListarPacotesAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task<List<VinculoCobranca>> ListarPacotesAtivosDeTurmasEncerradasAsync(DateOnly hoje, CancellationToken cancellationToken = default) => throw new NotImplementedException();
@@ -72,6 +74,9 @@ namespace SPI.Application.Tests.Mensalidade
 
         public Task<List<Pagamento>> ListarAsync(int? alunoId, string? status, DateOnly? vencimentoInicio, DateOnly? vencimentoFim, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
+
+        public Task<List<Pagamento>> ListarPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<Pagamento>> ListarPendentesFuturosDoVinculoAsync(int vinculoId, DateOnly hoje, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 

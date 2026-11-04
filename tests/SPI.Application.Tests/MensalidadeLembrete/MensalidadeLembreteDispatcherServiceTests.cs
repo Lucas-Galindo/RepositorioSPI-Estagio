@@ -47,6 +47,48 @@ namespace SPI.Application.Tests.MensalidadeLembrete
             Assert.Equal(1, pagamentos.Salvamentos);
         }
 
+        // specs/062 (FR-017): o lembrete vale tambem para as parcelas dos planos, com texto que cita o pagamento.
+        [Fact]
+        public async Task Parcela_de_plano_recebe_o_lembrete_com_a_descricao_e_sem_dizer_so_mensalidade()
+        {
+            var pagamentos = new FakePagamentoRepositoryParaLembreteVencimento();
+            var emailSender = new FakeEmailSenderParaLembreteVencimento();
+            var parcela = NovaMensalidadePendente(1);
+            parcela.Descricao = "Semestralidade - parcela 2/6";
+            pagamentos.Pagamentos.Add(parcela);
+
+            await MensalidadeLembreteDispatcherService.ProcessarLembretesVencimentoAsync(
+                pagamentos, emailSender, AntecedenciaDias, logger: null, Hoje, CancellationToken.None);
+
+            Assert.Equal(2, emailSender.Mensagens.Count);
+            Assert.All(emailSender.Mensagens, m =>
+            {
+                Assert.Equal("SPI - Lembrete: pagamento vence em breve", m.Assunto);
+                Assert.Contains("o pagamento (Semestralidade - parcela 2/6) de <b>Aluno 1</b>", m.Corpo);
+                Assert.DoesNotContain("mensalidade", m.Corpo.ToLowerInvariant());
+            });
+            Assert.True(parcela.LembreteVencimentoEnviado);
+        }
+
+        [Fact]
+        public async Task A_descricao_vai_protegida_contra_html_e_sem_descricao_o_texto_continua_correto()
+        {
+            var pagamentos = new FakePagamentoRepositoryParaLembreteVencimento();
+            var emailSender = new FakeEmailSenderParaLembreteVencimento();
+            var comHtml = NovaMensalidadePendente(1, emailResponsavel: null);
+            comHtml.Descricao = "Anuidade <b>1/12</b>";
+            var semDescricao = NovaMensalidadePendente(2, emailResponsavel: null);
+            pagamentos.Pagamentos.Add(comHtml);
+            pagamentos.Pagamentos.Add(semDescricao);
+
+            await MensalidadeLembreteDispatcherService.ProcessarLembretesVencimentoAsync(
+                pagamentos, emailSender, AntecedenciaDias, logger: null, Hoje, CancellationToken.None);
+
+            Assert.Contains("Anuidade &lt;b&gt;1/12&lt;/b&gt;", emailSender.Mensagens[0].Corpo);
+            Assert.DoesNotContain("<b>1/12</b>", emailSender.Mensagens[0].Corpo);
+            Assert.Contains("o pagamento de <b>Aluno 2</b>", emailSender.Mensagens[1].Corpo);
+        }
+
         [Fact]
         public async Task Mensalidade_que_ainda_nao_chegou_na_janela_de_antecedencia_nao_e_considerada()
         {

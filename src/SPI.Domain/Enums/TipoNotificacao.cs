@@ -9,6 +9,8 @@ namespace SPI.Domain.Enums
         // specs/060: aula agendada que comeca em breve (vespera, a partir das 08:00).
         AulaFutura,
         // specs/060: aluno com pagamento vencido sem baixa (uma por aluno).
-        PagamentoPendente
+        PagamentoPendente,
+        // specs/062: aluno cujo plano Semestral/Anual termina em breve ou ja terminou, sem renovacao (uma por aluno).
+        RenovacaoPlano
     }
 }

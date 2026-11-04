@@ -14,5 +14,9 @@ namespace SPI.Application.VinculosCobranca.Dtos
         public int? SaldoAulas { get; set; }
         // Somente com Modalidade = Pacote.
         public int? TotalAulasPacote { get; set; }
+        // specs/062: somente com Modalidade = Semestral ou Anual (obrigatorios nelas, proibidos nas outras). `Valor`
+        // e o valor total do periodo (referencia) e pode diferir da soma das parcelas.
+        public DateOnly? DataInicio { get; set; }
+        public List<ParcelaRequest>? Parcelas { get; set; }
     }
 }

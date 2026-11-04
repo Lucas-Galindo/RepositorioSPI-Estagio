@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -96,7 +97,7 @@ namespace SPI.Infrastructure.BackgroundServices
                         {
                             await emailSender.EnviarAsync(
                                 email,
-                                "SPI - Lembrete: mensalidade vence em breve",
+                                "SPI - Lembrete: pagamento vence em breve",
                                 MontarCorpoEmail(pagamento),
                                 cancellationToken);
                         }
@@ -135,10 +136,18 @@ namespace SPI.Infrastructure.BackgroundServices
             return emails.Distinct().ToList();
         }
 
-        private static string MontarCorpoEmail(Pagamento pagamento) => $"""
+        // specs/062 (FR-017): vale para toda cobranca gerada a partir de um vinculo -- a mensalidade e tambem as
+        // parcelas dos planos Semestral/Anual --, entao o texto cita a descricao do pagamento (protegida contra HTML)
+        // em vez de falar so em "mensalidade". Sem descricao, fica "o pagamento".
+        private static string MontarCorpoEmail(Pagamento pagamento)
+        {
+            var descricao = string.IsNullOrWhiteSpace(pagamento.Descricao) ? string.Empty : $" ({WebUtility.HtmlEncode(pagamento.Descricao)})";
+
+            return $"""
             <p>Ol&aacute;!</p>
-            <p>Este &eacute; um lembrete: a mensalidade de <b>{pagamento.Aluno.Nome}</b>, no valor de R$ {pagamento.ValorFinal:F2}, vence em {pagamento.DataVencimento:dd/MM/yyyy}.</p>
+            <p>Este &eacute; um lembrete: o pagamento{descricao} de <b>{pagamento.Aluno.Nome}</b>, no valor de R$ {pagamento.ValorFinal:F2}, vence em {pagamento.DataVencimento:dd/MM/yyyy}.</p>
             <p>Se o pagamento ja foi realizado, desconsidere este aviso.</p>
             """;
+        }
     }
 }

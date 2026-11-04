@@ -1,3 +1,4 @@
+using SPI.Domain.Enums;
 using SPI.Domain.Entities;
 using SPI.Domain.Repositories;
 
@@ -85,6 +86,20 @@ namespace SPI.Application.Tests.VinculosCobranca
             return Task.FromResult(lista);
         }
 
+        // specs/062: planos Semestral/Anual ativos (com o Aluno quando conhecido).
+        public List<Aluno> AlunosConhecidos { get; } = new();
+
+        public Task<List<VinculoCobranca>> ListarPlanosAtivosAsync(CancellationToken cancellationToken = default)
+        {
+            var planos = Vinculos.Where(v => v.Ativo && v.Modalidade.ComPeriodo()).ToList();
+            foreach (var v in planos)
+            {
+                v.Aluno ??= AlunosConhecidos.FirstOrDefault(a => a.Id == v.AlunoId)!;
+            }
+
+            return Task.FromResult(planos);
+        }
+
         public Task<List<VinculoCobranca>> ListarPacotesAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos
                 .Where(v => v.Ativo && v.Modalidade == SPI.Domain.Enums.ModalidadeCobranca.Pacote && v.TurmaId == turmaId)
@@ -113,8 +128,16 @@ namespace SPI.Application.Tests.VinculosCobranca
             return Task.CompletedTask;
         }
 
+        // specs/062: simula uma falha no salvamento (o contexto real nao grava nada se o SaveChanges falha).
+        public bool FalharAoSalvar { get; set; }
+
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
         {
+            if (FalharAoSalvar)
+            {
+                throw new InvalidOperationException("Falha simulada ao salvar.");
+            }
+
             SalvamentosRealizados++;
             return Task.CompletedTask;
         }

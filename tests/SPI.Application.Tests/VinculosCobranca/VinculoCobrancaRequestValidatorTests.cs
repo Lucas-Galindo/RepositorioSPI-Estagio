@@ -60,9 +60,9 @@ namespace SPI.Application.Tests.VinculosCobranca
 
         [Theory]
         [InlineData(0)]
-        [InlineData(4)]
+        [InlineData(6)] // 4 e 5 passaram a ser Semestral e Anual (specs/062)
         [InlineData(99)]
-        public void Deve_rejeitar_modalidade_fora_das_tres_opcoes(int modalidade)
+        public void Deve_rejeitar_modalidade_fora_das_modalidades_existentes(int modalidade)
         {
             var request = CriarRequestValido() with { Modalidade = (ModalidadeCobranca)modalidade };
 

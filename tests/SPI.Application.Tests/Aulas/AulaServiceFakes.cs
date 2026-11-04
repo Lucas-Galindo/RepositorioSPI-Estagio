@@ -82,6 +82,9 @@ namespace SPI.Application.Tests.Aulas
             return Task.CompletedTask;
         }
 
+        public Task<List<Pagamento>> ListarPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<Pagamento>> ListarPendentesFuturosDoVinculoAsync(int vinculoId, DateOnly hoje, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         public Task VincularAulaAsync(int pagamentoId, int aulaId, CancellationToken cancellationToken = default)
         {
             Vinculacoes.Add((pagamentoId, aulaId));
@@ -126,6 +129,8 @@ namespace SPI.Application.Tests.Aulas
         // specs/068: o resumo de cobranca le os vinculos ativos de todos os alunos da aula de uma vez.
         public Task<List<VinculoCobranca>> ListarAtivosDosAlunosAsync(IReadOnlyCollection<int> alunoIds, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos.Where(v => v.Ativo && alunoIds.Contains(v.AlunoId)).OrderBy(v => v.Id).ToList());
+
+        public Task<List<VinculoCobranca>> ListarPlanosAtivosAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task<List<VinculoCobranca>> ListarPacotesAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 

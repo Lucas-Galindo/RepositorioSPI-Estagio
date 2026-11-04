@@ -1,7 +1,22 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 
 /** Espelha SPI.Domain.Enums.ModalidadeCobranca (serializado como string). */
-export type ModalidadeCobranca = "Avulsa" | "Mensalidade" | "Pacote";
+export type ModalidadeCobranca = "Avulsa" | "Mensalidade" | "Pacote" | "Semestral" | "Anual";
+
+/** Espelha SPI.Application.VinculosCobranca.Dtos.ParcelaResponse (specs/062). status: Pendente, Pago, Cancelado ou Atrasado. */
+export interface ParcelaPlano {
+  pagamentoId: number;
+  descricao: string | null;
+  vencimento: string;
+  valor: number;
+  status: string;
+}
+
+/** Espelha SPI.Application.VinculosCobranca.Dtos.ParcelaRequest (specs/062). */
+export interface ParcelaRequest {
+  vencimento: string;
+  valor: number;
+}
 
 /** Espelha SPI.Application.VinculosCobranca.Dtos.ProgressoPacoteResponse (specs/058). */
 export interface ProgressoPacote {
@@ -65,6 +80,10 @@ export interface VinculoCobranca {
   totalAulasPacote: number | null;
   /** specs/058: so Pacote; calculado no backend (ProgressoPacote). */
   progresso: ProgressoPacote | null;
+  /** specs/062: so Semestral/Anual (null nas demais); o servidor calcula o fim e o status de cada parcela. */
+  dataInicio: string | null;
+  dataFim: string | null;
+  parcelas: ParcelaPlano[] | null;
   ativo: boolean;
   /** specs/056: combinacao herdada hoje proibida (so na listagem); null = sem conflito. */
   conflito: string | null;
@@ -82,6 +101,9 @@ export interface VinculoCobrancaRequest {
   saldoAulas: number | null;
   /** Somente com Pacote; no cadastro sem saldo, o saldo comeca igual ao total. */
   totalAulasPacote: number | null;
+  /** specs/062: so Semestral/Anual (obrigatorios nelas, omitidos nas outras). `valor` e o total do periodo. */
+  dataInicio?: string | null;
+  parcelas?: ParcelaRequest[];
 }
 
 const base = (alunoId: number) => `/api/alunos/${alunoId}/vinculos-cobranca`;
