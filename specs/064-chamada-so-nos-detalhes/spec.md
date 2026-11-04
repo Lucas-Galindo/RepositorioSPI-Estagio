@@ -193,3 +193,7 @@ O sistema passa a guardar quando a frequência foi registrada, e há uma consult
 - Portal ou login do aluno.
 - Layout responsivo para celular (o layout geral do app já não é responsivo; é assunto de outro card).
 - Apagar ou corrigir sozinho aulas já registradas antes do início; isso só com confirmação do usuário.
+
+## Nota de alteração (2026-11-04, Princípio V): fuso horário
+
+Onde esta spec diz "fuso America/Sao_Paulo", vale agora a regra do usuário: o horário do sistema é o **do lugar onde ele está instalado** (Bahia, Amazonas, São Paulo, Argentina...), obtido do próprio relógio do sistema (`TimeProvider.LocalTimeZone`, que em produção é o fuso da máquina). Um único ponto decide o fuso (`RelogioExtensions.AgoraLocal` e `ParaInstanteUtc`). Os testes usam um relógio falso com fuso fixo UTC-3 para não depender da máquina. Em São Paulo o comportamento é idêntico ao anterior.

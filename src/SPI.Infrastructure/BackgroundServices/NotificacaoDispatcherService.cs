@@ -36,7 +36,7 @@ namespace SPI.Infrastructure.BackgroundServices
                     var servico = scope.ServiceProvider.GetRequiredService<INotificacaoService>();
                     // specs/064: "ja terminou" e decidido pela hora de Sao Paulo, nao a do servidor.
                     var relogio = scope.ServiceProvider.GetRequiredService<TimeProvider>();
-                    await servico.SincronizarAsync(relogio.AgoraEmSaoPaulo(), professorId: null, stoppingToken);
+                    await servico.SincronizarAsync(relogio.AgoraLocal(), professorId: null, stoppingToken);
                 }
                 catch (Exception e) when (e is not OperationCanceledException)
                 {

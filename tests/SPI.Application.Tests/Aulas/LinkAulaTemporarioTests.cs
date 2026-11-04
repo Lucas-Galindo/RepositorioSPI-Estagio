@@ -84,11 +84,11 @@ namespace SPI.Application.Tests.Aulas
             Assert.Equal("https://b.exemplo.com/y", armazenamento.Obter(2));
         }
 
-        // O fim da aula e hora de parede de Sao Paulo (UTC-3): 16:00 em SP = 19:00Z.
+        // O fim da aula e hora de parede do fuso do relogio (o falso e UTC-3): 16:00 = 19:00Z.
         [Fact]
-        public void ParaInstanteUtc_converte_a_hora_de_sao_paulo()
+        public void ParaInstanteUtc_converte_a_hora_local_do_relogio()
         {
-            Assert.Equal(new DateTimeOffset(2026, 11, 10, 19, 0, 0, TimeSpan.Zero), RelogioExtensions.ParaInstanteUtc(FimDaAula));
+            Assert.Equal(new DateTimeOffset(2026, 11, 10, 19, 0, 0, TimeSpan.Zero), new RelogioFalso(FimDaAula).ParaInstanteUtc(FimDaAula));
         }
     }
 }

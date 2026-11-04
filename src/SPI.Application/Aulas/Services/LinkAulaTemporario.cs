@@ -27,7 +27,7 @@ namespace SPI.Application.Aulas.Services
         {
             RemoverVencidos();
 
-            var expiraEm = RelogioExtensions.ParaInstanteUtc(fimDaAula);
+            var expiraEm = _relogio.ParaInstanteUtc(fimDaAula);
             if (expiraEm <= _relogio.GetUtcNow())
             {
                 _links.TryRemove(aulaId, out _);

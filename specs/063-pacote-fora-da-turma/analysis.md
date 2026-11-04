@@ -107,7 +107,7 @@ Tarefas sem requisito direto (esperado): T001 (backup), T004 (consultas de apoio
 - **Médio**: até a professora decidir os casos listados pela migração, as presenças desses alunos em turma serão cobradas como avulsas (efeito aceito e escrito na spec).
 - **Baixo**: se a 062 for implementada antes, o nome do tipo de decisão muda de `Mensalidade` para `PlanoPeriodico`.
 
-## Decisões menores que dependem da sua confirmação
+## Decisões menores (CONFIRMADAS em 2026-11-04)
 
 1. O cadastro do pacote de turma **matricula** o aluno; a matrícula direta só vale para quem já tem pacote ativo da turma (a volta).
 2. Turma de pacote exige turma ativa, da professora e **não iniciada** no cadastro; turma migrada sem data nunca é "iniciada".
@@ -119,6 +119,6 @@ Tarefas sem requisito direto (esperado): T001 (backup), T004 (consultas de apoio
 
 ## Próximos passos
 
-1. Sua confirmação das decisões menores acima.
+1. ~~Sua confirmação das decisões menores acima.~~ **Confirmadas pelo usuário em 2026-11-04** ("as decisões estão OK"); nenhuma mudança pedida.
 2. `implement` seguindo `tasks.md`, com relatório em `docs/relatorios/` e comentário no card ao final.
 3. Depois: especificar os cards de recorrência de aulas e de saída do aluno de pacote.

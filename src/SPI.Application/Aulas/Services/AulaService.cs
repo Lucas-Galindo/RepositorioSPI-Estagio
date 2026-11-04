@@ -54,7 +54,7 @@ namespace SPI.Application.Aulas.Services
         {
             var aulas = await _aulaRepository.ListarAsync(status, turmaId, alunoId, dataInicio, dataFim, cancellationToken);
             // Uma leitura do relogio para a lista inteira: todas as aulas usam o mesmo instante.
-            var agora = _relogio.AgoraEmSaoPaulo();
+            var agora = _relogio.AgoraLocal();
             return aulas.Select(a => MapearEm(a, agora)).ToList();
         }
 
@@ -286,7 +286,7 @@ namespace SPI.Application.Aulas.Services
 
             // specs/064 (FR-006): o servidor decide, no fuso de Sao Paulo, se a aula ja comecou --
             // mesmo que a tela seja burlada. Nada e gravado antes desta recusa.
-            if (!RegraChamada.Liberada(aula, _relogio.AgoraEmSaoPaulo()))
+            if (!RegraChamada.Liberada(aula, _relogio.AgoraLocal()))
             {
                 throw new ConflitoException(RegraChamada.MensagemBloqueio(aula));
             }
@@ -350,7 +350,7 @@ namespace SPI.Application.Aulas.Services
             }
 
             aula.Status = "Realizada";
-            aula.FrequenciaRegistradaEm = _relogio.AgoraEmSaoPaulo();
+            aula.FrequenciaRegistradaEm = _relogio.AgoraLocal();
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
 
             if (aula.TurmaId.HasValue)
@@ -478,7 +478,7 @@ namespace SPI.Application.Aulas.Services
         public async Task<AulaResponse> DefinirLinkAsync(int id, string link, CancellationToken cancellationToken = default)
         {
             var aula = await ObterAulaAtivaAsync(id, cancellationToken);
-            var agora = _relogio.AgoraEmSaoPaulo();
+            var agora = _relogio.AgoraLocal();
 
             if (!RegraLinkAula.AceitaLink(aula, agora))
             {
@@ -535,7 +535,7 @@ namespace SPI.Application.Aulas.Services
 
         // A resposta informa se a chamada esta liberada, o que depende do relogio do servidor
         // (specs/064): quem mapeia uma aula so le o relogio uma vez.
-        private AulaResponse Mapear(Aula aula) => MapearEm(aula, _relogio.AgoraEmSaoPaulo());
+        private AulaResponse Mapear(Aula aula) => MapearEm(aula, _relogio.AgoraLocal());
 
         private AulaResponse MapearEm(Aula aula, DateTime agora)
         {

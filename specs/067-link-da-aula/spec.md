@@ -150,3 +150,7 @@ O link não fica guardado para sempre: some ao fim da aula, quando a aula é can
 - Reenviar o lembrete quando o link é informado depois do envio.
 - Mostrar o link em listas, no sino de notificações ou em relatórios.
 - Link em lembretes de pagamento, notificações ou outros e-mails.
+
+## Nota de alteração (2026-11-04, Princípio V): fuso horário
+
+Onde esta spec diz "fuso America/Sao_Paulo", vale agora a regra do usuário: o horário do sistema é o **do lugar onde ele está instalado** (Bahia, Amazonas, São Paulo, Argentina...), obtido do próprio relógio do sistema (`TimeProvider.LocalTimeZone`, que em produção é o fuso da máquina). Um único ponto decide o fuso (`RelogioExtensions.AgoraLocal` e `ParaInstanteUtc`). Os testes usam um relógio falso com fuso fixo UTC-3 para não depender da máquina. Em São Paulo o comportamento é idêntico ao anterior.

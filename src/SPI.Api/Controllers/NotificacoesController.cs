@@ -31,7 +31,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna as notificacoes ativas, mais recentes primeiro</returns>
         public async Task<IActionResult> Listar()
         {
-            return Ok(await _notificacaoService.ListarAtivasAsync(User.ObterUsuarioId(), _relogio.AgoraEmSaoPaulo()));
+            return Ok(await _notificacaoService.ListarAtivasAsync(User.ObterUsuarioId(), _relogio.AgoraLocal()));
         }
 
         [HttpPatch("{id}/lida")]
@@ -44,7 +44,7 @@ namespace SPI.Api.Controllers
         /// <param name="id">Id da notificacao</param>
         public async Task<IActionResult> MarcarComoLida(int id)
         {
-            await _notificacaoService.MarcarComoLidaAsync(User.ObterUsuarioId(), id, _relogio.AgoraEmSaoPaulo());
+            await _notificacaoService.MarcarComoLidaAsync(User.ObterUsuarioId(), id, _relogio.AgoraLocal());
             return NoContent();
         }
     }

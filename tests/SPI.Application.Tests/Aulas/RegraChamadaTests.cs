@@ -84,25 +84,25 @@ namespace SPI.Application.Tests.Aulas
         }
 
         [Fact]
-        public void AgoraEmSaoPaulo_converte_do_utc_para_o_fuso_de_sao_paulo()
+        public void AgoraLocal_converte_do_utc_para_o_fuso_do_relogio()
         {
             var relogio = new RelogioUtc(new DateTimeOffset(2026, 11, 10, 18, 0, 0, TimeSpan.Zero));
 
-            Assert.Equal(new DateTime(2026, 11, 10, 15, 0, 0), relogio.AgoraEmSaoPaulo());
+            Assert.Equal(new DateTime(2026, 11, 10, 15, 0, 0), relogio.AgoraLocal());
         }
 
         [Fact]
-        public void AgoraEmSaoPaulo_acompanha_a_virada_do_dia()
+        public void AgoraLocal_acompanha_a_virada_do_dia()
         {
             var relogio = new RelogioUtc(new DateTimeOffset(2026, 11, 11, 2, 30, 0, TimeSpan.Zero));
 
-            Assert.Equal(new DateTime(2026, 11, 10, 23, 30, 0), relogio.AgoraEmSaoPaulo());
+            Assert.Equal(new DateTime(2026, 11, 10, 23, 30, 0), relogio.AgoraLocal());
         }
 
         [Fact]
         public void RelogioFalso_devolve_exatamente_o_instante_informado_em_sao_paulo()
         {
-            Assert.Equal(new DateTime(2026, 11, 10, 15, 0, 0), new RelogioFalso(new DateTime(2026, 11, 10, 15, 0, 0)).AgoraEmSaoPaulo());
+            Assert.Equal(new DateTime(2026, 11, 10, 15, 0, 0), new RelogioFalso(new DateTime(2026, 11, 10, 15, 0, 0)).AgoraLocal());
         }
     }
 }
