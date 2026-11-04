@@ -2,7 +2,6 @@ using SPI.Application.Aulas.Dtos;
 using SPI.Application.Common;
 using SPI.Application.Lembretes.Services;
 using SPI.Domain.Entities;
-using SPI.Domain.Enums;
 using SPI.Domain.Exceptions;
 using SPI.Domain.Repositories;
 
