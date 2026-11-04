@@ -3,6 +3,9 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 /** Espelha SPI.Domain.Enums.ModalidadeCobranca (serializado como string). */
 export type ModalidadeCobranca = "Avulsa" | "Mensalidade" | "Pacote" | "Semestral" | "Anual";
 
+/** Semestral e Anual: planos com periodo e parcelas, que nao se editam nem se reativam (specs/062). */
+export const ehPlano = (modalidade: string): boolean => modalidade === "Semestral" || modalidade === "Anual";
+
 /** Espelha SPI.Application.VinculosCobranca.Dtos.ParcelaResponse (specs/062). status: Pendente, Pago, Cancelado ou Atrasado. */
 export interface ParcelaPlano {
   pagamentoId: number;

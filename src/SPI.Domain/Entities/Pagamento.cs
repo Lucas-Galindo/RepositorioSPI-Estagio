@@ -31,6 +31,10 @@ namespace SPI.Domain.Entities
         // nunca mais reenviado para este pagamento.
         public bool LembreteVencimentoEnviado { get; set; }
 
+        // "Atrasado" nao e gravado (02_criacao_tabelas.sql): e um Pendente cuja data de vencimento ja passou. Um
+        // lugar so calcula, para Contas a Receber e para as parcelas dos planos mostrarem o mesmo status.
+        public string StatusEfetivo(DateOnly hoje) => Status == "Pendente" && DataVencimento < hoje ? "Atrasado" : Status;
+
         public Aluno Aluno { get; set; } = null!;
         public FormaPagamento? FormaPagamento { get; set; }
         public CategoriaReceita? CategoriaReceita { get; set; }

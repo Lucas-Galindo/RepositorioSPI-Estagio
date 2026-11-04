@@ -33,7 +33,7 @@ namespace SPI.Application.Tests.Aulas
 
         private static CategoriaReceita NovaCategoria(int id, string nome) => new() { Id = id, Nome = nome, Ativo = true };
 
-        private static Aula NovaAula(int? turmaId, Aluno aluno, Materia materia, bool presente) => new()
+        private static Aula NovaAula(int? turmaId, Aluno aluno, Materia materia) => new()
         {
             Id = 100,
             MateriaId = materia.Id,
@@ -86,7 +86,7 @@ namespace SPI.Application.Tests.Aulas
         {
             var aluno = NovoAluno(80m);
             var materia = NovaMateria();
-            var aula = NovaAula(TurmaId, aluno, materia, presente: true);
+            var aula = NovaAula(TurmaId, aluno, materia);
             var (servico, _, pagamentos, _, categorias) = CriarServico(aula);
 
             await servico.RegistrarSessaoAsync(aula.Id, new RegistrarSessaoRequest { Presencas = { [AlunoId] = true } });
@@ -106,7 +106,7 @@ namespace SPI.Application.Tests.Aulas
         {
             var aluno = NovoAluno(80m);
             var materia = NovaMateria();
-            var aula = NovaAula(null, aluno, materia, presente: true);
+            var aula = NovaAula(null, aluno, materia);
             var (servico, _, pagamentos, _, categorias) = CriarServico(aula);
 
             await servico.RegistrarSessaoAsync(aula.Id, new RegistrarSessaoRequest { Presencas = { [AlunoId] = true } });
@@ -121,7 +121,7 @@ namespace SPI.Application.Tests.Aulas
         {
             var aluno = NovoAluno(80m);
             var materia = NovaMateria();
-            var aula = NovaAula(TurmaId, aluno, materia, presente: true);
+            var aula = NovaAula(TurmaId, aluno, materia);
             var (servico, _, pagamentos, vinculos, _) = CriarServico(aula);
 
             // Vinculo ativo, mas para uma turma diferente (contexto nao bate).
@@ -138,7 +138,7 @@ namespace SPI.Application.Tests.Aulas
         {
             var aluno = NovoAluno(80m);
             var materia = NovaMateria();
-            var aula = NovaAula(TurmaId, aluno, materia, presente: true);
+            var aula = NovaAula(TurmaId, aluno, materia);
             var (servico, _, pagamentos, vinculos, _) = CriarServico(aula);
 
             vinculos.Vinculos.Add(new VinculoCobranca { AlunoId = AlunoId, TurmaId = TurmaId, Modalidade = ModalidadeCobranca.Avulsa, Valor = 500m, Ativo = false });
@@ -154,7 +154,7 @@ namespace SPI.Application.Tests.Aulas
         {
             var aluno = NovoAluno(80m);
             var materia = NovaMateria();
-            var aula = NovaAula(TurmaId, aluno, materia, presente: false);
+            var aula = NovaAula(TurmaId, aluno, materia);
             var (servico, _, pagamentos, vinculos, _) = CriarServico(aula);
 
             await servico.RegistrarSessaoAsync(aula.Id, new RegistrarSessaoRequest { Presencas = { [AlunoId] = false } });

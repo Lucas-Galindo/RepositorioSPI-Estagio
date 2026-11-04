@@ -96,3 +96,7 @@ O resultado passa a se chamar `TipoCobrancaPresenca.PlanoPeriodico` (antes `Mens
 **Decision**: `VinculoCobrancaResponse` ganha `DataInicio`, `DataFim` e `Parcelas` (para Semestral/Anual): `pagamentoId`, `descricao`, `vencimento`, `valor` e `status`. O `status` já vem como o sistema o mostra em Contas a Receber ("Atrasado" quando pendente e vencida), pela mesma regra do `PagamentoService`. As parcelas de todos os planos da listagem vêm numa **única consulta** (`ListarPorVinculosAsync`), sem uma consulta por vínculo.
 
 **Rationale**: a ficha mostra o período e a situação de cada parcela sem o frontend decidir nada.
+
+## Nota de revisão (2026-11-04)
+
+Na revisão do card, `EhPlanoPeriodico()` (R1) foi **removido**: nunca teve uso, porque cada ponto do código só precisa saber se a modalidade tem período (`ComPeriodo()`, Semestral/Anual) ou se é a Mensalidade (comparação direta). Também ficaram num lugar só o status "Atrasado" do pagamento (`Pagamento.StatusEfetivo`, usado por Contas a Receber e pelas parcelas) e a sincronização dos avisos por aluno do sino (`NotificacaoService.SincronizarPorAlunoAsync`, usada pelo pagamento pendente e pela renovação de plano).

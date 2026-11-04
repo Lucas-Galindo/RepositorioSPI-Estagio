@@ -1,4 +1,3 @@
-using SPI.Application.Pagamentos.Services;
 using SPI.Application.Relatorios.Services;
 using SPI.Domain.Entities;
 using SPI.Domain.Repositories;

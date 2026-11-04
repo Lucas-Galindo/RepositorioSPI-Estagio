@@ -1,5 +1,4 @@
 using SPI.Application.Aulas.Dtos;
-using SPI.Application.Aulas.Services;
 using SPI.Domain.Exceptions;
 using Xunit;
 

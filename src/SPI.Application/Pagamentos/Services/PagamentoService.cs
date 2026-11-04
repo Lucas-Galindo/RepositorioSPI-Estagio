@@ -203,9 +203,7 @@ namespace SPI.Application.Pagamentos.Services
 
         private static PagamentoResponse Mapear(Pagamento pagamento)
         {
-            var statusEfetivo = pagamento.Status == "Pendente" && pagamento.DataVencimento < DateOnly.FromDateTime(DateTime.UtcNow)
-                ? "Atrasado"
-                : pagamento.Status;
+            var statusEfetivo = pagamento.StatusEfetivo(DateOnly.FromDateTime(DateTime.UtcNow));
 
             return new PagamentoResponse
             {

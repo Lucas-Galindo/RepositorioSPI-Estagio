@@ -1,4 +1,5 @@
 import type { SeloCobranca as SeloCobrancaDados } from "@/lib/api/vinculosCobranca";
+import { ehPlano } from "@/lib/api/vinculosCobranca";
 import { currency } from "@/lib/format";
 
 interface SeloCobrancaProps {
@@ -17,7 +18,7 @@ function classeDaPilula(selo: SeloCobrancaDados): string {
     if (selo.progresso?.estado === "Atencao") return "status-pendente";
     return "status-ativo";
   }
-  if (selo.categoria === "Mensalidade" || selo.categoria === "Semestral" || selo.categoria === "Anual") return "status-ativo";
+  if (selo.categoria === "Mensalidade" || ehPlano(selo.categoria)) return "status-ativo";
   return "status-inativo";
 }
 

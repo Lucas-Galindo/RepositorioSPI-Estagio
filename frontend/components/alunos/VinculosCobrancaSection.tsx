@@ -12,6 +12,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { ApiError } from "@/lib/api/client";
 import type { Aluno } from "@/lib/api/alunos";
 import {
+  ehPlano,
   excluirVinculoCobranca,
   listarAulasDoPacote,
   listarVinculosCobranca,
@@ -24,14 +25,11 @@ import { currency, fmtData, fmtHora } from "@/lib/format";
 import { ProgressoPacoteBarra } from "@/components/shared/ProgressoPacoteBarra";
 import { VinculoCobrancaFormModal } from "./VinculoCobrancaFormModal";
 
-// specs/062: Semestral/Anual nao se editam nem se reativam (as parcelas ja foram geradas / canceladas).
-const ehPlano = (v: VinculoCobranca) => v.modalidade === "Semestral" || v.modalidade === "Anual";
-
 function detalheDaModalidade(v: VinculoCobranca): string | null {
   if (v.modalidade === "Mensalidade" && v.aulasIncluidas !== null) {
     return `${v.aulasIncluidas} aula(s) incluída(s)`;
   }
-  if (ehPlano(v) && v.dataInicio && v.dataFim) {
+  if (ehPlano(v.modalidade) && v.dataInicio && v.dataFim) {
     return `${fmtData(v.dataInicio)} a ${fmtData(v.dataFim)}`;
   }
   return null;
@@ -40,7 +38,7 @@ function detalheDaModalidade(v: VinculoCobranca): string | null {
 // specs/056 + specs/063: a Mensalidade e do aluno; a Avulsa e o Pacote pertencem a um grupo --
 // uma turma ou, sem turma, o atendimento individual.
 function contextoDoVinculo(v: VinculoCobranca): string {
-  if (v.modalidade === "Mensalidade" || ehPlano(v)) return "Todas as aulas do aluno";
+  if (v.modalidade === "Mensalidade" || ehPlano(v.modalidade)) return "Todas as aulas do aluno";
   return v.turmaNome ?? "Atendimento individual";
 }
 
@@ -173,7 +171,7 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
               <div style={{ display: "flex", gap: 8 }}>
                 {v.ativo ? (
                   <>
-                    {!ehPlano(v) && (
+                    {!ehPlano(v.modalidade) && (
                       <button className="btn btn-ghost btn-sm" type="button" onClick={() => setModal(v)}>
                         <Icon name="edit" size={13} /> Editar
                       </button>
@@ -183,7 +181,7 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
                     </button>
                   </>
                 ) : (
-                  !ehPlano(v) && (
+                  !ehPlano(v.modalidade) && (
                     <button className="btn btn-success btn-sm" type="button" onClick={() => handleReativar(v)} disabled={reativandoId === v.id}>
                       <Icon name="check" size={13} /> Reativar
                     </button>
@@ -214,7 +212,7 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
         <ConfirmModal
           titulo="Excluir vínculo de cobrança"
           descricao={
-            ehPlano(exclusaoPendente)
+            ehPlano(exclusaoPendente.modalidade)
               ? "As parcelas futuras ainda pendentes serão canceladas; as pagas e as vencidas não mudam. O plano não pode ser reativado depois."
               : "O vínculo deixa de valer para este aluno, mas o registro é preservado e pode ser reativado."
           }

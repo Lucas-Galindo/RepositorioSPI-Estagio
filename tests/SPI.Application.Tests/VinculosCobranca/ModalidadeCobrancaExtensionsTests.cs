@@ -3,18 +3,17 @@ using Xunit;
 
 namespace SPI.Application.Tests.VinculosCobranca
 {
-    // specs/062: um lugar so diz quem e plano periodico, quem tem periodo e quantos meses dura.
+    // specs/062: um lugar so diz quem tem periodo e quantos meses dura.
     public class ModalidadeCobrancaExtensionsTests
     {
         [Theory]
-        [InlineData(ModalidadeCobranca.Avulsa, false, false, 0)]
-        [InlineData(ModalidadeCobranca.Pacote, false, false, 0)]
-        [InlineData(ModalidadeCobranca.Mensalidade, true, false, 0)]
-        [InlineData(ModalidadeCobranca.Semestral, true, true, 6)]
-        [InlineData(ModalidadeCobranca.Anual, true, true, 12)]
-        public void As_tres_funcoes_para_cada_modalidade(ModalidadeCobranca modalidade, bool planoPeriodico, bool comPeriodo, int meses)
+        [InlineData(ModalidadeCobranca.Avulsa, false, 0)]
+        [InlineData(ModalidadeCobranca.Pacote, false, 0)]
+        [InlineData(ModalidadeCobranca.Mensalidade, false, 0)]
+        [InlineData(ModalidadeCobranca.Semestral, true, 6)]
+        [InlineData(ModalidadeCobranca.Anual, true, 12)]
+        public void Periodo_e_meses_de_cada_modalidade(ModalidadeCobranca modalidade, bool comPeriodo, int meses)
         {
-            Assert.Equal(planoPeriodico, modalidade.EhPlanoPeriodico());
             Assert.Equal(comPeriodo, modalidade.ComPeriodo());
             Assert.Equal(meses, modalidade.MesesDoPeriodo());
         }

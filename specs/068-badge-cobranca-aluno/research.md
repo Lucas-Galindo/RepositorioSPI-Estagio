@@ -94,3 +94,7 @@ A turma e a chamada **não** precisam do parâmetro: o selo faz parte do que ess
 | Aula realizada: o vínculo vigente pode diferir do aplicado na época | documentado; o histórico exato continua na ficha e nos relatórios (spec 052) |
 | Conflito com a spec 067 (mesmos arquivos de aula) | 067 em standby; edições aditivas |
 | Selo largo na lista | `title` para o detalhe e "+N" curto; linha de apoio pequena |
+
+## Nota de atualização (2026-11-04)
+
+As modalidades **Semestral e Anual (spec 062) já existem** e entram no selo: na lista, o principal segue **Mensalidade → Semestral/Anual → Pacote → Avulsa**; na turma e na chamada, o plano só vale dentro do período, na data da turma (hoje) ou da aula, pela mesma regra que cobra a presença (`RegraCobrancaPresenca.Decidir` com a data). Nenhuma tela mudou além da cor (planos em verde, como a Mensalidade).

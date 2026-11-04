@@ -82,11 +82,11 @@ namespace SPI.Application.Notificacoes.Services
             }
         }
 
-        // specs/060: uma notificacao por (professora, aluno) com pagamento vencido sem
-        // baixa. Sistema single-tenant: na rotina a professora e a unica cadastrada.
+        // specs/060: uma notificacao por (professora, aluno) com pagamento vencido sem baixa. Sistema
+        // single-tenant: na rotina a professora e a unica cadastrada.
         private async Task SincronizarPagamentosAsync(DateTime agora, int? professorId, CancellationToken cancellationToken)
         {
-            var destinataria = professorId ?? (await _professorRepository.ObterUnicaAsync(cancellationToken))?.Id;
+            var destinataria = await ResolverDestinatariaAsync(professorId, cancellationToken);
             if (destinataria is null)
             {
                 return;
@@ -95,29 +95,13 @@ namespace SPI.Application.Notificacoes.Services
             var hoje = DateOnly.FromDateTime(agora);
             var alunosComPendencia = (await _pagamentoRepository.ListarPendentesVencidosAsync(hoje, cancellationToken))
                 .Select(p => p.AlunoId).ToHashSet();
-            var existentesPorAluno = (await _notificacaoRepository.ListarPorAlunosAsync(TipoNotificacao.PagamentoPendente, destinataria.Value, alunosComPendencia, cancellationToken))
-                .ToDictionary(n => n.AlunoId!.Value);
 
-            foreach (var alunoId in alunosComPendencia)
-            {
-                await CriarOuReativarAsync(existentesPorAluno.GetValueOrDefault(alunoId),
-                    () => new Notificacao { ProfessorId = destinataria.Value, Tipo = TipoNotificacao.PagamentoPendente, AlunoId = alunoId, CriadaEm = agora },
-                    agora, cancellationToken);
-            }
-
-            foreach (var ativa in await _notificacaoRepository.ListarAtivasPorTipoAsync(TipoNotificacao.PagamentoPendente, destinataria, cancellationToken))
-            {
-                if (!alunosComPendencia.Contains(ativa.AlunoId!.Value))
-                {
-                    ativa.ResolvidaEm = agora;
-                }
-            }
+            await SincronizarPorAlunoAsync(TipoNotificacao.PagamentoPendente, destinataria.Value, alunosComPendencia, agora, cancellationToken);
         }
 
         // specs/062: uma notificacao por (professora, aluno ativo) cujo plano Semestral/Anual mais recente (maior data de
         // fim) termina a ate RenovacaoDiasAntes dias ou ja terminou. Um plano de renovacao com inicio depois do fim do
-        // atual passa a ser o de maior fim e tira o aluno do conjunto; excluir o plano tambem. Mesma trava de unicidade
-        // (tipo, professora, aluno) das demais: nunca duplica entre verificacoes.
+        // atual passa a ser o de maior fim e tira o aluno do conjunto; excluir o plano tambem.
         private async Task SincronizarRenovacoesAsync(DateTime agora, int? professorId, CancellationToken cancellationToken)
         {
             if (_vinculoRepository is null)
@@ -125,7 +109,7 @@ namespace SPI.Application.Notificacoes.Services
                 return;
             }
 
-            var destinataria = professorId ?? (await _professorRepository.ObterUnicaAsync(cancellationToken))?.Id;
+            var destinataria = await ResolverDestinatariaAsync(professorId, cancellationToken);
             if (destinataria is null)
             {
                 return;
@@ -139,19 +123,31 @@ namespace SPI.Application.Notificacoes.Services
                 .Select(g => g.Key)
                 .ToHashSet();
 
-            var existentesPorAluno = (await _notificacaoRepository.ListarPorAlunosAsync(TipoNotificacao.RenovacaoPlano, destinataria.Value, alunosComRenovacao, cancellationToken))
+            await SincronizarPorAlunoAsync(TipoNotificacao.RenovacaoPlano, destinataria.Value, alunosComRenovacao, agora, cancellationToken);
+        }
+
+        // Na rotina (professorId nulo) a destinataria e a unica professora cadastrada (sistema single-tenant).
+        private async Task<int?> ResolverDestinatariaAsync(int? professorId, CancellationToken cancellationToken) =>
+            professorId ?? (await _professorRepository.ObterUnicaAsync(cancellationToken))?.Id;
+
+        // Os tipos por aluno (pagamento pendente, renovacao de plano) seguem a mesma regra: uma notificacao por
+        // (tipo, professora, aluno), trava de unicidade no banco. Cria para o aluno que entrou no conjunto, reativa
+        // a resolvida que voltou e resolve a ativa cujo aluno saiu dele.
+        private async Task SincronizarPorAlunoAsync(TipoNotificacao tipo, int destinataria, HashSet<int> alunosNoConjunto, DateTime agora, CancellationToken cancellationToken)
+        {
+            var existentesPorAluno = (await _notificacaoRepository.ListarPorAlunosAsync(tipo, destinataria, alunosNoConjunto, cancellationToken))
                 .ToDictionary(n => n.AlunoId!.Value);
 
-            foreach (var alunoId in alunosComRenovacao)
+            foreach (var alunoId in alunosNoConjunto)
             {
                 await CriarOuReativarAsync(existentesPorAluno.GetValueOrDefault(alunoId),
-                    () => new Notificacao { ProfessorId = destinataria.Value, Tipo = TipoNotificacao.RenovacaoPlano, AlunoId = alunoId, CriadaEm = agora },
+                    () => new Notificacao { ProfessorId = destinataria, Tipo = tipo, AlunoId = alunoId, CriadaEm = agora },
                     agora, cancellationToken);
             }
 
-            foreach (var ativa in await _notificacaoRepository.ListarAtivasPorTipoAsync(TipoNotificacao.RenovacaoPlano, destinataria, cancellationToken))
+            foreach (var ativa in await _notificacaoRepository.ListarAtivasPorTipoAsync(tipo, destinataria, cancellationToken))
             {
-                if (!alunosComRenovacao.Contains(ativa.AlunoId!.Value))
+                if (!alunosNoConjunto.Contains(ativa.AlunoId!.Value))
                 {
                     ativa.ResolvidaEm = agora;
                 }

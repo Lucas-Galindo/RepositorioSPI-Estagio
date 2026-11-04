@@ -260,8 +260,7 @@ namespace SPI.Application.VinculosCobranca.Services
             }
             else if (vinculo.Modalidade == ModalidadeCobranca.Mensalidade && request.AulasIncluidas.HasValue)
             {
-                var competenciaAtual = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1);
-                var dadoNoMes = await _aulaRepository.ContarPresencasPorVinculoECompetenciaAsync(vinculo.Id, competenciaAtual, cancellationToken);
+                var dadoNoMes = await _aulaRepository.ContarPresencasPorVinculoECompetenciaAsync(vinculo.Id, CompetenciaAtual(), cancellationToken);
                 if (request.AulasIncluidas.Value < dadoNoMes)
                 {
                     throw new ConflitoException($"O novo teto de aulas da mensalidade nao pode ser menor que as aulas ja dadas neste mes ({dadoNoMes}).");
@@ -305,8 +304,7 @@ namespace SPI.Application.VinculosCobranca.Services
             // estao, e nenhum pagamento e apagado.
             if (vinculo.Modalidade.ComPeriodo() && _pagamentoRepository is not null)
             {
-                var hoje = DateOnly.FromDateTime(DateTime.Now);
-                foreach (var parcela in await _pagamentoRepository.ListarPendentesFuturosDoVinculoAsync(vinculo.Id, hoje, cancellationToken))
+                foreach (var parcela in await _pagamentoRepository.ListarPendentesFuturosDoVinculoAsync(vinculo.Id, Hoje(), cancellationToken))
                 {
                     parcela.Status = "Cancelado";
                 }
@@ -417,7 +415,7 @@ namespace SPI.Application.VinculosCobranca.Services
                 throw new ConflitoException("Somente turma do tipo Pacote recebe pacote.");
             }
 
-            var hoje = DateOnly.FromDateTime(DateTime.Now);
+            var hoje = Hoje();
 
             if (exigirNaoIniciada && turma.EstaIniciada(hoje))
             {
@@ -533,10 +531,10 @@ namespace SPI.Application.VinculosCobranca.Services
                 .ToDictionary(g => g.Key, g => g.OrderBy(p => p.DataVencimento).ToList());
         }
 
-        // "Atrasado" nao e gravado: e uma parcela Pendente ja vencida, calculada como em Contas a Receber
-        // (PagamentoService), para a ficha do aluno mostrar o mesmo status.
-        private static string StatusDaParcela(Pagamento parcela) =>
-            parcela.Status == "Pendente" && parcela.DataVencimento < DateOnly.FromDateTime(DateTime.UtcNow) ? "Atrasado" : parcela.Status;
+        private static DateOnly Hoje() => DateOnly.FromDateTime(DateTime.Now);
+
+        // Primeiro dia do mes atual: a competencia da Mensalidade que esta sendo contada.
+        private static DateOnly CompetenciaAtual() => new(DateTime.Now.Year, DateTime.Now.Month, 1);
 
         // specs/058: aulas que contaram como dadas no pacote (a mesma fonte do progresso).
         public async Task<List<AulaDoPacoteResponse>> ListarAulasDoPacoteAsync(int alunoId, int id, CancellationToken cancellationToken = default)
@@ -580,7 +578,8 @@ namespace SPI.Application.VinculosCobranca.Services
                         Descricao = p.Descricao,
                         Vencimento = p.DataVencimento,
                         Valor = p.ValorFinal,
-                        Status = StatusDaParcela(p),
+                        // O mesmo status de Contas a Receber (inclusive "Atrasado"), com a mesma data de referencia do PagamentoService.
+                        Status = p.StatusEfetivo(DateOnly.FromDateTime(DateTime.UtcNow)),
                     })
                     .ToList();
             }
@@ -592,8 +591,7 @@ namespace SPI.Application.VinculosCobranca.Services
             }
             else if (vinculo.Modalidade == ModalidadeCobranca.Mensalidade)
             {
-                var competenciaAtual = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1);
-                aulasDadasNoMes = await _aulaRepository.ContarPresencasPorVinculoECompetenciaAsync(vinculo.Id, competenciaAtual, cancellationToken);
+                aulasDadasNoMes = await _aulaRepository.ContarPresencasPorVinculoECompetenciaAsync(vinculo.Id, CompetenciaAtual(), cancellationToken);
             }
 
             return new VinculoCobrancaResponse

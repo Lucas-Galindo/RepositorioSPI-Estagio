@@ -13,7 +13,7 @@ namespace SPI.Application.VinculosCobranca.Services
     {
         public const string SemVinculo = "SemVinculo";
 
-        // Ordem fixa do vinculo principal na LISTA (um lugar so; Semestral/Anual entram aqui quando existirem).
+        // Ordem fixa do vinculo principal na LISTA (um lugar so): os planos que cobrem tudo vem antes do pacote.
         private static readonly ModalidadeCobranca[] OrdemDoPrincipal =
         {
             ModalidadeCobranca.Mensalidade,
@@ -75,7 +75,7 @@ namespace SPI.Application.VinculosCobranca.Services
                 resultado[aluno.Id] = decisao.Tipo switch
                 {
                     TipoCobrancaPresenca.PlanoPeriodico or TipoCobrancaPresenca.Pacote => SeloDoVinculo(decisao.Vinculo!, presencas, incluirTurma: false),
-                    TipoCobrancaPresenca.Avulsa => ComAviso(SeloDoVinculo(decisao.Vinculo!, presencas, incluirTurma: false), decisao.PacoteEsgotado),
+                    TipoCobrancaPresenca.Avulsa => SeloDoVinculo(decisao.Vinculo!, presencas, incluirTurma: false) with { AvisoPacoteEsgotado = decisao.PacoteEsgotado },
                     // A presenca sera barrada: o pacote do grupo esta esgotado e nao ha avulsa para cair.
                     TipoCobrancaPresenca.Bloqueada => PacoteEsgotado(decisao.Vinculo!, presencas),
                     _ => SeloSemVinculo(aluno),
@@ -137,19 +137,12 @@ namespace SPI.Application.VinculosCobranca.Services
                 ? ProgressoPacote.Calcular(vinculo, presencas.GetValueOrDefault(vinculo.Id))
                 : null;
 
-        private static SeloCobrancaResponse ComAviso(SeloCobrancaResponse selo, bool pacoteEsgotado)
-        {
-            selo.AvisoPacoteEsgotado = pacoteEsgotado;
-            return selo;
-        }
-
         // Pacote com o saldo zerado: o selo mostra "esgotado" mesmo que o total informado ainda aponte aulas
         // restantes (o que bloqueia a presenca e o saldo, spec 041).
         private static SeloCobrancaResponse PacoteEsgotado(VinculoCobranca pacote, IReadOnlyDictionary<int, int> presencas)
         {
             var selo = SeloDoVinculo(pacote, presencas, incluirTurma: false);
-            selo.Progresso = selo.Progresso! with { Estado = ProgressoPacote.Esgotado, AulasRestantes = 0 };
-            return selo;
+            return selo with { Progresso = selo.Progresso! with { Estado = ProgressoPacote.Esgotado, AulasRestantes = 0 } };
         }
 
         private static SeloCobrancaResponse SeloSemVinculo(Aluno aluno) => new()

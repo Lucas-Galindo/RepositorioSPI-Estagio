@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
 import { obterTurma, excluirTurma, reativarTurma, vincularAluno, desvincularAluno, type AlunoResumo, type Turma } from "@/lib/api/turmas";
-import { listarAlunos, type Aluno } from "@/lib/api/alunos";
+import { listarAlunos } from "@/lib/api/alunos";
 import { listarAulas, type Aula } from "@/lib/api/aulas";
 import { avatarColor, initials, fmtData, fmtHora } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";

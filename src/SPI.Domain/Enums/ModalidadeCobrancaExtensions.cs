@@ -1,15 +1,11 @@
 namespace SPI.Domain.Enums
 {
-    // specs/062: os pontos do sistema que hoje perguntam "e Mensalidade?" passam a perguntar "e um plano
-    // periodico?", sem repetir listas de modalidades (um lugar so decide quem e quem).
+    // specs/062: um lugar so diz quem tem periodo e quantos meses dura (Semestral e Anual), sem repetir listas
+    // de modalidades pelo sistema.
     public static class ModalidadeCobrancaExtensions
     {
-        // Mensalidade, Semestral e Anual cobrem TODAS as aulas do aluno e nao geram cobranca por presenca.
-        public static bool EhPlanoPeriodico(this ModalidadeCobranca modalidade) =>
-            modalidade is ModalidadeCobranca.Mensalidade or ModalidadeCobranca.Semestral or ModalidadeCobranca.Anual;
-
         // So Semestral e Anual tem inicio, fim e parcelas (a Mensalidade nao tem periodo: e cobrada todo mes
-        // pelo job). Sem turma, como a Mensalidade.
+        // pelo job). Como a Mensalidade, cobrem todas as aulas do aluno e nao tem turma.
         public static bool ComPeriodo(this ModalidadeCobranca modalidade) =>
             modalidade is ModalidadeCobranca.Semestral or ModalidadeCobranca.Anual;
 

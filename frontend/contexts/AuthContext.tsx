@@ -43,26 +43,30 @@ function montarSessao(resposta: LoginResponse): Sessao {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(null);
   const [carregando, setCarregando] = useState(true);
+  // Copia da sessao para quem roda fora da renderizacao (encerrarSessao); atualizada depois de cada commit.
   const sessaoRef = useRef<Sessao | null>(null);
-  sessaoRef.current = sessao;
+  useEffect(() => {
+    sessaoRef.current = sessao;
+  }, [sessao]);
 
+  // Restaura a sessao salva ("Manter conectada"). Sem token salvo, so termina o carregamento; o estado so muda
+  // dentro do .finally (nunca de forma sincrona no corpo do efeito).
   useEffect(() => {
     const tokenSalvo = localStorage.getItem(CHAVE_REFRESH_TOKEN);
-    if (!tokenSalvo) {
-      setCarregando(false);
-      return;
-    }
 
-    refresh(tokenSalvo)
-      .then((resposta) => {
-        setSessao(montarSessao(resposta));
-        // Rotacao: o backend revoga o token usado e emite um novo a cada troca.
-        localStorage.setItem(CHAVE_REFRESH_TOKEN, resposta.refreshToken);
-      })
-      .catch(() => {
-        localStorage.removeItem(CHAVE_REFRESH_TOKEN);
-      })
-      .finally(() => setCarregando(false));
+    const restaurada = tokenSalvo
+      ? refresh(tokenSalvo)
+          .then((resposta) => {
+            setSessao(montarSessao(resposta));
+            // Rotacao: o backend revoga o token usado e emite um novo a cada troca.
+            localStorage.setItem(CHAVE_REFRESH_TOKEN, resposta.refreshToken);
+          })
+          .catch(() => {
+            localStorage.removeItem(CHAVE_REFRESH_TOKEN);
+          })
+      : Promise.resolve();
+
+    restaurada.finally(() => setCarregando(false));
   }, []);
 
   const definirSessao = useCallback((resposta: LoginResponse, manterConectada = false) => {

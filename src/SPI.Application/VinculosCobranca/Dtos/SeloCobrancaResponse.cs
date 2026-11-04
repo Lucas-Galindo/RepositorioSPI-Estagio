@@ -5,8 +5,7 @@ namespace SPI.Application.VinculosCobranca.Dtos
     // e aulas restantes e o backend (Principio II).
     public record SeloCobrancaResponse
     {
-        // "Mensalidade", "Pacote", "Avulsa" ou "SemVinculo" (o nome da modalidade; Semestral/Anual entram
-        // sozinhas quando existirem).
+        // O nome da modalidade ("Mensalidade", "Pacote", "Avulsa", "Semestral" ou "Anual") ou "SemVinculo".
         public string Categoria { get; set; } = string.Empty;
 
         // Valor do vinculo exibido; em "SemVinculo", o valor da aula do aluno.

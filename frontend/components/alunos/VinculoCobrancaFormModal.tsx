@@ -12,6 +12,7 @@ import { currency } from "@/lib/format";
 import {
   atualizarVinculoCobranca,
   cadastrarVinculoCobranca,
+  ehPlano,
   type ModalidadeCobranca,
   type VinculoCobranca,
   type VinculoCobrancaRequest,
@@ -31,8 +32,6 @@ const MODALIDADES: ModalidadeCobranca[] = ["Avulsa", "Mensalidade", "Pacote"];
 // specs/062: os planos so existem no cadastro (um plano salvo nao e editado).
 const MODALIDADES_NO_CADASTRO: ModalidadeCobranca[] = [...MODALIDADES, "Semestral", "Anual"];
 const ROTULO_DA_MODALIDADE: Partial<Record<ModalidadeCobranca, string>> = { Semestral: "Semestral (6 meses)", Anual: "Anual (12 meses)" };
-
-const ehPlano = (m: ModalidadeCobranca) => m === "Semestral" || m === "Anual";
 
 interface ParcelaDoFormulario {
   vencimento: string;

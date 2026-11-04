@@ -18,9 +18,6 @@ namespace SPI.Application.Tests.Aulas
     {
         private const int TurmaId = 10;
 
-        private static Aluno NovoAluno(int id, string nome) =>
-            new() { Id = id, Nome = nome, Ativo = true, ValorAula = 80m };
-
         private static Materia NovaMateria() => new() { Id = 1, Nome = "Matematica", Ativo = true };
 
         private static Aula NovaAula(int id, string status = "Agendada", int? turmaId = TurmaId) => new()

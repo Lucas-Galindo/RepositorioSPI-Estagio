@@ -7,7 +7,7 @@ namespace SPI.Application.VinculosCobranca.Services
     // chamada, qualquer que seja o numero de alunos). A chave do resultado e o Id do aluno.
     public interface IResumoCobrancaService
     {
-        // Lista de alunos: o vinculo principal (Mensalidade, Pacote, Avulsa) + quantos outros + todos
+        // Lista de alunos: o vinculo principal (Mensalidade, Semestral/Anual, Pacote, Avulsa) + quantos outros + todos
         // (para a dica).
         Task<Dictionary<int, SeloCobrancaResponse>> ResumirParaListaAsync(IReadOnlyCollection<Aluno> alunos, CancellationToken cancellationToken = default);
 
