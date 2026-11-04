@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { ApiError } from "@/lib/api/client";
 import { cadastrarTurma, atualizarTurma, type Turma, type TurmaRequest, type TipoTurma } from "@/lib/api/turmas";
+import { DateInput } from "@/components/shared/DateInput";
 
 export function TurmaForm({ turma }: { turma?: Turma }) {
   const { sessao } = useAuth();
@@ -93,13 +94,7 @@ export function TurmaForm({ turma }: { turma?: Turma }) {
                 <label>
                   Início da turma{!editando && <span className="req">*</span>}
                 </label>
-                <input
-                  type="date"
-                  required={!editando}
-                  disabled={inicioTravado}
-                  value={dataInicio}
-                  onChange={(e) => setDataInicio(e.target.value)}
-                />
+                <DateInput required={!editando} disabled={inicioTravado} value={dataInicio} onChange={setDataInicio} />
                 <span className="hint">
                   {inicioTravado
                     ? "A data de início não muda depois de preenchida."
@@ -110,13 +105,7 @@ export function TurmaForm({ turma }: { turma?: Turma }) {
                 <label>
                   Fim da turma{!editando && <span className="req">*</span>}
                 </label>
-                <input
-                  type="date"
-                  required={!editando}
-                  min={dataInicio || undefined}
-                  value={dataFim}
-                  onChange={(e) => setDataFim(e.target.value)}
-                />
+                <DateInput required={!editando} min={dataInicio || undefined} value={dataFim} onChange={setDataFim} />
                 <span className="hint">Quando a turma acaba, os pacotes dela ficam inativos (o saldo é preservado).</span>
               </div>
             </div>

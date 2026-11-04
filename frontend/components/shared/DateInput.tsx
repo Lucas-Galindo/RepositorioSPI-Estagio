@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
+import { Icon } from "@/components/shared/Icon";
 
 /**
  * Parsing manual de string (nunca `new Date()`), mesma tecnica de `lib/format.ts`:
@@ -44,14 +45,26 @@ interface DateInputProps {
   className?: string;
   title?: string;
   disabled?: boolean;
+  /** Rotulo de acessibilidade do campo de texto (ex.: linhas de uma tabela de parcelas). */
+  ariaLabel?: string;
+  /** Estilo do involucro do campo (ex.: `flex` e `minWidth` em linhas de formulario). */
+  style?: CSSProperties;
+  /** yyyy-MM-dd: o calendario do navegador nao deixa escolher dias anteriores. A digitacao nao e bloqueada (o servidor valida). */
+  min?: string;
 }
 
 /**
  * Campo de data mascarado dd/mm/aaaa — substitui `<input type="date">` nativo para que o
  * formato exibido/aceito nao dependa do idioma/SO do navegador da usuaria. O valor
  * emitido/recebido continua `yyyy-MM-dd`, o mesmo contrato do input nativo que substitui.
+ *
+ * specs/069: dentro do campo ha um botao de calendario. Ele abre o calendario do proprio navegador por meio
+ * de um `<input type="date">` auxiliar invisivel (sem foco, fora da navegacao por teclado): o dia escolhido
+ * volta ja em `yyyy-MM-dd`, entao nao ha conversao de data nem risco de dia deslocado por fuso. O campo de
+ * texto continua sendo o que a usuaria ve e digita.
  */
-export function DateInput({ value, onChange, required, id, className, title, disabled }: DateInputProps) {
+export function DateInput({ value, onChange, required, id, className, title, disabled, ariaLabel, style, min }: DateInputProps) {
+  const auxiliarRef = useRef<HTMLInputElement>(null);
   const [texto, setTexto] = useState(() => isoParaTexto(value));
   const [ultimoValue, setUltimoValue] = useState(value);
 
@@ -75,20 +88,53 @@ export function DateInput({ value, onChange, required, id, className, title, dis
     if (iso) onChange(iso);
   }
 
+  // showPicker() abre o calendario a partir do clique; sem suporte (ou se o navegador recusar) so foca o
+  // auxiliar, sem propagar erro -- a digitacao continua funcionando.
+  function abrirCalendario() {
+    const auxiliar = auxiliarRef.current;
+    if (!auxiliar) return;
+    try {
+      auxiliar.showPicker();
+    } catch {
+      auxiliar.focus();
+    }
+  }
+
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      autoComplete="off"
-      placeholder="dd/mm/aaaa"
-      value={texto}
-      onChange={handleChange}
-      required={required}
-      disabled={disabled}
-      id={id}
-      title={title}
-      className={["date-input", className].filter(Boolean).join(" ")}
-      maxLength={10}
-    />
+    <span className="date-wrap" style={style}>
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        placeholder="dd/mm/aaaa"
+        value={texto}
+        onChange={handleChange}
+        required={required}
+        disabled={disabled}
+        id={id}
+        title={title}
+        aria-label={ariaLabel}
+        className={["date-input", className].filter(Boolean).join(" ")}
+        maxLength={10}
+      />
+      <button type="button" className="date-cal-btn" aria-label="Abrir calendário" title="Abrir calendário" disabled={disabled} onClick={abrirCalendario}>
+        <Icon name="cal" size={14} />
+      </button>
+      {/* So abre o calendario e devolve o dia escolhido. Recebe a data do TEXTO exibido, e so quando esta completa
+          (texto vazio, parcial ou invalido: o calendario abre em hoje, sem mexer no que a usuaria digitou). */}
+      <input
+        ref={auxiliarRef}
+        type="date"
+        className="date-nativo"
+        tabIndex={-1}
+        aria-hidden="true"
+        disabled={disabled}
+        min={min}
+        value={textoParaIso(texto) ?? ""}
+        onChange={(e) => {
+          if (e.target.value) onChange(e.target.value);
+        }}
+      />
+    </span>
   );
 }

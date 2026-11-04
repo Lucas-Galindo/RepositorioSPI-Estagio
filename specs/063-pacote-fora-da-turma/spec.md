@@ -254,3 +254,7 @@ Quando a turma de pacote acaba, os pacotes dela ficam inativos sem perder o sald
 
 - **Recorrência na criação de aulas** (dias e horários fixos da turma): hoje cada aula é cadastrada uma por vez. A opção de repetir no formulário da aula é um card próprio ("Recorrência na criação de aulas"). Esta spec não depende dele, porque cada aula criada, uma a uma ou em série, já segue as regras desta spec.
 - **Saída do aluno de turma de pacote com acerto proporcional ao consumo** (pacote de R$ 100 para 10 aulas, 7 consumidas, paga R$ 70): card próprio ("Saída do aluno de turma de pacote"). O sistema ainda não registra o pagamento do pacote, então o acerto exige decidir o modelo de cobrança do pacote parcelado (ver o card).
+
+## Nota de alteração (2026-11-04, Princípio V): calendário nos campos de data
+
+Os campos "Início da turma" e "Fim da turma" do formulário da turma de pacote passaram a usar o campo de data compartilhado, com botão de calendário (calendário do navegador) e formato dd/mm/aaaa; o calendário continua sem permitir um fim anterior ao início e o servidor continua validando as datas. Ver [specs/069-calendario-campos-de-data/spec.md](../069-calendario-campos-de-data/spec.md).

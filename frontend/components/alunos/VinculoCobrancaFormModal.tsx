@@ -7,6 +7,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { ApiError } from "@/lib/api/client";
 import type { TurmaResumo } from "@/lib/api/alunos";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
+import { DateInput } from "@/components/shared/DateInput";
 import { sugerirParcelas } from "@/lib/parcelas";
 import { currency } from "@/lib/format";
 import {
@@ -226,15 +227,14 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
                     <label>
                       Data de início<span className="req">*</span>
                     </label>
-                    <input
+                    <DateInput
                       required
-                      type="date"
                       value={dataInicio}
-                      onChange={(e) => {
-                        setDataInicio(e.target.value);
+                      onChange={(novaData) => {
+                        setDataInicio(novaData);
                         if (!primeiroVencimento) {
-                          setPrimeiroVencimento(e.target.value);
-                          regerarParcelas(valor, quantidadeDeParcelas, e.target.value);
+                          setPrimeiroVencimento(novaData);
+                          regerarParcelas(valor, quantidadeDeParcelas, novaData);
                         }
                       }}
                     />
@@ -262,13 +262,12 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
                     <label>
                       Vencimento da 1ª parcela<span className="req">*</span>
                     </label>
-                    <input
+                    <DateInput
                       required
-                      type="date"
                       value={primeiroVencimento}
-                      onChange={(e) => {
-                        setPrimeiroVencimento(e.target.value);
-                        regerarParcelas(valor, quantidadeDeParcelas, e.target.value);
+                      onChange={(novaData) => {
+                        setPrimeiroVencimento(novaData);
+                        regerarParcelas(valor, quantidadeDeParcelas, novaData);
                       }}
                     />
                   </div>
@@ -305,12 +304,11 @@ export function VinculoCobrancaFormModal({ alunoId, turmasAtivas, vinculo, onSal
                     <span className="hint" style={{ width: 48 }}>
                       {i + 1}/{parcelas.length}
                     </span>
-                    <input
-                      type="date"
+                    <DateInput
                       required
-                      aria-label={`Vencimento da parcela ${i + 1}`}
+                      ariaLabel={`Vencimento da parcela ${i + 1}`}
                       value={p.vencimento}
-                      onChange={(e) => setParcelas((lista) => lista.map((x, j) => (j === i ? { ...x, vencimento: e.target.value } : x)))}
+                      onChange={(novaData) => setParcelas((lista) => lista.map((x, j) => (j === i ? { ...x, vencimento: novaData } : x)))}
                       style={{ flex: 1, minWidth: 140 }}
                     />
                     <input

@@ -1863,6 +1863,75 @@ tbody tr.row-link:hover {
 .filter-date {
   max-width: 140px;
 }
+/* ===== specs/069: botao de calendario dentro do campo de data ===== */
+.date-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+/* No formulario o .field e uma coluna flex que estica os filhos diretos: o involucro acompanha. */
+.field .date-wrap {
+  display: block;
+}
+.field .date-wrap .date-input {
+  width: 100%;
+}
+.date-wrap .date-input {
+  padding-right: 34px;
+}
+/* So tokens do tema: o icone fica escuro no fundo claro e claro no fundo escuro por construcao. */
+.date-cal-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c-text-muted);
+  cursor: pointer;
+}
+.date-cal-btn:hover,
+.date-cal-btn:focus-visible {
+  color: var(--c-accent-text);
+}
+.date-cal-btn:focus-visible {
+  outline: 2px solid var(--c-accent-text);
+  outline-offset: 1px;
+}
+.date-cal-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Auxiliar que so serve para abrir o calendario nativo. O seletor e mais especifico que ".field input", para o
+   preenchimento e a sombra dos formularios nao o atingirem. */
+.date-wrap .date-nativo {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: none;
+}
+/* O calendario e o icone nativos seguem o tema (sem isso ficam escuros sobre fundo escuro). Vale so para estes
+   controles, nao para a pagina inteira (que mudaria barras de rolagem e listas). */
+.date-wrap .date-nativo,
+input[type="month"] {
+  color-scheme: light;
+}
+.dark-mode .date-wrap .date-nativo,
+.dark-mode input[type="month"] {
+  color-scheme: dark;
+}
 .filter-clear {
   background: var(--c-bg);
   box-shadow: var(--shadow-press);

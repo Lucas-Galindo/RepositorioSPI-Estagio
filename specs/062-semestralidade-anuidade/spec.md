@@ -184,3 +184,7 @@ Quando faltam 15 dias ou menos para o fim do período, ou o período já acabou,
 - O cálculo do fim do período soma 6 ou 12 meses ao início e termina um dia antes do aniversário (início 01/11/2026 + 6 meses → fim 30/04/2027).
 - A Mensalidade existente e o processo mensal dela não mudam.
 - **Glossário**: nesta spec, **plano** é o vínculo Semestral ou Anual (os dois têm período e parcelas). No código, o termo técnico **plano periódico** inclui também a Mensalidade, que cobre todas as aulas mas não tem período nem parcelas.
+
+## Nota de alteração (2026-11-04, Princípio V): calendário nos campos de data
+
+No cadastro do plano Semestral/Anual, as datas (início, 1º vencimento e cada parcela) passaram a usar o campo de data compartilhado, com botão de calendário (calendário do navegador) e formato dd/mm/aaaa; as datas enviadas ao servidor são as mesmas de antes. Ver [specs/069-calendario-campos-de-data/spec.md](../069-calendario-campos-de-data/spec.md).
