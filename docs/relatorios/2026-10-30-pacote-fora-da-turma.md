@@ -102,3 +102,18 @@ Em 360px de largura, páginas que já existiam antes (como `/turmas` e `/alunos`
 ### Estado do banco local depois dos testes
 
 Idêntico ao que estava antes da validação: as linhas dos seus testes pela tela (turma 15 "Matematica basica 1", o vínculo 34 e os vínculos 20, 21 e 22 inativados) ficaram **intactas**; só apaguei registros com o prefixo "TESTE-063".
+
+## Revalidação em 2026-11-04 (depois da revisão de código do card)
+
+A revisão de hoje (commit `b7532a1`) mexeu em `TurmaService` e `EncerramentoTurmaPacoteService`, então o quickstart foi refeito contra a API e o Chrome reais (login da professora, dados `TESTE-063`, SMTP desviado, rotina de encerramento a cada 1 minuto, backup `database/backup/spi_db_20261104_095249.sql`).
+
+| Parte | Resultado |
+|---|---|
+| API, fase 1 (cenários 1 a 31) | 44 de 44 |
+| API, fase 2 (fim de turma pela rotina, reativar, prorrogar) | 5 de 5 |
+| Chrome (16 verificações, incluindo 360 px) | 16 de 16 |
+| Contagens do banco depois da limpeza (vínculos, matrículas, aulas, presenças, pagamentos, turmas, alunos) | idênticas às de antes |
+
+**Ajuste no script de validação (não no sistema):** a primeira rodada deu 16 falhas porque o script criava aulas em datas futuras e registrava a chamada; desde a spec 064 a API recusa chamada antes do início da aula (409 correto). O script passou a criar as aulas no passado e as falhas sumiram. Também é preciso subir a API só em HTTP (com HTTPS junto, o 307 faz o cliente perder o token).
+
+**Continua pendente (fora do alcance desta validação):** aplicar a migração 25 em produção, com backup, e conferir as contagens do quickstart.
