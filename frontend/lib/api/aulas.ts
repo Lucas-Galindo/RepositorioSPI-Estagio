@@ -34,6 +34,10 @@ export interface Aula {
   chamadaLiberada: boolean;
   /** specs/064: segundos ate o inicio quando a chamada esta bloqueada so por horario; senao null. */
   segundosParaChamada: number | null;
+  /** specs/067: link da reuniao, guardado so em memoria no servidor ate o fim da aula; null se nao ha. */
+  linkAula: string | null;
+  /** specs/067: decidido pelo servidor: a aula ainda aceita um link (ativa, nao cancelada, nao terminou). */
+  aceitaLinkAula: boolean;
 }
 
 /** Espelha SPI.Application.Aulas.Dtos.AulaRequest. */
@@ -86,6 +90,16 @@ export function registrarSessao(
 
 export function cancelarAula(id: number, accessToken: string): Promise<Aula> {
   return apiPost<Aula>(`/api/aulas/${id}/cancelar`, {}, accessToken);
+}
+
+/** specs/067: informa ou troca o link da reuniao da aula (so em memoria no servidor). */
+export function definirLinkAula(id: number, link: string, accessToken: string): Promise<Aula> {
+  return apiPut<Aula>(`/api/aulas/${id}/link`, { link }, accessToken);
+}
+
+/** specs/067: remove o link da reuniao da aula. */
+export function removerLinkAula(id: number, accessToken: string): Promise<Aula> {
+  return apiDelete<Aula>(`/api/aulas/${id}/link`, accessToken);
 }
 
 /** specs/056: coloca um aluno de fora da turma na aula agendada (reposicao). */

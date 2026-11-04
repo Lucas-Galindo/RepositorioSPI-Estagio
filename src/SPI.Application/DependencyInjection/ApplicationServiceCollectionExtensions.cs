@@ -30,6 +30,10 @@ namespace SPI.Application.DependencyInjection
             // specs/064: relogio injetavel (a regra da chamada decide pela hora de Sao Paulo).
             services.AddSingleton(TimeProvider.System);
 
+            // specs/067: link da aula, so em memoria (singleton: precisa sobreviver entre requisicoes e
+            // ser visto pela rotina de lembretes; nunca vai para o banco).
+            services.AddSingleton<ILinkAulaTemporario, LinkAulaTemporario>();
+
             services.AddScoped<IAutenticacaoService, AutenticacaoService>();
             services.AddScoped<IRecuperacaoSenhaService, RecuperacaoSenhaService>();
             services.AddScoped<IProfessorService, ProfessorService>();

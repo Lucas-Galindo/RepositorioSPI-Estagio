@@ -34,7 +34,7 @@
 8. **Segurança**: o link pode conter senha de reunião; **não** é registrado em log, e o e-mail o escreve com os caracteres especiais protegidos. Só esquemas `http`/`https` são aceitos (nada de `javascript:`).
 9. A tela avisa, junto do campo, que o link fica guardado só até o fim da aula e que **se perde se o sistema reiniciar**.
 10. **Uma instalação só**: o armazenamento temporário assume um único servidor da API (o que o sistema é hoje).
-11. **Ordem de entrega**: depende do relógio de São Paulo da spec 064; recomenda-se implementar a 064 antes (a 067 cria o ajudante de relógio se ele ainda não existir).
+11. **Ordem de entrega**: depende do relógio de São Paulo da spec 064, que **já foi implementada** (2026-11-03); a 067 só acrescenta a conversão de fuso na mesma classe.
 
 ## User Scenarios & Testing *(mandatory)*
 

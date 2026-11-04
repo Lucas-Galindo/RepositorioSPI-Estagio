@@ -1,7 +1,9 @@
+using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SPI.Application.Aulas.Services;
 using SPI.Application.Common;
 using SPI.Domain.Entities;
 using SPI.Domain.Repositories;
@@ -55,8 +57,9 @@ namespace SPI.Infrastructure.BackgroundServices
             using var scope = _scopeFactory.CreateScope();
             var lembreteRepository = scope.ServiceProvider.GetRequiredService<ILembreteRepository>();
             var emailSender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
+            var links = scope.ServiceProvider.GetRequiredService<ILinkAulaTemporario>();
 
-            await ProcessarLembretesVencidosAsync(lembreteRepository, emailSender, _maxEmailsPorCiclo, _logger, DateTime.Now, cancellationToken);
+            await ProcessarLembretesVencidosAsync(lembreteRepository, emailSender, _maxEmailsPorCiclo, _logger, DateTime.Now, cancellationToken, links);
         }
 
         // Logica testavel sem IServiceScopeFactory/BackgroundService (mesmo padrao
@@ -73,7 +76,8 @@ namespace SPI.Infrastructure.BackgroundServices
             int maxEmailsPorCiclo,
             ILogger? logger,
             DateTime agora,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ILinkAulaTemporario? links = null)
         {
             var vencidos = await lembreteRepository.ListarPendentesVencidosAsync(agora, cancellationToken);
             if (vencidos.Count == 0)
@@ -112,6 +116,10 @@ namespace SPI.Infrastructure.BackgroundServices
                 var pendentes = destinatariosOriginais.Except(jaTentados).ToList();
                 var destinatariosDesteCiclo = pendentes.Take(orcamentoRestante).ToList();
 
+                // specs/067: um corpo por lembrete (o mesmo para todos os destinatarios deste ciclo), com o link
+                // da proxima aula quando houver.
+                var corpo = MontarCorpoEmail(lembrete, await ObterLinkDaProximaAulaAsync(lembreteRepository, links, lembrete, logger, cancellationToken));
+
                 var sucessosDesteCiclo = 0;
                 foreach (var email in destinatariosDesteCiclo)
                 {
@@ -120,7 +128,7 @@ namespace SPI.Infrastructure.BackgroundServices
                         await emailSender.EnviarAsync(
                             email,
                             $"SPI - Lembrete: aula da turma {lembrete.Turma.Nome}",
-                            MontarCorpoEmail(lembrete),
+                            corpo,
                             cancellationToken);
                         sucessosDesteCiclo++;
                     }
@@ -172,10 +180,46 @@ namespace SPI.Infrastructure.BackgroundServices
             return emails.Distinct().ToList();
         }
 
-        private static string MontarCorpoEmail(Lembrete lembrete) => $"""
-            <p>Ol&aacute;!</p>
-            <p>Este &eacute; um lembrete da turma <b>{lembrete.Turma.Nome}</b>: sua pr&oacute;xima aula est&aacute; se aproximando.</p>
-            <p>Data/hora do lembrete: {lembrete.HoraProgramada:dd/MM/yyyy HH:mm}</p>
-            """;
+        // specs/067: o lembrete e por turma e anuncia a PROXIMA aula dela (a mesma que define o horario do
+        // lembrete); e dessa aula que vem o link, se a professora o informou e ele ainda vale. Qualquer falha
+        // aqui (aula nao encontrada, erro de banco) so tira o link: o e-mail sai igual ao de sempre. O link
+        // nunca e registrado em log.
+        private static async Task<string?> ObterLinkDaProximaAulaAsync(
+            ILembreteRepository lembreteRepository, ILinkAulaTemporario? links, Lembrete lembrete, ILogger? logger, CancellationToken cancellationToken)
+        {
+            if (links is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var aula = await lembreteRepository.ObterProximaAulaDaTurmaAsync(lembrete.TurmaId, cancellationToken);
+                return aula is null ? null : links.Obter(aula.Id);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                logger?.LogWarning(e, "Nao foi possivel buscar o link da aula do lembrete {Id}; o e-mail sai sem link.", lembrete.Id);
+                return null;
+            }
+        }
+
+        // Sem link, o corpo e exatamente o de antes da spec 067. O link entra com o HTML protegido.
+        private static string MontarCorpoEmail(Lembrete lembrete, string? link)
+        {
+            var corpo = $"""
+                <p>Ol&aacute;!</p>
+                <p>Este &eacute; um lembrete da turma <b>{lembrete.Turma.Nome}</b>: sua pr&oacute;xima aula est&aacute; se aproximando.</p>
+                <p>Data/hora do lembrete: {lembrete.HoraProgramada:dd/MM/yyyy HH:mm}</p>
+                """;
+
+            if (link is null)
+            {
+                return corpo;
+            }
+
+            var seguro = WebUtility.HtmlEncode(link);
+            return $"{corpo}\n<p>Link da aula: <a href=\"{seguro}\">{seguro}</a></p>";
+        }
     }
 }

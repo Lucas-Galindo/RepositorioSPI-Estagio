@@ -51,7 +51,7 @@ O `Lembrete` é por turma e não guarda o id da aula, mas o horário dele é cal
 
 ## R7 — Relógio
 
-Usa o ajudante da spec 064 (`RelogioExtensions.AgoraEmSaoPaulo(TimeProvider)` e o fuso `America/Sao_Paulo`). Como a 064 ainda não foi implementada, a tarefa de fundação **cria o arquivo se não existir** com o mesmo contrato (a 064 só o reaproveita) e registra `TimeProvider.System` no DI se ainda não estiver. A conversão hora de parede → `DateTimeOffset` usa o `TimeZoneInfo` de São Paulo, não o fuso do servidor.
+Usa o ajudante da spec 064 (`RelogioExtensions.AgoraEmSaoPaulo(TimeProvider)` e o fuso `America/Sao_Paulo`). A spec 064 **já foi implementada** (2026-11-03): `RelogioExtensions` e o registro do `TimeProvider.System` existem; a 067 só acrescenta, na mesma classe, a conversão "hora de parede de São Paulo → instante absoluto" (o fuso continua num lugar só). A conversão hora de parede → `DateTimeOffset` usa o `TimeZoneInfo` de São Paulo, não o fuso do servidor.
 
 ## R8 — Ciclo de vida do link
 
@@ -80,6 +80,13 @@ Usa o ajudante da spec 064 (`RelogioExtensions.AgoraEmSaoPaulo(TimeProvider)` e 
 - `AulaServiceLinkTests`: define/troca/remove; 409 em cancelada e terminada; 404 em excluída; cancelar/excluir remove; editar horário atualiza validade; `Mapear` expõe `linkAula`/`aceitaLinkAula`.
 - `LembreteDispatcherLinkTests`: com link → corpo contém o link protegido; sem link → corpo idêntico ao atual (comparação de texto exato); link expirado → sem link; regra de envio inalterada (status, tentativas); script/aspas no link ficam protegidos.
 - Os testes atuais do dispatcher e do `AulaService` continuam sem alteração de `Assert` (parâmetros novos opcionais; os 5 construtores de `AulaService` ganham os novos argumentos, como na spec 064).
+
+## R12 — Pontos de contato com as specs 064, 065 e 068 (reanálise de 2026-11-04)
+
+- **064**: `AulaService.Mapear` virou `MapearEm(aula, agora)` (estático) com uma leitura do relógio por resposta; a 067 o torna de instância para consultar o armazenamento, mantendo a leitura única. O construtor já recebe `TimeProvider`; o `ILinkAulaTemporario` entra como último parâmetro **opcional** (não altera as ~11 construções de teste).
+- **065**: o `ErrosDeNegocioFilter` agora **registra a exceção completa** dos 500 e devolve texto genérico fora de Development; por isso nenhuma mensagem de exceção da 067 pode conter o link (já proibido por FR-009). As ações novas continuam declarando 400/404/409.
+- **068** (selo de cobrança): também adiciona um parâmetro opcional ao `AulaService` e mexe em `AlunoPresencaResponse`/`aulas/[id]/page.tsx`; as edições são aditivas e em pontos distintos; quem entrar depois usa argumentos nomeados nos testes.
+- **Fuso do e-mail**: `ILembreteRepository.ObterProximaAulaDaTurmaAsync` ainda usa `DateTime.Now` (hora do servidor), enquanto a validade do link usa a hora de São Paulo. Com o servidor em São Paulo (hoje) coincidem; em outro fuso a "próxima aula" poderia divergir. É o mesmo ponto já listado como sugestão de card ao fim da 064 (trocar os demais `DateTime.Now`); fica fora desta spec.
 
 ## R11 — Riscos
 

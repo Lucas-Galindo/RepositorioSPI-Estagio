@@ -16,17 +16,20 @@ namespace SPI.Api.Controllers
         private readonly IAulaService _aulaService;
         private readonly IValidator<AulaRequest> _aulaValidator;
         private readonly IValidator<RegistrarSessaoRequest> _sessaoValidator;
+        private readonly IValidator<DefinirLinkAulaRequest> _linkValidator;
         private readonly ILogger<AulasController> _logger;
 
         public AulasController(
             IAulaService aulaService,
             IValidator<AulaRequest> aulaValidator,
             IValidator<RegistrarSessaoRequest> sessaoValidator,
+            IValidator<DefinirLinkAulaRequest> linkValidator,
             ILogger<AulasController> logger)
         {
             _aulaService = aulaService;
             _aulaValidator = aulaValidator;
             _sessaoValidator = sessaoValidator;
+            _linkValidator = linkValidator;
             _logger = logger;
         }
 
@@ -170,6 +173,49 @@ namespace SPI.Api.Controllers
         {
             var response = await _aulaService.CancelarAsync(id);
             _logger.LogInformation("Aula {Id} cancelada", id);
+            return Ok(response);
+        }
+
+        [HttpPut("{id}/link")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para informar ou trocar o link da reuniao da aula (specs/067): fica so em memoria do
+        /// servidor, ate o fim da aula, e vai no e-mail do lembrete. Nunca e gravado em banco.
+        /// </summary>
+        /// <param name="id">Id da aula</param>
+        /// <param name="request">Link http ou https (ate 500 caracteres, sem espacos)</param>
+        /// <returns>Retorna a aula com o link</returns>
+        public async Task<IActionResult> DefinirLink(int id, [FromBody] DefinirLinkAulaRequest request)
+        {
+            var validacao = await _linkValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
+            {
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
+
+            // O link pode conter senha de reuniao: nunca vai para o log, so o id da aula.
+            var response = await _aulaService.DefinirLinkAsync(id, request.Link);
+            _logger.LogInformation("Link da aula {Id} informado", id);
+            return Ok(response);
+        }
+
+        [HttpDelete("{id}/link")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Endpoint para remover o link da reuniao da aula (idempotente)
+        /// </summary>
+        /// <param name="id">Id da aula</param>
+        /// <returns>Retorna a aula sem o link</returns>
+        public async Task<IActionResult> RemoverLink(int id)
+        {
+            var response = await _aulaService.RemoverLinkAsync(id);
+            _logger.LogInformation("Link da aula {Id} removido", id);
             return Ok(response);
         }
 

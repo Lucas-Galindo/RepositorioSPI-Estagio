@@ -189,7 +189,8 @@ export async function apiGetBlob(path: string, accessToken: string): Promise<{ b
   return { blob: await response.blob(), nomeArquivo: extrairNomeArquivo(response) };
 }
 
-export async function apiDelete(path: string, accessToken: string): Promise<void> {
+/** DELETE. Sem o tipo informado devolve void; com ele, devolve o corpo da resposta quando houver (specs/067). */
+export async function apiDelete<TResponse = void>(path: string, accessToken: string): Promise<TResponse> {
   const response = await fetch(`${API_URL}${path}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -198,4 +199,7 @@ export async function apiDelete(path: string, accessToken: string): Promise<void
   if (!response.ok) {
     throw await extrairErro(response);
   }
+
+  const texto = await response.text();
+  return (texto ? JSON.parse(texto) : undefined) as TResponse;
 }

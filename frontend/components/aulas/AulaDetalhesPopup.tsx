@@ -78,6 +78,17 @@ export function AulaDetalhesPopup({ aula, onFechar }: AulaDetalhesPopupProps) {
               <dd>{aula.descricao}</dd>
             </>
           )}
+          {/* specs/067: link da reuniao, somente leitura; o servidor so o devolve enquanto vale. */}
+          {aula.linkAula && (
+            <>
+              <dt>Link da aula</dt>
+              <dd>
+                <a href={aula.linkAula} target="_blank" rel="noopener noreferrer" style={{ overflowWrap: "anywhere", color: "var(--c-accent-text)" }}>
+                  {aula.linkAula}
+                </a>
+              </dd>
+            </>
+          )}
         </dl>
 
         {aula.alunos.length > 0 && (

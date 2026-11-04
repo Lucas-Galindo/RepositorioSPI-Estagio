@@ -18,6 +18,7 @@ namespace SPI.Application.Aulas.Services
         private readonly ICategoriaReceitaRepository _categoriaReceitaRepository;
         private readonly IVinculoCobrancaRepository _vinculoCobrancaRepository;
         private readonly TimeProvider _relogio;
+        private readonly ILinkAulaTemporario? _links;
 
         public AulaService(
             IAulaRepository aulaRepository,
@@ -28,7 +29,8 @@ namespace SPI.Application.Aulas.Services
             IPagamentoRepository pagamentoRepository,
             ICategoriaReceitaRepository categoriaReceitaRepository,
             IVinculoCobrancaRepository vinculoCobrancaRepository,
-            TimeProvider relogio)
+            TimeProvider relogio,
+            ILinkAulaTemporario? links = null)
         {
             _aulaRepository = aulaRepository;
             _alunoRepository = alunoRepository;
@@ -39,6 +41,7 @@ namespace SPI.Application.Aulas.Services
             _categoriaReceitaRepository = categoriaReceitaRepository;
             _vinculoCobrancaRepository = vinculoCobrancaRepository;
             _relogio = relogio;
+            _links = links;
         }
 
         public async Task<List<AulaResponse>> ListarAsync(
@@ -154,6 +157,12 @@ namespace SPI.Application.Aulas.Services
             // (aula_id, aluno_id) e a chave da tabela.
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
 
+            // specs/067: o link acompanha o novo fim da aula (se o novo fim ja passou, e descartado).
+            if (_links?.Obter(id) is { } linkAtual)
+            {
+                _links.Definir(id, linkAtual, RegraLinkAula.FimDaAula(aula));
+            }
+
             var jaParticipam = aula.AulaAlunos.Select(aa => aa.AlunoId).ToHashSet();
             await _aulaRepository.DefinirAlunosAsync(aula.Id, matriculados.Where(alunoId => !jaParticipam.Contains(alunoId)), cancellationToken);
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
@@ -249,6 +258,7 @@ namespace SPI.Application.Aulas.Services
 
             aula.Ativo = false;
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+            _links?.Remover(id);
 
             if (aula.TurmaId.HasValue)
             {
@@ -451,6 +461,7 @@ namespace SPI.Application.Aulas.Services
 
             aula.Status = "Cancelada";
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+            _links?.Remover(id);
 
             if (aula.TurmaId.HasValue)
             {
@@ -460,6 +471,37 @@ namespace SPI.Application.Aulas.Services
             }
 
             return Mapear(aula);
+        }
+
+        // specs/067: so aula ativa, nao cancelada e que ainda nao terminou aceita link; a regra e uma so
+        // (RegraLinkAula) e vale tambem para a resposta (AceitaLinkAula). O link nunca e gravado em banco.
+        public async Task<AulaResponse> DefinirLinkAsync(int id, string link, CancellationToken cancellationToken = default)
+        {
+            var aula = await ObterAulaAtivaAsync(id, cancellationToken);
+            var agora = _relogio.AgoraEmSaoPaulo();
+
+            if (!RegraLinkAula.AceitaLink(aula, agora))
+            {
+                throw new ConflitoException("Esta aula nao aceita link: ja terminou ou foi cancelada.");
+            }
+
+            var links = _links ?? throw new InvalidOperationException("Armazenamento temporario de links nao configurado.");
+            links.Definir(id, link, RegraLinkAula.FimDaAula(aula));
+            return MapearEm(aula, agora);
+        }
+
+        public async Task<AulaResponse> RemoverLinkAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var aula = await ObterAulaAtivaAsync(id, cancellationToken);
+
+            _links?.Remover(id);
+            return Mapear(aula);
+        }
+
+        private async Task<Aula> ObterAulaAtivaAsync(int id, CancellationToken cancellationToken)
+        {
+            var aula = await _aulaRepository.ObterPorIdAsync(id, cancellationToken);
+            return aula is { Ativo: true } ? aula : throw new NaoEncontradoException("Aula nao encontrada.");
         }
 
         private async Task ValidarReferenciasAsync(AulaRequest request, CancellationToken cancellationToken)
@@ -495,31 +537,39 @@ namespace SPI.Application.Aulas.Services
         // (specs/064): quem mapeia uma aula so le o relogio uma vez.
         private AulaResponse Mapear(Aula aula) => MapearEm(aula, _relogio.AgoraEmSaoPaulo());
 
-        private static AulaResponse MapearEm(Aula aula, DateTime agora) => new()
+        private AulaResponse MapearEm(Aula aula, DateTime agora)
         {
-            ChamadaLiberada = RegraChamada.Liberada(aula, agora),
-            SegundosParaChamada = RegraChamada.SegundosParaLiberar(aula, agora),
-            Id = aula.Id,
-            Descricao = aula.Descricao,
-            MateriaId = aula.MateriaId,
-            MateriaNome = aula.Materia.Nome,
-            ProfessorId = aula.ProfessorId,
-            TurmaId = aula.TurmaId,
-            TurmaNome = aula.Turma?.Nome,
-            DataInicio = aula.DataInicio,
-            HoraInicio = aula.HoraInicio,
-            HoraFim = aula.HoraFim,
-            Status = aula.Status,
-            Ativo = aula.Ativo,
-            Alunos = aula.AulaAlunos.Select(aa => new AlunoPresencaResponse
+            var aceitaLink = RegraLinkAula.AceitaLink(aula, agora);
+
+            return new()
             {
-                AlunoId = aa.AlunoId,
-                Nome = aa.Aluno.Nome,
-                Ra = aa.Aluno.Ra,
-                Presente = aa.Presente,
-                MotivoNaoRegistro = aa.MotivoNaoRegistro,
-                Reposicao = aa.Reposicao
-            }).ToList()
-        };
+                ChamadaLiberada = RegraChamada.Liberada(aula, agora),
+                SegundosParaChamada = RegraChamada.SegundosParaLiberar(aula, agora),
+                // specs/067: o link so e devolvido enquanto a aula o aceita (ativa, nao cancelada, nao terminou).
+                AceitaLinkAula = aceitaLink,
+                LinkAula = aceitaLink ? _links?.Obter(aula.Id) : null,
+                Id = aula.Id,
+                Descricao = aula.Descricao,
+                MateriaId = aula.MateriaId,
+                MateriaNome = aula.Materia.Nome,
+                ProfessorId = aula.ProfessorId,
+                TurmaId = aula.TurmaId,
+                TurmaNome = aula.Turma?.Nome,
+                DataInicio = aula.DataInicio,
+                HoraInicio = aula.HoraInicio,
+                HoraFim = aula.HoraFim,
+                Status = aula.Status,
+                Ativo = aula.Ativo,
+                Alunos = aula.AulaAlunos.Select(aa => new AlunoPresencaResponse
+                {
+                    AlunoId = aa.AlunoId,
+                    Nome = aa.Aluno.Nome,
+                    Ra = aa.Aluno.Ra,
+                    Presente = aa.Presente,
+                    MotivoNaoRegistro = aa.MotivoNaoRegistro,
+                    Reposicao = aa.Reposicao
+                }).ToList()
+            };
+        }
     }
 }

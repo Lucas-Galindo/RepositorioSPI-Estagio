@@ -12,6 +12,8 @@
 
 Este documento registra, de forma retroativa, uma decisão e mudança já implementadas no sistema. Ele existe como referência histórica sobre por que o canal de lembrete foi restringido a Email, não como um roteiro de implementação futura.
 
+> **Nota (Princípio V — specs/067):** o conteúdo do e-mail do lembrete ganhou uma parte **opcional**: o link da reunião da próxima aula da turma, quando a professora o informou e ele ainda vale (guardado só em memória do servidor). Sem link, o e-mail continua exatamente como descrito aqui. Ver [specs/067-link-da-aula/spec.md](../067-link-da-aula/spec.md).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Cadastrar lembrete com canal válido (Priority: P1)

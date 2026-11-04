@@ -10,6 +10,22 @@ namespace SPI.Application.Common
         public static DateTime AgoraEmSaoPaulo(this TimeProvider relogio) =>
             TimeZoneInfo.ConvertTimeFromUtc(relogio.GetUtcNow().UtcDateTime, FusoSaoPaulo.Value);
 
+        // specs/067: converte uma hora de parede de Sao Paulo (como data + hora de uma aula) no
+        // instante absoluto correspondente, usando o MESMO fuso (um lugar so decide o fuso). Hora
+        // inexistente (salto de horario de verao) avanca uma hora, em vez de falhar.
+        public static DateTimeOffset ParaInstanteUtc(DateTime horaDeParede)
+        {
+            var fuso = FusoSaoPaulo.Value;
+            var hora = DateTime.SpecifyKind(horaDeParede, DateTimeKind.Unspecified);
+
+            if (fuso.IsInvalidTime(hora))
+            {
+                hora = hora.AddHours(1);
+            }
+
+            return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(hora, fuso), TimeSpan.Zero);
+        }
+
         // Tenta o id IANA (Linux e Windows com ICU) e depois o id do Windows. Se nenhum resolver
         // (ex.: conteiner minimo sem tzdata) falha alto: decidir "ja comecou" com o fuso errado
         // liberaria a chamada na hora errada.

@@ -98,7 +98,7 @@ docs/relatorios/<data>-link-da-aula.md
 4. US2: e-mail do lembrete.
 5. Acabamento: nota na spec 001, relatório, Trello.
 
-**Dependência da spec 064**: ambas editam `AulaService`, `AulaResponse` e `aulas/[id]/page.tsx` (pontos distintos). Recomenda-se implementar a 064 primeiro; se a 067 vier antes, a fundação cria `RelogioExtensions.cs`/registro de `TimeProvider` e a 064 apenas os reaproveita.
+**Dependência da spec 064**: **atendida** (implementada em 2026-11-03; `RelogioExtensions`, `TimeProvider` no DI, `RelogioFalso` e `MapearEm` já existem). A 067 só acrescenta a conversão de fuso na mesma classe. Spec 068 (selo de cobrança) também mexe em `AulaService` e `aulas/[id]/page.tsx`, em pontos distintos; ver research R12.
 
 ## Verificações "MUST NOT" que o /speckit-tasks deve cobrir (regra do CLAUDE.md)
 

@@ -23,6 +23,18 @@ namespace SPI.Application.Aulas.Dtos
         public bool ChamadaLiberada { get; set; }
 
         /// <summary>
+        /// specs/067: link da reuniao da aula (so em memoria do servidor, ate o fim da aula); nulo se nao
+        /// ha, expirou, a aula foi cancelada/excluida ou a API reiniciou. Nunca e gravado em banco.
+        /// </summary>
+        public string? LinkAula { get; set; }
+
+        /// <summary>
+        /// specs/067: true se a aula esta ativa, nao cancelada e ainda nao terminou (aceita informar link).
+        /// Calculado pelo servidor; a tela apenas exibe.
+        /// </summary>
+        public bool AceitaLinkAula { get; set; }
+
+        /// <summary>
         /// specs/064: segundos ate o inicio quando a chamada esta bloqueada so por horario; nulo nos
         /// demais casos. Permite a tela buscar a aula de novo na hora certa sem usar o relogio dela.
         /// </summary>

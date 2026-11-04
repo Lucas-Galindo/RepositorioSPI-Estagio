@@ -56,3 +56,38 @@
 
 1. `/speckit-implement` na ordem: fase 1, fase 2 (fundação), US1, US3, US2 e acabamento. Recomenda-se implementar a spec 064 antes.
 2. Sincronizar o Trello (os hooks `backlog`, `design`, `a-fazer` e `analyze` falharam por timeout de rede em 2026-11-03).
+
+---
+
+# Reanálise de 2026-11-04 (depois da 064 implementada, da revisão dos cards e da spec 068)
+
+**Motivo**: desde a primeira análise entraram a implementação da spec 064 (relógio, `MapearEm`), a correção do erro 500 na 065 e o plano da spec 068, que mexem nos mesmos arquivos. Cada premissa das tarefas foi conferida de novo contra o código atual.
+
+## Resultado
+
+| Métrica | Valor |
+|---|---|
+| Requisitos funcionais / critérios de sucesso | 12 / 6 (sem mudança; cobertura 100%) |
+| Tarefas | 23 (sem mudança de número) |
+| Achados críticos / altos | 0 / 0 |
+| Achados médios / baixos | 2 / 4 (todos aplicados nos documentos) |
+| Violações da constituição | 0 |
+
+## Achados e correções (aplicados passo a passo)
+
+| ID | Gravidade | Achado | Correção |
+|---|---|---|---|
+| B1 | **Média** | T009 mandava tornar `Mapear` de instância, mas depois da 064 `Mapear` já é de instância e quem não pode consultar o armazenamento é `MapearEm` (estático, usado pela lista de aulas) | T009 reescrita: `MapearEm` passa a instância, mantendo **uma** leitura do relógio por resposta/lista |
+| B2 | **Média** | T007 pedia mudar 5 construções de teste do `AulaService`, mas existem cerca de **11** (a 064 acrescentou o relógio); mexer em todas é trabalho e risco à toa | `ILinkAulaTemporario? links = null` como **último parâmetro opcional** (mesmo padrão do selo de cobrança da 068): nenhuma construção atual muda; só `AulaServiceLinkTests` passa o armazenamento; usar argumentos nomeados se a 068 entrar antes |
+| B3 | Baixa | T002 e T006 ainda tratavam `RelogioExtensions`, `TimeProvider` no DI e `RelogioFalso` como "criar se não existir"; hoje existem | T002: só **acrescentar** a conversão hora de parede → instante UTC **na mesma classe** (o fuso continua num lugar só); T006 e T020 ajustadas |
+| B4 | Baixa | Segurança de logs: o `ErrosDeNegocioFilter` agora **registra a exceção completa** dos 500 e o Serilog registra requisições | T012 ganhou o item (e): o link vai no corpo do `PUT` (nunca na URL), conferir que o `UseSerilogRequestLogging` não registra corpo e que nenhuma exceção da 067 leva o link na mensagem |
+| B5 | Baixa | `ObterProximaAulaDaTurmaAsync` (que acha a aula do lembrete) ainda usa `DateTime.Now` (hora do servidor), enquanto a validade do link usa a hora de São Paulo | Registrado como risco no research R12 (coincidem com o servidor em São Paulo); é o mesmo item de "trocar os demais `DateTime.Now`" já sugerido ao fim da 064, fora desta spec |
+| B6 | Baixa | Referências desatualizadas: decisão 11 da spec, plano e baseline (testes: 511 na última rodada; `dotnet test` sem `--no-build`) | Spec (decisão 11), plano (dependência da 064 atendida), T001 e T020 ajustados |
+
+## Conferido e sem mudança
+- `LembreteDispatcherService.ProcessarLembretesVencidosAsync` mantém a assinatura (`links` opcional ao final continua compatível); `ILembreteRepository.ObterProximaAulaDaTurmaAsync` existe; o fake `FakeLembreteRepositoryParaOrcamento` ainda lança `NotImplementedException` (a T017 já só chama a busca com `links != null`).
+- As ações novas continuam declarando 400/404/409, que o `ErrosDeNegocioFilter` exige; o 500 agora é genérico fora de Development, o que só reforça o FR-009.
+- Constituição: sem violação (nada em banco; validação e elegibilidade no servidor; link não logado).
+
+## Próximos passos
+1. `/speckit-implement` da 067 continua **em standby** por pedido do usuário. Ao retomar, implementar na ordem das tarefas; a fundação agora é menor (o relógio e o `RelogioFalso` já existem).

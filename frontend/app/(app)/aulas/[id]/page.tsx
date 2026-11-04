@@ -17,6 +17,8 @@ import {
   cancelarAula,
   adicionarParticipante,
   removerParticipante,
+  definirLinkAula,
+  removerLinkAula,
   type Aula,
 } from "@/lib/api/aulas";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
@@ -39,6 +41,9 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
   // specs/056 (reposicao): alunos ativos que podem ser colocados nesta aula.
   const [alunosAtivos, setAlunosAtivos] = useState<Aluno[]>([]);
   const [alunoReposicao, setAlunoReposicao] = useState("");
+  // specs/067: texto do campo do link (a validacao e do servidor) e se esta trocando um link ja salvo.
+  const [linkDigitado, setLinkDigitado] = useState("");
+  const [trocandoLink, setTrocandoLink] = useState(false);
 
   useEffect(() => {
     if (!sessao) return;
@@ -98,6 +103,35 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
       mostrarToast("Aluno retirado da aula.");
     } catch (excecao) {
       mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível retirar o aluno.");
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  const handleSalvarLink = async () => {
+    if (!sessao || !aula) return;
+    setProcessando(true);
+    try {
+      setAula(await definirLinkAula(aula.id, linkDigitado.trim(), sessao.accessToken));
+      setLinkDigitado("");
+      setTrocandoLink(false);
+      mostrarToast("Link da aula salvo.");
+    } catch (excecao) {
+      mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível salvar o link.");
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  const handleRemoverLink = async () => {
+    if (!sessao || !aula) return;
+    setProcessando(true);
+    try {
+      setAula(await removerLinkAula(aula.id, sessao.accessToken));
+      setTrocandoLink(false);
+      mostrarToast("Link da aula removido.");
+    } catch (excecao) {
+      mostrarToast(excecao instanceof ApiError ? excecao.message : "Não foi possível remover o link.");
     } finally {
       setProcessando(false);
     }
@@ -312,6 +346,78 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
           <div className="mini-panel">
             <h4>Descrição</h4>
             <p style={{ fontSize: 12.5, color: "var(--c-text-muted)" }}>{aula.descricao}</p>
+          </div>
+        )}
+
+        {/* specs/067: link da reuniao, guardado so em memoria no servidor. Quem decide se a aula aceita
+            link e se ele ainda vale e o servidor (aceitaLinkAula / linkAula); a tela so mostra e envia. */}
+        {(aula.linkAula || aula.aceitaLinkAula) && (
+          <div className="mini-panel">
+            <h4>Link da aula</h4>
+
+            {aula.linkAula && !trocandoLink ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <a
+                  href={aula.linkAula}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 12.5, overflowWrap: "anywhere", flex: 1, minWidth: 180, color: "var(--c-accent-text)" }}
+                >
+                  {aula.linkAula}
+                </a>
+                {aula.aceitaLinkAula && (
+                  <>
+                    <button className="btn btn-ghost btn-sm" type="button" disabled={processando} onClick={() => setTrocandoLink(true)}>
+                      Trocar
+                    </button>
+                    <button className="btn btn-ghost btn-sm" type="button" disabled={processando} onClick={handleRemoverLink}>
+                      Remover
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              aula.aceitaLinkAula && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <input
+                    type="url"
+                    value={linkDigitado}
+                    onChange={(e) => setLinkDigitado(e.target.value)}
+                    placeholder="Cole o link da reunião"
+                    aria-label="Link da aula"
+                    maxLength={500}
+                    style={{ flex: 1, minWidth: 180 }}
+                  />
+                  <button
+                    className="btn btn-primary btn-sm"
+                    type="button"
+                    disabled={processando || !linkDigitado.trim()}
+                    onClick={handleSalvarLink}
+                  >
+                    Salvar link
+                  </button>
+                  {trocandoLink && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      type="button"
+                      disabled={processando}
+                      onClick={() => {
+                        setTrocandoLink(false);
+                        setLinkDigitado("");
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              )
+            )}
+
+            {aula.aceitaLinkAula && (
+              <p style={{ marginTop: 10, fontSize: 12, color: "var(--c-text-muted)" }}>
+                Este link fica guardado só até o fim da aula e se perde se o sistema reiniciar.
+              </p>
+            )}
           </div>
         )}
       </div>

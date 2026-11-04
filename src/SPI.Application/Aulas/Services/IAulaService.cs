@@ -24,6 +24,11 @@ namespace SPI.Application.Aulas.Services
 
         Task<AulaResponse> CancelarAsync(int id, CancellationToken cancellationToken = default);
 
+        // specs/067: link da reuniao, so em memoria (ver ILinkAulaTemporario).
+        Task<AulaResponse> DefinirLinkAsync(int id, string link, CancellationToken cancellationToken = default);
+
+        Task<AulaResponse> RemoverLinkAsync(int id, CancellationToken cancellationToken = default);
+
         Task<AulaResponse> AdicionarParticipanteAsync(int aulaId, int alunoId, CancellationToken cancellationToken = default);
 
         Task<AulaResponse> RemoverParticipanteAsync(int aulaId, int alunoId, CancellationToken cancellationToken = default);

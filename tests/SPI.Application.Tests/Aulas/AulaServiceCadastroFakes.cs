@@ -66,7 +66,7 @@ namespace SPI.Application.Tests.Aulas
         }
 
         public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
+            Task.FromResult(Aulas.ToList());
 
         public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
@@ -143,8 +143,12 @@ namespace SPI.Application.Tests.Aulas
         // specs/064: relogio do servico; comeca depois de qualquer data dos testes (a aula "ja comecou").
         public RelogioFalso Relogio { get; } = RelogioFalso.Depois();
 
+        // specs/067: armazenamento temporario de links, ligado ao mesmo relogio do servico.
+        public LinkAulaTemporario Links { get; }
+
         public CenarioCadastroAula(params Aluno[] alunos)
         {
+            Links = new LinkAulaTemporario(Relogio);
             var turma = new Turma { Id = TurmaId, Nome = "Turma A", Ativo = true };
             Aulas.Turma = turma;
             TurmasRepo.Turmas.Add(turma);
@@ -168,7 +172,8 @@ namespace SPI.Application.Tests.Aulas
                     AulaParticular = new CategoriaReceita { Id = 2, Nome = "Aula particular", Ativo = true },
                 },
                 Vinculos,
-                Relogio);
+                Relogio,
+                links: Links);
         }
 
         public static Aluno NovoAluno(int id, string nome) => new() { Id = id, Nome = nome, Ra = $"RA{id}", Ativo = true, ValorAula = 80m };
