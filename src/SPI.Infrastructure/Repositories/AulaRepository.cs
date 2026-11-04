@@ -47,23 +47,21 @@ namespace SPI.Infrastructure.Repositories
             return await query.ToListAsync(cancellationToken);
         }
 
-        public async Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, DateTime desde, int? professorId, CancellationToken cancellationToken = default)
+        public async Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default)
         {
-            // Termino = DataInicio + HoraFim. Comparado em duas partes (data antes,
-            // ou mesma data e hora ate o limite) porque somar DateOnly + TimeOnly
-            // nao e traduzido para SQL de forma confiavel.
+            // specs/064: toda aula ativa, Agendada, que ja terminou e segue sem frequencia -- sem corte
+            // de data (aulas antigas tambem). Termino = DataInicio + HoraFim, comparado em duas partes
+            // (data antes, ou mesma data e hora ate o limite) porque somar DateOnly + TimeOnly nao e
+            // traduzido para SQL de forma confiavel. Em andamento (ainda nao terminou) fica de fora.
             var hoje = DateOnly.FromDateTime(agora);
             var horaAgora = TimeOnly.FromDateTime(agora);
-            var diaDesde = DateOnly.FromDateTime(desde);
-            var horaDesde = TimeOnly.FromDateTime(desde);
 
             var query = _dbContext.Aulas
                 .Include(a => a.Materia)
                 .Include(a => a.Turma)
                 .Include(a => a.AulaAlunos).ThenInclude(aa => aa.Aluno)
                 .Where(a => a.Ativo && a.Status == "Agendada")
-                .Where(a => a.DataInicio < hoje || (a.DataInicio == hoje && a.HoraFim <= horaAgora))
-                .Where(a => a.DataInicio > diaDesde || (a.DataInicio == diaDesde && a.HoraFim >= horaDesde));
+                .Where(a => a.DataInicio < hoje || (a.DataInicio == hoje && a.HoraFim <= horaAgora));
 
             if (professorId.HasValue)
             {

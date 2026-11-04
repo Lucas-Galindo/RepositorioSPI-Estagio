@@ -12,6 +12,8 @@ namespace SPI.Domain.Entities
         public TimeOnly HoraFim { get; set; }
         public string Status { get; set; } = "Agendada";
         public bool Ativo { get; set; }
+        // specs/064: quando a chamada foi registrada (hora de Sao Paulo); vazia nas aulas realizadas antes desta coluna.
+        public DateTime? FrequenciaRegistradaEm { get; set; }
 
         public Materia Materia { get; set; } = null!;
         public Professor Professor { get; set; } = null!;

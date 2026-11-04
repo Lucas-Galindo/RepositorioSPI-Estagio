@@ -71,7 +71,7 @@ namespace SPI.Application.Tests.Aulas
         public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<List<Aula>> ListarNaJanelaDeAvisoAsync(DateTime agora, int diasAntes, TimeOnly hora, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, DateTime desde, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
@@ -140,6 +140,9 @@ namespace SPI.Application.Tests.Aulas
         public FakeTurmaRepositoryParaCadastro TurmasRepo { get; } = new();
         public AulaService Servico { get; }
 
+        // specs/064: relogio do servico; comeca depois de qualquer data dos testes (a aula "ja comecou").
+        public RelogioFalso Relogio { get; } = RelogioFalso.Depois();
+
         public CenarioCadastroAula(params Aluno[] alunos)
         {
             var turma = new Turma { Id = TurmaId, Nome = "Turma A", Ativo = true };
@@ -164,7 +167,8 @@ namespace SPI.Application.Tests.Aulas
                     AulaEmTurma = new CategoriaReceita { Id = 1, Nome = "Aula em turma", Ativo = true },
                     AulaParticular = new CategoriaReceita { Id = 2, Nome = "Aula particular", Ativo = true },
                 },
-                Vinculos);
+                Vinculos,
+                Relogio);
         }
 
         public static Aluno NovoAluno(int id, string nome) => new() { Id = id, Nome = nome, Ra = $"RA{id}", Ativo = true, ValorAula = 80m };

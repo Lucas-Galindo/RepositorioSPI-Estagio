@@ -53,7 +53,8 @@ namespace SPI.Application.Tests.Aulas
                     AulaEmTurma = new CategoriaReceita { Id = 1, Nome = "Aula em turma", Ativo = true },
                     AulaParticular = new CategoriaReceita { Id = 2, Nome = "Aula particular", Ativo = true },
                 },
-                vinculos);
+                vinculos,
+                RelogioFalso.Depois());
 
         [Fact]
         public async Task Mensalidade_nao_gera_conta_a_receber()

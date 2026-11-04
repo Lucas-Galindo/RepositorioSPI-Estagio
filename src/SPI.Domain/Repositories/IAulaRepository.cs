@@ -52,7 +52,7 @@ namespace SPI.Domain.Repositories
         // specs/059: aulas ativas, ainda "Agendadas", cujo termino (data + hora
         // fim) esta entre `desde` e `agora`; professorId nulo = de todas.
         // Inclui Materia, Turma e AulaAlunos.Aluno.
-        Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, DateTime desde, int? professorId, CancellationToken cancellationToken = default);
+        Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default);
 
         Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default);
     }

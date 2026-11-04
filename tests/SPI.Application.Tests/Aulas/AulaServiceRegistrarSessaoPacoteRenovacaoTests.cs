@@ -50,7 +50,8 @@ namespace SPI.Application.Tests.Aulas
                     AulaEmTurma = new CategoriaReceita { Id = 1, Nome = "Aula em turma", Ativo = true },
                     AulaParticular = new CategoriaReceita { Id = 2, Nome = "Aula particular", Ativo = true },
                 },
-                vinculos);
+                vinculos,
+                RelogioFalso.Depois());
 
         [Fact]
         public async Task Renovar_saldo_para_10_libera_a_presenca_na_proxima_aula()

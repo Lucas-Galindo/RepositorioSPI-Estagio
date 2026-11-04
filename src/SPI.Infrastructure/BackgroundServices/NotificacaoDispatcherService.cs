@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SPI.Application.Common;
 using SPI.Application.Notificacoes.Services;
 
 namespace SPI.Infrastructure.BackgroundServices
@@ -33,7 +34,9 @@ namespace SPI.Infrastructure.BackgroundServices
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var servico = scope.ServiceProvider.GetRequiredService<INotificacaoService>();
-                    await servico.SincronizarAsync(DateTime.Now, professorId: null, stoppingToken);
+                    // specs/064: "ja terminou" e decidido pela hora de Sao Paulo, nao a do servidor.
+                    var relogio = scope.ServiceProvider.GetRequiredService<TimeProvider>();
+                    await servico.SincronizarAsync(relogio.AgoraEmSaoPaulo(), professorId: null, stoppingToken);
                 }
                 catch (Exception e) when (e is not OperationCanceledException)
                 {

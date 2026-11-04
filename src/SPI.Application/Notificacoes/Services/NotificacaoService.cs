@@ -34,7 +34,7 @@ namespace SPI.Application.Notificacoes.Services
         // nao precisa de gancho proprio: a referencia simplesmente sai do conjunto.
         public async Task SincronizarAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default)
         {
-            var pendentes = await _aulaRepository.ListarPendentesDeStatusAsync(agora, _opcoes.AulasPendentesDesde, professorId, cancellationToken);
+            var pendentes = await _aulaRepository.ListarPendentesDeStatusAsync(agora, professorId, cancellationToken);
             await SincronizarPorAulaAsync(TipoNotificacao.AulaPendente, pendentes, agora, professorId, cancellationToken);
 
             var futuras = await _aulaRepository.ListarNaJanelaDeAvisoAsync(agora, _opcoes.AulaFuturaDiasAntes, _opcoes.AulaFuturaHora, professorId, cancellationToken);
@@ -165,7 +165,7 @@ namespace SPI.Application.Notificacoes.Services
             Tipo = n.Tipo,
             Mensagem = n.Tipo switch
             {
-                TipoNotificacao.AulaPendente => "Você ainda não atualizou o status desta aula.",
+                TipoNotificacao.AulaPendente => "Esta aula já terminou e está sem frequência registrada. Registre a chamada para corrigir.",
                 TipoNotificacao.AulaFutura => "Você tem uma aula agendada em breve.",
                 _ => $"{n.Aluno?.Nome} tem pagamento vencido sem baixa.",
             },

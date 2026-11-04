@@ -13,11 +13,11 @@ namespace SPI.Application.Tests.Notificacoes
     {
         public List<Aula> Aulas { get; } = new();
 
-        public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, DateTime desde, int? professorId, CancellationToken cancellationToken = default)
+        public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default)
         {
             DateTime Termino(Aula a) => a.DataInicio.ToDateTime(a.HoraFim);
             return Task.FromResult(Aulas
-                .Where(a => a.Ativo && a.Status == "Agendada" && Termino(a) <= agora && Termino(a) >= desde)
+                .Where(a => a.Ativo && a.Status == "Agendada" && Termino(a) <= agora)
                 .Where(a => !professorId.HasValue || a.ProfessorId == professorId.Value)
                 .ToList());
         }
@@ -145,7 +145,6 @@ namespace SPI.Application.Tests.Notificacoes
 
     public class CenarioNotificacao
     {
-        public static readonly DateTime Desde = new(2026, 10, 19, 0, 0, 0);
         public const int ProfessoraId = 6;
 
         public FakeAulaRepositoryParaNotificacao Aulas { get; } = new();
@@ -156,7 +155,7 @@ namespace SPI.Application.Tests.Notificacoes
 
         public CenarioNotificacao()
         {
-            Servico = new NotificacaoService(Notificacoes, Aulas, Pagamentos, Professores, new NotificacoesOptions { AulasPendentesDesde = Desde });
+            Servico = new NotificacaoService(Notificacoes, Aulas, Pagamentos, Professores, new NotificacoesOptions());
         }
 
         // specs/060: pagamento de um aluno (o aluno fica conhecido para o detalhe).

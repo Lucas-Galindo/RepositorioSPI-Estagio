@@ -48,7 +48,8 @@ namespace SPI.Application.Tests.Aulas
                     AulaEmTurma = new CategoriaReceita { Id = 1, Nome = "Aula em turma", Ativo = true },
                     AulaParticular = new CategoriaReceita { Id = 2, Nome = "Aula particular", Ativo = true },
                 },
-                vinculos);
+                vinculos,
+                RelogioFalso.Depois());
 
         private static VinculoCobranca NovoVinculoPacote(int alunoId, int? turmaId, int? saldoAulas, bool ativo = true, ModalidadeCobranca modalidade = ModalidadeCobranca.Pacote) =>
             new() { AlunoId = alunoId, TurmaId = turmaId, Modalidade = modalidade, Valor = 500m, SaldoAulas = saldoAulas, Ativo = ativo };

@@ -44,14 +44,13 @@ namespace SPI.Application.Tests.Aulas
             return vinculo;
         }
 
-        private static AulaRequest Request(int dias = 7, Dictionary<int, bool>? presencas = null) => new()
+        private static AulaRequest Request(int dias = 7) => new()
         {
             MateriaId = 1,
             TurmaId = TurmaDaAula,
             DataInicio = DateOnly.FromDateTime(DateTime.Now).AddDays(dias),
             HoraInicio = new TimeOnly(10, 0),
             HoraFim = new TimeOnly(11, 0),
-            Presencas = presencas,
         };
 
         // Aula agendada com o matriculado e o visitante (reposicao), ja com a sessao registrada.
@@ -171,14 +170,15 @@ namespace SPI.Application.Tests.Aulas
             Assert.Empty(_cenario.Pagamentos.Gerados);
         }
 
-        // ---- FR-023: aula criada ja realizada (retroativa) segue a mesma regra ----
+        // ---- FR-023: aula antiga (criada Agendada, chamada feita depois nos detalhes -- specs/064) segue a mesma regra ----
 
         [Fact]
         public async Task Aula_retroativa_gera_conta_para_pacote_de_outra_turma_e_consome_o_da_propria()
         {
             var pacoteOutra = Vinculo(MatriculadoId, ModalidadeCobranca.Pacote, OutraTurma, saldo: 5);
 
-            var resposta = await _cenario.Servico.CadastrarAsync(1, Request(dias: -1, presencas: new Dictionary<int, bool> { [MatriculadoId] = true }));
+            var criada = await _cenario.Servico.CadastrarAsync(1, Request(dias: -1));
+            var resposta = await _cenario.Servico.RegistrarSessaoAsync(criada.Id, new RegistrarSessaoRequest { Presencas = { [MatriculadoId] = true } });
 
             Assert.Equal("Realizada", resposta.Status);
             Assert.Equal(5, pacoteOutra.SaldoAulas);
@@ -190,7 +190,8 @@ namespace SPI.Application.Tests.Aulas
         {
             var pacote = Vinculo(MatriculadoId, ModalidadeCobranca.Pacote, TurmaDaAula, saldo: 5);
 
-            await _cenario.Servico.CadastrarAsync(1, Request(dias: -1, presencas: new Dictionary<int, bool> { [MatriculadoId] = true }));
+            var criada = await _cenario.Servico.CadastrarAsync(1, Request(dias: -1));
+            await _cenario.Servico.RegistrarSessaoAsync(criada.Id, new RegistrarSessaoRequest { Presencas = { [MatriculadoId] = true } });
 
             Assert.Equal(4, pacote.SaldoAulas);
             Assert.Empty(_cenario.Pagamentos.Gerados);

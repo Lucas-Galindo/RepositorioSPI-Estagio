@@ -12,7 +12,7 @@ const INTERVALO_MS = 60_000;
 
 // specs/060: rotulo na lista e titulo do popup de cada tipo.
 const TIPOS: Record<TipoNotificacao, { rotulo: string; titulo: string; grupo: "Aulas" | "Pagamentos" }> = {
-  AulaPendente: { rotulo: "Aula", titulo: "Aula sem status", grupo: "Aulas" },
+  AulaPendente: { rotulo: "Aula", titulo: "Aula sem frequência", grupo: "Aulas" },
   AulaFutura: { rotulo: "Próxima aula", titulo: "Aula em breve", grupo: "Aulas" },
   PagamentoPendente: { rotulo: "Pagamento", titulo: "Pagamento pendente", grupo: "Pagamentos" },
 };

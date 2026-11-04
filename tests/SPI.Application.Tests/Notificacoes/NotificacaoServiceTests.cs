@@ -32,7 +32,8 @@ namespace SPI.Application.Tests.Notificacoes
             var n = Assert.Single(lista);
             Assert.False(n.Lida);
             Assert.Equal(1, n.Aula!.Id);
-            Assert.Equal("Você ainda não atualizou o status desta aula.", n.Mensagem);
+            // specs/064: o aviso agora fala em frequencia (decisao 4 da spec 064).
+            Assert.Equal("Esta aula já terminou e está sem frequência registrada. Registre a chamada para corrigir.", n.Mensagem);
             Assert.Equal("Turma A", n.Aula.Contexto);
             Assert.Equal("Matematica", n.Aula.MateriaNome);
         }
@@ -73,15 +74,16 @@ namespace SPI.Application.Tests.Notificacoes
             Assert.Empty(Pendentes);
         }
 
-        // FR-004 (MUST NOT): aula que terminou antes da entrada no ar nao gera aviso.
+        // specs/064 (FR-010, FR-014): o corte de vigencia de 19/10/2026 (059, FR-004) deixou de existir --
+        // aula antiga sem frequencia tambem gera aviso.
         [Fact]
-        public async Task Aula_que_terminou_antes_da_vigencia_nunca_gera_notificacao()
+        public async Task Aula_que_terminou_antes_de_19_10_2026_tambem_gera_notificacao()
         {
-            _c.NovaAula(1, DateOnly.FromDateTime(CenarioNotificacao.Desde).AddDays(-1));
+            _c.NovaAula(1, new DateOnly(2026, 10, 18));
 
             await _c.Servico.SincronizarAsync(Agora, null);
 
-            Assert.Empty(Pendentes);
+            Assert.Equal(1, Linhas(1));
         }
 
         [Fact]

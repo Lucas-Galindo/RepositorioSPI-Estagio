@@ -50,6 +50,21 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
       .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Aula não encontrada."));
   }, [sessao, id]);
 
+  // specs/064: quando a chamada esta bloqueada so por horario, o servidor informa quantos segundos
+  // faltam para o inicio. Uma nova busca na hora certa libera a chamada sem recarregar a pagina; a
+  // tela nao compara horarios nem usa o relogio do navegador -- so espera a duracao informada. O teto
+  // de 1 h evita o limite do setTimeout em aulas distantes (a busca simplesmente se repete).
+  useEffect(() => {
+    if (!sessao || !aula || aula.segundosParaChamada === null) return;
+    const espera = Math.min((aula.segundosParaChamada + 1) * 1000, 3_600_000);
+    const timer = setTimeout(() => {
+      obterAula(aula.id, sessao.accessToken)
+        .then(setAula)
+        .catch(() => {});
+    }, espera);
+    return () => clearTimeout(timer);
+  }, [sessao, aula]);
+
   // Reposicao so existe em aula de turma ainda agendada (a regra e do backend;
   // aqui so evita carregar a lista quando o campo nem aparece).
   const aceitaReposicao = aula?.status === "Agendada" && aula.turmaId !== null;
@@ -168,7 +183,7 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
         </button>
       )}
 
-      {aula.status === "Agendada" ? (
+      {aula.status === "Agendada" && aula.chamadaLiberada ? (
         <label className="chk-pill">
           <input
             type="checkbox"
@@ -273,7 +288,14 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {aula.status === "Agendada" && aula.alunos.length > 0 && (
+          {/* specs/064: antes do inicio a chamada fica bloqueada; quem decide e o servidor (chamadaLiberada). */}
+          {aula.status === "Agendada" && !aula.chamadaLiberada && (
+            <p className="hint" style={{ marginTop: 14 }}>
+              A chamada ficará disponível a partir das {fmtHora(aula.horaInicio)} de {fmtData(aula.dataInicio)}.
+            </p>
+          )}
+
+          {aula.status === "Agendada" && aula.chamadaLiberada && aula.alunos.length > 0 && (
             <button
               className="btn btn-primary btn-sm"
               type="button"

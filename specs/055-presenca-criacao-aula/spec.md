@@ -1,5 +1,7 @@
 # Feature Specification: Registrar Presença na Criação da Aula
 
+> **Parcialmente substituída pela [spec 064](../064-chamada-so-nos-detalhes/spec.md) (2026-11-03).** O lançamento retroativo de presença **na criação** da aula (FR-001 a FR-007 e a US1) **deixou de valer**: o formulário só agenda, toda aula nasce "Agendada" (inclusive de data passada) e a chamada se faz só nos detalhes da aula, depois do horário de início, decidido pelo servidor (fuso America/Sao_Paulo). A **US2 continua valendo** (editar a descrição de uma aula já realizada). O texto abaixo é o registro histórico (Princípio V da constituição).
+
 **Feature Branch**: `055-presenca-criacao-aula`
 
 **Created**: 2026-10-18

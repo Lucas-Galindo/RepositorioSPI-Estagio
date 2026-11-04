@@ -10,8 +10,9 @@ namespace SPI.Application.Tests.Aulas
     {
         private static readonly DateOnly Ontem = DateOnly.FromDateTime(DateTime.Now).AddDays(-1);
 
-        // Cria uma aula de turma retroativa (ja "Realizada") e devolve o request que a
-        // reproduz exatamente, para cada teste mudar so um campo.
+        // Cria uma aula de turma antiga, registra a chamada (specs/064: a aula nasce Agendada e a
+        // chamada e feita nos detalhes) e devolve o request que a reproduz exatamente, para cada
+        // teste mudar so um campo.
         private static async Task<(CenarioCadastroAula Cenario, int AulaId, AulaRequest Igual)> AulaRealizadaAsync()
         {
             var cenario = new CenarioCadastroAula(CenarioCadastroAula.NovoAluno(1, "Ana"));
@@ -23,10 +24,10 @@ namespace SPI.Application.Tests.Aulas
                 DataInicio = Ontem,
                 HoraInicio = new TimeOnly(10, 0),
                 HoraFim = new TimeOnly(11, 0),
-                Presencas = new() { [1] = true },
             };
             var criada = await cenario.Servico.CadastrarAsync(1, request);
-            return (cenario, criada.Id, request with { Presencas = null });
+            await cenario.Servico.RegistrarSessaoAsync(criada.Id, new RegistrarSessaoRequest { Presencas = { [1] = true } });
+            return (cenario, criada.Id, request);
         }
 
         [Fact]
@@ -89,12 +90,13 @@ namespace SPI.Application.Tests.Aulas
             var request = new AulaRequest
             {
                 MateriaId = 1, AlunoId = 1, DataInicio = Ontem,
-                HoraInicio = new TimeOnly(10, 0), HoraFim = new TimeOnly(11, 0), Presencas = new() { [1] = true },
+                HoraInicio = new TimeOnly(10, 0), HoraFim = new TimeOnly(11, 0),
             };
             var criada = await cenario.Servico.CadastrarAsync(1, request);
+            await cenario.Servico.RegistrarSessaoAsync(criada.Id, new RegistrarSessaoRequest { Presencas = { [1] = true } });
 
             await Assert.ThrowsAsync<ConflitoException>(() =>
-                cenario.Servico.AtualizarAsync(criada.Id, request with { AlunoId = 2, Presencas = null }));
+                cenario.Servico.AtualizarAsync(criada.Id, request with { AlunoId = 2 }));
         }
     }
 }

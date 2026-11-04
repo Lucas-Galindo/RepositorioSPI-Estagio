@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SPI.Api.Extensions;
+using SPI.Application.Common;
 using SPI.Application.Notificacoes.Services;
 using SPI.Domain.Enums;
 
@@ -13,10 +14,12 @@ namespace SPI.Api.Controllers
     public class NotificacoesController : ControllerBase
     {
         private readonly INotificacaoService _notificacaoService;
+        private readonly TimeProvider _relogio;
 
-        public NotificacoesController(INotificacaoService notificacaoService)
+        public NotificacoesController(INotificacaoService notificacaoService, TimeProvider relogio)
         {
             _notificacaoService = notificacaoService;
+            _relogio = relogio;
         }
 
         [HttpGet]
@@ -28,7 +31,7 @@ namespace SPI.Api.Controllers
         /// <returns>Retorna as notificacoes ativas, mais recentes primeiro</returns>
         public async Task<IActionResult> Listar()
         {
-            return Ok(await _notificacaoService.ListarAtivasAsync(User.ObterUsuarioId(), DateTime.Now));
+            return Ok(await _notificacaoService.ListarAtivasAsync(User.ObterUsuarioId(), _relogio.AgoraEmSaoPaulo()));
         }
 
         [HttpPatch("{id}/lida")]
@@ -41,7 +44,7 @@ namespace SPI.Api.Controllers
         /// <param name="id">Id da notificacao</param>
         public async Task<IActionResult> MarcarComoLida(int id)
         {
-            await _notificacaoService.MarcarComoLidaAsync(User.ObterUsuarioId(), id, DateTime.Now);
+            await _notificacaoService.MarcarComoLidaAsync(User.ObterUsuarioId(), id, _relogio.AgoraEmSaoPaulo());
             return NoContent();
         }
     }

@@ -58,7 +58,8 @@ namespace SPI.Application.Tests.Aulas
                 new FakeLembreteServiceVazio(),
                 pagamentos,
                 new FakeCategoriaReceitaRepositoryParaAula { AulaEmTurma = new CategoriaReceita { Id = 1, Nome = "Aula em turma", Ativo = true } },
-                vinculos);
+                vinculos,
+                RelogioFalso.Depois());
 
             await servico.RegistrarSessaoAsync(aula.Id, new RegistrarSessaoRequest
             {

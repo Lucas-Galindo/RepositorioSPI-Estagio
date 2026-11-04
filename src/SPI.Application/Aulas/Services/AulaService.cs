@@ -1,4 +1,5 @@
 using SPI.Application.Aulas.Dtos;
+using SPI.Application.Common;
 using SPI.Application.Lembretes.Services;
 using SPI.Domain.Entities;
 using SPI.Domain.Enums;
@@ -17,6 +18,7 @@ namespace SPI.Application.Aulas.Services
         private readonly IPagamentoRepository _pagamentoRepository;
         private readonly ICategoriaReceitaRepository _categoriaReceitaRepository;
         private readonly IVinculoCobrancaRepository _vinculoCobrancaRepository;
+        private readonly TimeProvider _relogio;
 
         public AulaService(
             IAulaRepository aulaRepository,
@@ -26,7 +28,8 @@ namespace SPI.Application.Aulas.Services
             ILembreteService lembreteService,
             IPagamentoRepository pagamentoRepository,
             ICategoriaReceitaRepository categoriaReceitaRepository,
-            IVinculoCobrancaRepository vinculoCobrancaRepository)
+            IVinculoCobrancaRepository vinculoCobrancaRepository,
+            TimeProvider relogio)
         {
             _aulaRepository = aulaRepository;
             _alunoRepository = alunoRepository;
@@ -36,6 +39,7 @@ namespace SPI.Application.Aulas.Services
             _pagamentoRepository = pagamentoRepository;
             _categoriaReceitaRepository = categoriaReceitaRepository;
             _vinculoCobrancaRepository = vinculoCobrancaRepository;
+            _relogio = relogio;
         }
 
         public async Task<List<AulaResponse>> ListarAsync(
@@ -63,16 +67,9 @@ namespace SPI.Application.Aulas.Services
             await ValidarReferenciasAsync(request, cancellationToken);
             await ValidarConflitoAsync(professorId, request, ignorarAulaId: null, cancellationToken);
 
-            // specs/055: aula com data de hoje ou do passado e um lancamento
-            // retroativo -- ela ja nasce "Realizada", com as presencas informadas
-            // no mesmo formulario. Compara so a data (sem a hora), como decidido
-            // na spec: uma aula marcada pra mais tarde hoje ja conta como retroativa.
-            var retroativa = request.DataInicio <= DateOnly.FromDateTime(DateTime.Now);
-            if (retroativa && request.Presencas is null)
-            {
-                throw new ConflitoException("Informe a presenca de cada aluno para criar uma aula retroativa.");
-            }
-
+            // specs/064: toda aula nasce "Agendada", inclusive a de data passada. A chamada so se faz
+            // nos detalhes da aula, depois do inicio (RegistrarSessaoAsync); criar nao registra
+            // frequencia, nao atualiza a frequencia dos alunos e nao gera cobranca.
             var aula = new Aula
             {
                 Descricao = request.Descricao,
@@ -97,25 +94,16 @@ namespace SPI.Application.Aulas.Services
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
 
             // Estoria 5: a aula nova muda a "proxima aula" da turma, entao os
-            // lembretes precisam recalcular. Na aula retroativa isso ja acontece
-            // dentro de AplicarPresencasAsync -- por isso aqui so no caso futuro,
-            // para nunca recalcular duas vezes.
-            if (!retroativa && request.TurmaId.HasValue)
+            // lembretes precisam recalcular.
+            if (request.TurmaId.HasValue)
             {
                 await _lembreteService.RecalcularAsync(request.TurmaId.Value, cancellationToken);
             }
 
-            // Recarrega com Materia e AulaAlunos.Aluno: AplicarPresencasAsync usa
-            // esses dados (nome do aluno no aviso, frequencia, descricao da cobranca).
+            // Recarrega com Materia e AulaAlunos.Aluno para montar a resposta.
             var aulaCompleta = (await _aulaRepository.ObterPorIdAsync(aula.Id, cancellationToken))!;
 
-            var avisos = retroativa
-                ? await AplicarPresencasAsync(aulaCompleta, request.Presencas!, cancellationToken)
-                : new List<string>();
-
-            var resposta = Mapear(aulaCompleta);
-            resposta.Avisos = avisos;
-            return resposta;
+            return Mapear(aulaCompleta);
         }
 
         public async Task<AulaResponse> AtualizarAsync(int id, AulaRequest request, CancellationToken cancellationToken = default)
@@ -272,12 +260,24 @@ namespace SPI.Application.Aulas.Services
 
         public async Task<AulaResponse> RegistrarSessaoAsync(int id, RegistrarSessaoRequest request, CancellationToken cancellationToken = default)
         {
-            var aula = await _aulaRepository.ObterPorIdAsync(id, cancellationToken)
-                ?? throw new NaoEncontradoException("Aula nao encontrada.");
+            var aula = await _aulaRepository.ObterPorIdAsync(id, cancellationToken);
+
+            // Aula excluida nao tem chamada (specs/064): responde como inexistente.
+            if (aula is null || !aula.Ativo)
+            {
+                throw new NaoEncontradoException("Aula nao encontrada.");
+            }
 
             if (aula.Status != "Agendada")
             {
                 throw new ConflitoException("Somente aulas com status 'Agendada' podem ter a sessao registrada.");
+            }
+
+            // specs/064 (FR-006): o servidor decide, no fuso de Sao Paulo, se a aula ja comecou --
+            // mesmo que a tela seja burlada. Nada e gravado antes desta recusa.
+            if (!RegraChamada.Liberada(aula, _relogio.AgoraEmSaoPaulo()))
+            {
+                throw new ConflitoException(RegraChamada.MensagemBloqueio(aula));
             }
 
             var avisos = await AplicarPresencasAsync(aula, request.Presencas, cancellationToken);
@@ -288,10 +288,10 @@ namespace SPI.Application.Aulas.Services
         }
 
         // Unico ponto que transforma as presencas informadas em uma aula
-        // "Realizada" (specs/055, research.md R1). Usado por RegistrarSessaoAsync
-        // (aula que ja existia) e por CadastrarAsync (aula retroativa criada ja
-        // realizada), para a regra de presenca e cobranca nunca divergir entre os
-        // dois caminhos. Devolve os avisos a mostrar para a professora.
+        // "Realizada" (specs/055, research.md R1). Desde a spec 064 so
+        // RegistrarSessaoAsync o chama: a criacao da aula nunca registra frequencia. Grava
+        // tambem quando a chamada foi feita (FrequenciaRegistradaEm). Devolve os avisos a
+        // mostrar para a professora.
         private async Task<List<string>> AplicarPresencasAsync(Aula aula, Dictionary<int, bool> presencas, CancellationToken cancellationToken)
         {
             var avisos = new List<string>();
@@ -339,6 +339,7 @@ namespace SPI.Application.Aulas.Services
             }
 
             aula.Status = "Realizada";
+            aula.FrequenciaRegistradaEm = _relogio.AgoraEmSaoPaulo();
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
 
             if (aula.TurmaId.HasValue)
@@ -489,8 +490,12 @@ namespace SPI.Application.Aulas.Services
             }
         }
 
-        private static AulaResponse Mapear(Aula aula) => new()
+        // Instancia (nao estatico) porque a resposta informa se a chamada esta liberada, o que
+        // depende do relogio do servidor (specs/064).
+        private AulaResponse Mapear(Aula aula) => new()
         {
+            ChamadaLiberada = RegraChamada.Liberada(aula, _relogio.AgoraEmSaoPaulo()),
+            SegundosParaChamada = RegraChamada.SegundosParaLiberar(aula, _relogio.AgoraEmSaoPaulo()),
             Id = aula.Id,
             Descricao = aula.Descricao,
             MateriaId = aula.MateriaId,

@@ -27,6 +27,9 @@ namespace SPI.Application.DependencyInjection
         {
             services.AddValidatorsFromAssembly(typeof(ApplicationServiceCollectionExtensions).Assembly);
 
+            // specs/064: relogio injetavel (a regra da chamada decide pela hora de Sao Paulo).
+            services.AddSingleton(TimeProvider.System);
+
             services.AddScoped<IAutenticacaoService, AutenticacaoService>();
             services.AddScoped<IRecuperacaoSenhaService, RecuperacaoSenhaService>();
             services.AddScoped<IProfessorService, ProfessorService>();

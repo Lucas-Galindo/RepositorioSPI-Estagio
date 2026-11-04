@@ -51,7 +51,8 @@ namespace SPI.Application.Tests.Aulas
                     AulaEmTurma = new CategoriaReceita { Id = 1, Nome = "Aula em turma", Ativo = true },
                     AulaParticular = new CategoriaReceita { Id = 2, Nome = "Aula particular", Ativo = true },
                 },
-                new FakeVinculoCobrancaRepositoryParaAula());
+                new FakeVinculoCobrancaRepositoryParaAula(),
+                RelogioFalso.Depois());
 
         [Fact]
         public async Task Excluir_uma_aula_de_turma_recalcula_os_lembretes_da_turma()

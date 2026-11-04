@@ -21,6 +21,7 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(a => a.HoraFim).HasColumnName("hora_fim");
             builder.Property(a => a.Status).HasColumnName("status").HasMaxLength(20).HasDefaultValue("Agendada");
             builder.Property(a => a.Ativo).HasColumnName("ativo").HasDefaultValue(true);
+            builder.Property(a => a.FrequenciaRegistradaEm).HasColumnName("frequencia_registrada_em");
 
             builder.HasOne(a => a.Materia)
                 .WithMany(m => m.Aulas)

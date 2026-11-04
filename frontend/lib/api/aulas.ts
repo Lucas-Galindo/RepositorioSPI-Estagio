@@ -30,6 +30,10 @@ export interface Aula {
   alunos: AlunoPresenca[];
   /** Avisos imediatos do registro da sessao (ex.: pacote esgotado); vazio na maioria das respostas. */
   avisos: string[];
+  /** specs/064: decidido pelo servidor (hora de Sao Paulo): a chamada ja pode ser feita nos detalhes. */
+  chamadaLiberada: boolean;
+  /** specs/064: segundos ate o inicio quando a chamada esta bloqueada so por horario; senao null. */
+  segundosParaChamada: number | null;
 }
 
 /** Espelha SPI.Application.Aulas.Dtos.AulaRequest. */
@@ -41,8 +45,6 @@ export interface AulaRequest {
   dataInicio: string;
   horaInicio: string;
   horaFim: string;
-  /** So ao criar aula com data de hoje/passada (specs/055): AlunoId -> presente. */
-  presencas?: Record<number, boolean>;
 }
 
 export function listarAulas(

@@ -75,7 +75,8 @@ namespace SPI.Application.Tests.Aulas
                 new FakeLembreteServiceVazio(),
                 pagamentos,
                 categorias,
-                vinculos);
+                vinculos,
+                RelogioFalso.Depois());
 
             return (servico, aulas, pagamentos, vinculos, categorias);
         }
