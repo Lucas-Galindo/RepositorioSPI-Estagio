@@ -13,6 +13,33 @@ export interface ProgressoPacote {
   estado: "EmDia" | "Atencao" | "Esgotado" | "SemTotal";
 }
 
+/** Espelha SPI.Application.VinculosCobranca.Dtos.DetalheCobrancaResponse (specs/068). */
+export interface DetalheCobranca {
+  categoria: string;
+  turmaNome: string | null;
+  valor: number;
+  progresso: ProgressoPacote | null;
+}
+
+/**
+ * Espelha SPI.Application.VinculosCobranca.Dtos.SeloCobrancaResponse (specs/068): resumo de cobranca calculado
+ * no servidor. categoria: "Mensalidade" | "Pacote" | "Avulsa" | "SemVinculo".
+ */
+export interface SeloCobranca {
+  categoria: string;
+  valor: number;
+  /** So no resumo da lista. */
+  turmaNome: string | null;
+  /** So na categoria Pacote. */
+  progresso: ProgressoPacote | null;
+  /** true na Avulsa que so vale porque o pacote do grupo esgotou. */
+  avisoPacoteEsgotado: boolean;
+  /** So no resumo da lista. */
+  outrosVinculos: number;
+  /** So no resumo da lista: todos os vinculos ativos (dica). */
+  detalhes: DetalheCobranca[];
+}
+
 /** Espelha SPI.Application.VinculosCobranca.Dtos.AulaDoPacoteResponse (specs/058). */
 export interface AulaDoPacote {
   aulaId: number;

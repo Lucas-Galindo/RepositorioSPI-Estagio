@@ -66,7 +66,25 @@ namespace SPI.Application.Tests.VinculosCobranca
         public Task<List<VinculoCobranca>> ListarAtivosPorModalidadeAsync(SPI.Domain.Enums.ModalidadeCobranca modalidade, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos.Where(v => v.Ativo && v.Modalidade == modalidade).ToList());
 
-        // specs/063
+        // specs/068: em lote, como o repositorio real (com a Turma); conta as chamadas para provar que o resumo
+        // faz UMA consulta por tela, nao uma por aluno.
+        public int ChamadasListarAtivosDosAlunos { get; private set; }
+
+        public Task<List<VinculoCobranca>> ListarAtivosDosAlunosAsync(IReadOnlyCollection<int> alunoIds, CancellationToken cancellationToken = default)
+        {
+            ChamadasListarAtivosDosAlunos++;
+            var lista = alunoIds.Count == 0
+                ? new List<VinculoCobranca>()
+                : Vinculos.Where(v => v.Ativo && alunoIds.Contains(v.AlunoId)).OrderBy(v => v.Id).ToList();
+
+            foreach (var v in lista)
+            {
+                v.Turma = v.TurmaId is null ? null : TurmasConhecidas.FirstOrDefault(t => t.Id == v.TurmaId);
+            }
+
+            return Task.FromResult(lista);
+        }
+
         public Task<List<VinculoCobranca>> ListarPacotesAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Vinculos
                 .Where(v => v.Ativo && v.Modalidade == SPI.Domain.Enums.ModalidadeCobranca.Pacote && v.TurmaId == turmaId)
@@ -168,7 +186,9 @@ namespace SPI.Application.Tests.VinculosCobranca
 
         public Task<Aluno?> ObterPorIdAtivoAsync(int id, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-        public Task<List<Aluno>> ListarAsync(string? nome, string? ra, int? turmaId, bool? ativo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        // specs/068: a lista de alunos devolve todos os alunos semeados (sem filtro) para o teste do resumo.
+        public Task<List<Aluno>> ListarAsync(string? nome, string? ra, int? turmaId, bool? ativo, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Alunos.ToList());
 
         public Task<bool> ExisteCpfAsync(string cpf, int? ignorarId = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -191,7 +211,16 @@ namespace SPI.Application.Tests.VinculosCobranca
         // specs/058: presencas com aula (para a lista de aulas do pacote).
         public List<AulaAluno> PresencasComAula { get; } = new();
 
-        public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default) =>
+        // specs/068: conta as chamadas (guarda de N+1 do resumo de cobranca).
+        public int ChamadasContarPresencas { get; private set; }
+
+        public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default)
+        {
+            ChamadasContarPresencas++;
+            return ContarPresencasPorVinculos(vinculoIds, de, ate);
+        }
+
+        private Task<Dictionary<int, int>> ContarPresencasPorVinculos(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate) =>
             Task.FromResult(Presencas
                 .Where(p => vinculoIds.Contains(p.VinculoCobrancaId))
                 .Where(p => !de.HasValue || new DateOnly(p.Ano, p.Mes, 1) >= new DateOnly(de.Value.Year, de.Value.Month, 1))

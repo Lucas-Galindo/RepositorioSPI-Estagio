@@ -1,5 +1,6 @@
 using SPI.Application.Common.Dtos;
 using SPI.Application.Turmas.Dtos;
+using SPI.Application.VinculosCobranca.Services;
 using SPI.Domain.Entities;
 using SPI.Domain.Enums;
 using SPI.Domain.Exceptions;
@@ -13,13 +14,16 @@ namespace SPI.Application.Turmas.Services
         private readonly IAlunoRepository _alunoRepository;
         private readonly IVinculoCobrancaRepository _vinculoRepository;
         private readonly IEncerramentoTurmaPacoteService _encerramentoPacotes;
+        private readonly IResumoCobrancaService? _cobranca;
 
         public TurmaService(
             ITurmaRepository turmaRepository,
             IAlunoRepository alunoRepository,
             IVinculoCobrancaRepository vinculoRepository,
-            IEncerramentoTurmaPacoteService encerramentoPacotes)
+            IEncerramentoTurmaPacoteService encerramentoPacotes,
+            IResumoCobrancaService? cobranca = null)
         {
+            _cobranca = cobranca;
             _turmaRepository = turmaRepository;
             _alunoRepository = alunoRepository;
             _vinculoRepository = vinculoRepository;
@@ -227,6 +231,18 @@ namespace SPI.Application.Turmas.Services
         private async Task<TurmaResponse> MapearComPacotesAsync(Turma turma, CancellationToken cancellationToken)
         {
             var resposta = Mapear(turma);
+
+            // specs/068: o selo de cada aluno matriculado mostra a cobranca que VALE nesta turma (a mesma regra
+            // que cobra a presenca). Uma chamada em lote; so os matriculados -- quem esta so "fora da turma"
+            // (AlunosComPacoteForaDaTurma) nao recebe.
+            if (_cobranca is not null && turma.AlunosTurma.Count > 0)
+            {
+                var selos = await _cobranca.ResumirParaGrupoAsync(turma.AlunosTurma.Select(at => at.Aluno).ToList(), turma.Id, cancellationToken);
+                foreach (var aluno in resposta.Alunos)
+                {
+                    aluno.Cobranca = selos.GetValueOrDefault(aluno.Id);
+                }
+            }
 
             if (turma.Tipo == TipoTurma.Pacote)
             {

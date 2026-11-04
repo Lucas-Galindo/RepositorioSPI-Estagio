@@ -1,3 +1,5 @@
+using SPI.Application.VinculosCobranca.Dtos;
+
 namespace SPI.Application.Aulas.Dtos
 {
     public record AlunoPresencaResponse
@@ -21,5 +23,11 @@ namespace SPI.Application.Aulas.Dtos
         /// TRUE = aluno de fora da turma colocado nesta aula como reposicao (specs/056).
         /// </summary>
         public bool Reposicao { get; set; }
+
+        /// <summary>
+        /// specs/068: o vinculo de cobranca que vale para ESTA aula (a turma da aula; aula individual = aulas
+        /// individuais); nulo quando nao calculado (lista de aulas).
+        /// </summary>
+        public SeloCobrancaResponse? Cobranca { get; set; }
     }
 }

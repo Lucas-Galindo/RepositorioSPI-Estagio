@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { InfoTooltip } from "@/components/shared/InfoTooltip";
 import { StatusPill } from "@/components/shared/StatusPill";
+import { SeloCobranca } from "@/components/alunos/SeloCobranca";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
@@ -30,6 +31,8 @@ export default function AlunosPage() {
       nome: nome || undefined,
       ra: ra || undefined,
       ativo: status === "" ? undefined : status === "Ativo",
+      // specs/068: so esta tela pede o resumo de cobranca (as outras usam a lista apenas para escolher um aluno).
+      incluirCobranca: true,
     })
       .then((lista) => {
         setErro("");
@@ -125,6 +128,7 @@ export default function AlunosPage() {
                   <th>Turma(s)</th>
                   <th>Telefone</th>
                   <th>Valor da aula</th>
+                  <th>Cobrança</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -143,6 +147,9 @@ export default function AlunosPage() {
                     <td>{a.turmas.map((t) => t.nome).join(", ") || "—"}</td>
                     <td>{a.telefoneAluno ?? "—"}</td>
                     <td>R$ {a.valorAula.toFixed(2)}</td>
+                    <td>
+                      <SeloCobranca selo={a.cobranca} modo="lista" />
+                    </td>
                     <td>
                       <StatusPill status={a.ativo ? "Ativo" : "Inativo"} />
                     </td>

@@ -1,3 +1,4 @@
+import type { SeloCobranca } from "./vinculosCobranca";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 
 /** Espelha SPI.Application.Common.Dtos.AlunoResumoResponse. */
@@ -5,6 +6,8 @@ export interface AlunoResumo {
   id: number;
   ra: string;
   nome: string;
+  /** specs/068: a cobranca que vale nesta turma (alunos matriculados); null quando nao calculada. */
+  cobranca?: SeloCobranca | null;
 }
 
 /** Espelha SPI.Domain.Enums.TipoTurma (serializado como string). */

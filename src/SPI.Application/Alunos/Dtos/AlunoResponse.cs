@@ -1,4 +1,5 @@
 using SPI.Application.Common.Dtos;
+using SPI.Application.VinculosCobranca.Dtos;
 
 namespace SPI.Application.Alunos.Dtos
 {
@@ -33,5 +34,9 @@ namespace SPI.Application.Alunos.Dtos
         public string? ResponsavelBairro { get; set; }
         public string? ResponsavelCidade { get; set; }
         public string? ResponsavelEstado { get; set; }
+
+        // specs/068: resumo de cobranca (principal + outros). Calculado so quando a lista pede
+        // (incluirCobranca=true); nulo nas demais respostas.
+        public SeloCobrancaResponse? Cobranca { get; set; }
     }
 }

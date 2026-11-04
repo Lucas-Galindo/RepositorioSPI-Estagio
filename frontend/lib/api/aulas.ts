@@ -1,3 +1,4 @@
+import type { SeloCobranca } from "./vinculosCobranca";
 import { apiGet, apiPost, apiPut, apiDelete } from "./client";
 
 /** Espelha SPI.Application.Aulas.Dtos.AlunoPresencaResponse. */
@@ -11,6 +12,8 @@ export interface AlunoPresenca {
   motivoNaoRegistro: string | null;
   /** true = aluno de fora da turma colocado nesta aula como reposicao (specs/056). */
   reposicao: boolean;
+  /** specs/068: a cobranca que vale para esta aula; null quando nao calculada. */
+  cobranca?: SeloCobranca | null;
 }
 
 /** Espelha SPI.Application.Aulas.Dtos.AulaResponse. Datas/horas como string ISO (DateOnly/TimeOnly do backend). */

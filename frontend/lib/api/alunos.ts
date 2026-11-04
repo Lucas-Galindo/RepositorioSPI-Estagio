@@ -1,3 +1,4 @@
+import type { SeloCobranca } from "./vinculosCobranca";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 
 /** Espelha SPI.Application.Common.Dtos.TurmaResumoResponse. */
@@ -36,6 +37,8 @@ export interface Aluno {
   responsavelBairro: string | null;
   responsavelCidade: string | null;
   responsavelEstado: string | null;
+  /** specs/068: resumo de cobranca; so vem em listarAlunos com incluirCobranca=true (senao null). */
+  cobranca: SeloCobranca | null;
 }
 
 /** Espelha SPI.Application.Alunos.Dtos.CadastrarAlunoRequest. */
@@ -96,7 +99,7 @@ export interface AtualizarAlunoRequest {
 
 export function listarAlunos(
   accessToken: string,
-  filtros?: { nome?: string; ra?: string; turmaId?: number; ativo?: boolean }
+  filtros?: { nome?: string; ra?: string; turmaId?: number; ativo?: boolean; incluirCobranca?: boolean }
 ): Promise<Aluno[]> {
   return apiGet<Aluno[]>("/api/alunos", accessToken, filtros);
 }

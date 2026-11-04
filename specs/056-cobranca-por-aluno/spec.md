@@ -174,3 +174,7 @@ Os pacotes e mensalidades que hoje estão amarrados a uma turma passam a ser do 
 - O aviso de conflito na ficha do aluno é a forma de "listar para a professora decidir"; não há tela separada de relatório de conflitos.
 - A regra de prioridade para conflitos herdados (mensalidade prevalece; pacote mais antigo primeiro) é uma salvaguarda temporária até a professora resolver, escolhida para nunca cobrar o aluno a mais.
 - Telas de acompanhamento de progresso do pacote ficam para a spec 058; notificações ficam para as specs 059/060.
+
+## Nota de alteração (2026-11-04, Princípio V): selo de cobrança nas telas
+
+A cobrança do aluno (e, no caso do pacote, o progresso das aulas restantes) agora também aparece como **selo** na lista de alunos, na página da turma e na chamada da aula, sem mudar nenhuma regra desta spec: o selo é calculado no servidor pela mesma regra que cobra a presença (`RegraCobrancaPresenca.Decidir`) e pelo mesmo progresso (`ProgressoPacote.Calcular`). Ver [specs/068-badge-cobranca-aluno/spec.md](../068-badge-cobranca-aluno/spec.md).

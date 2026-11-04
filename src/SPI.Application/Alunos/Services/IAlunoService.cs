@@ -4,7 +4,7 @@ namespace SPI.Application.Alunos.Services
 {
     public interface IAlunoService
     {
-        Task<List<AlunoResponse>> ListarAsync(string? nome, string? ra, int? turmaId, bool? ativo, CancellationToken cancellationToken = default);
+        Task<List<AlunoResponse>> ListarAsync(string? nome, string? ra, int? turmaId, bool? ativo, CancellationToken cancellationToken = default, bool incluirCobranca = false);
 
         Task<AlunoResponse> ObterPorIdAsync(int id, CancellationToken cancellationToken = default);
 

@@ -1,6 +1,7 @@
 using SPI.Application.Alunos.Dtos;
 using SPI.Application.Common;
 using SPI.Application.Common.Dtos;
+using SPI.Application.VinculosCobranca.Services;
 using SPI.Domain.Entities;
 using SPI.Domain.Exceptions;
 using SPI.Domain.Repositories;
@@ -12,18 +13,33 @@ namespace SPI.Application.Alunos.Services
         private readonly IAlunoRepository _alunoRepository;
         private readonly ITurmaRepository _turmaRepository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IResumoCobrancaService? _cobranca;
 
-        public AlunoService(IAlunoRepository alunoRepository, ITurmaRepository turmaRepository, IPasswordHasher passwordHasher)
+        public AlunoService(IAlunoRepository alunoRepository, ITurmaRepository turmaRepository, IPasswordHasher passwordHasher, IResumoCobrancaService? cobranca = null)
         {
+            _cobranca = cobranca;
             _alunoRepository = alunoRepository;
             _turmaRepository = turmaRepository;
             _passwordHasher = passwordHasher;
         }
 
-        public async Task<List<AlunoResponse>> ListarAsync(string? nome, string? ra, int? turmaId, bool? ativo, CancellationToken cancellationToken = default)
+        public async Task<List<AlunoResponse>> ListarAsync(string? nome, string? ra, int? turmaId, bool? ativo, CancellationToken cancellationToken = default, bool incluirCobranca = false)
         {
             var alunos = await _alunoRepository.ListarAsync(nome, ra, turmaId, ativo, cancellationToken);
-            return alunos.Select(Mapear).ToList();
+            var respostas = alunos.Select(Mapear).ToList();
+
+            // specs/068: o resumo de cobranca so e calculado quando a tela pede (a lista de alunos e usada por
+            // varias telas apenas para escolher um aluno). Uma chamada em lote para a lista toda.
+            if (incluirCobranca && _cobranca is not null)
+            {
+                var selos = await _cobranca.ResumirParaListaAsync(alunos.ToList(), cancellationToken);
+                foreach (var resposta in respostas)
+                {
+                    resposta.Cobranca = selos.GetValueOrDefault(resposta.Id);
+                }
+            }
+
+            return respostas;
         }
 
         public async Task<AlunoResponse> ObterPorIdAsync(int id, CancellationToken cancellationToken = default)

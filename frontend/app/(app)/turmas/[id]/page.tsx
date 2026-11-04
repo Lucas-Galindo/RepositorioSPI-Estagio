@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { SeloCobranca } from "@/components/alunos/SeloCobranca";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -181,6 +182,7 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
                     {a.nome}
                   </Link>
                   <div className="who">RA {a.ra}</div>
+                  <SeloCobranca selo={a.cobranca} modo="grupo" />
                 </div>
                 <button
                   className="btn btn-ghost btn-sm"

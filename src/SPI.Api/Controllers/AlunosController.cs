@@ -39,10 +39,11 @@ namespace SPI.Api.Controllers
         /// <param name="ra">Filtro por RA (busca parcial)</param>
         /// <param name="turmaId">Filtro por turma</param>
         /// <param name="ativo">Filtro por status</param>
+        /// <param name="incluirCobranca">specs/068: true traz o resumo de cobranca de cada aluno (so a tela de Alunos pede)</param>
         /// <returns>Retorna a lista de alunos que atendem aos filtros</returns>
-        public async Task<IActionResult> Listar([FromQuery] string? nome, [FromQuery] string? ra, [FromQuery] int? turmaId, [FromQuery] bool? ativo)
+        public async Task<IActionResult> Listar([FromQuery] string? nome, [FromQuery] string? ra, [FromQuery] int? turmaId, [FromQuery] bool? ativo, [FromQuery] bool incluirCobranca = false)
         {
-            return Ok(await _alunoService.ListarAsync(nome, ra, turmaId, ativo));
+            return Ok(await _alunoService.ListarAsync(nome, ra, turmaId, ativo, incluirCobranca: incluirCobranca));
         }
 
         [HttpGet("{id}")]

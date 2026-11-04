@@ -140,3 +140,7 @@ Os filtros são por aluno e por período.
 - **Período padrão**: o mesmo do dashboard (mês corrente).
 - **Bloqueio por pacote esgotado** (spec 041): não muda; continua baseado no saldo.
 - **Quem vê**: a visão de negócio é da professora (Home). Admin não tem essa tela.
+
+## Nota de alteração (2026-11-04, Princípio V): selo de cobrança nas telas
+
+A cobrança do aluno (e, no caso do pacote, o progresso das aulas restantes) agora também aparece como **selo** na lista de alunos, na página da turma e na chamada da aula, sem mudar nenhuma regra desta spec: o selo é calculado no servidor pela mesma regra que cobra a presença (`RegraCobrancaPresenca.Decidir`) e pelo mesmo progresso (`ProgressoPacote.Calcular`). Ver [specs/068-badge-cobranca-aluno/spec.md](../068-badge-cobranca-aluno/spec.md).

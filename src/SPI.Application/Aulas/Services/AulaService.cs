@@ -1,6 +1,7 @@
 using SPI.Application.Aulas.Dtos;
 using SPI.Application.Common;
 using SPI.Application.Lembretes.Services;
+using SPI.Application.VinculosCobranca.Services;
 using SPI.Domain.Entities;
 using SPI.Domain.Exceptions;
 using SPI.Domain.Repositories;
@@ -19,6 +20,7 @@ namespace SPI.Application.Aulas.Services
         private readonly IVinculoCobrancaRepository _vinculoCobrancaRepository;
         private readonly TimeProvider _relogio;
         private readonly ILinkAulaTemporario? _links;
+        private readonly IResumoCobrancaService? _cobranca;
 
         public AulaService(
             IAulaRepository aulaRepository,
@@ -30,8 +32,10 @@ namespace SPI.Application.Aulas.Services
             ICategoriaReceitaRepository categoriaReceitaRepository,
             IVinculoCobrancaRepository vinculoCobrancaRepository,
             TimeProvider relogio,
-            ILinkAulaTemporario? links = null)
+            ILinkAulaTemporario? links = null,
+            IResumoCobrancaService? cobranca = null)
         {
+            _cobranca = cobranca;
             _aulaRepository = aulaRepository;
             _alunoRepository = alunoRepository;
             _turmaRepository = turmaRepository;
@@ -63,7 +67,7 @@ namespace SPI.Application.Aulas.Services
             var aula = await _aulaRepository.ObterPorIdAsync(id, cancellationToken)
                 ?? throw new NaoEncontradoException("Aula nao encontrada.");
 
-            return Mapear(aula);
+            return await MapearComCobrancaAsync(aula, cancellationToken);
         }
 
         public async Task<AulaResponse> CadastrarAsync(int professorId, AulaRequest request, CancellationToken cancellationToken = default)
@@ -179,7 +183,7 @@ namespace SPI.Application.Aulas.Services
             }
 
             var aulaCompleta = await _aulaRepository.ObterPorIdAsync(id, cancellationToken);
-            return Mapear(aulaCompleta!);
+            return await MapearComCobrancaAsync(aulaCompleta!, cancellationToken);
         }
 
         // specs/056 (reposicao): a professora coloca um aluno de fora da turma numa
@@ -211,7 +215,7 @@ namespace SPI.Application.Aulas.Services
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
 
             var aulaCompleta = await _aulaRepository.ObterPorIdAsync(aulaId, cancellationToken);
-            return Mapear(aulaCompleta!);
+            return await MapearComCobrancaAsync(aulaCompleta!, cancellationToken);
         }
 
         // Remove so participantes de reposicao: os matriculados saem da aula pela
@@ -232,7 +236,7 @@ namespace SPI.Application.Aulas.Services
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
 
             var aulaCompleta = await _aulaRepository.ObterPorIdAsync(aulaId, cancellationToken);
-            return Mapear(aulaCompleta!);
+            return await MapearComCobrancaAsync(aulaCompleta!, cancellationToken);
         }
 
         private async Task<Aula> ObterAgendadaAsync(int aulaId, CancellationToken cancellationToken)
@@ -293,7 +297,7 @@ namespace SPI.Application.Aulas.Services
 
             var avisos = await AplicarPresencasAsync(aula, request.Presencas, cancellationToken);
 
-            var resposta = Mapear(aula);
+            var resposta = await MapearComCobrancaAsync(aula, cancellationToken);
             resposta.Avisos = avisos;
             return resposta;
         }
@@ -390,7 +394,7 @@ namespace SPI.Application.Aulas.Services
 
             aula.Descricao = request.Descricao;
             await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
-            return Mapear(aula);
+            return await MapearComCobrancaAsync(aula, cancellationToken);
         }
 
         // Executa o efeito financeiro ja decidido (RegraCobrancaPresenca) para cada
@@ -470,7 +474,7 @@ namespace SPI.Application.Aulas.Services
                 await _lembreteService.RecalcularAsync(aula.TurmaId.Value, cancellationToken);
             }
 
-            return Mapear(aula);
+            return await MapearComCobrancaAsync(aula, cancellationToken);
         }
 
         // specs/067: so aula ativa, nao cancelada e que ainda nao terminou aceita link; a regra e uma so
@@ -487,7 +491,9 @@ namespace SPI.Application.Aulas.Services
 
             var links = _links ?? throw new InvalidOperationException("Armazenamento temporario de links nao configurado.");
             links.Definir(id, link, RegraLinkAula.FimDaAula(aula));
-            return MapearEm(aula, agora);
+            var resposta = MapearEm(aula, agora);
+            await PreencherCobrancaAsync(resposta, aula, cancellationToken);
+            return resposta;
         }
 
         public async Task<AulaResponse> RemoverLinkAsync(int id, CancellationToken cancellationToken = default)
@@ -495,7 +501,7 @@ namespace SPI.Application.Aulas.Services
             var aula = await ObterAulaAtivaAsync(id, cancellationToken);
 
             _links?.Remover(id);
-            return Mapear(aula);
+            return await MapearComCobrancaAsync(aula, cancellationToken);
         }
 
         private async Task<Aula> ObterAulaAtivaAsync(int id, CancellationToken cancellationToken)
@@ -536,6 +542,30 @@ namespace SPI.Application.Aulas.Services
         // A resposta informa se a chamada esta liberada, o que depende do relogio do servidor
         // (specs/064): quem mapeia uma aula so le o relogio uma vez.
         private AulaResponse Mapear(Aula aula) => MapearEm(aula, _relogio.AgoraLocal());
+
+        // specs/068: resposta de UMA aula com o selo de cobranca de cada aluno -- o vinculo que vale para esta
+        // aula (turma da aula; aula individual = aulas individuais), decidido pela mesma regra que cobra a
+        // presenca. A lista de aulas nao passa por aqui (continua leve, sem consulta extra).
+        private async Task<AulaResponse> MapearComCobrancaAsync(Aula aula, CancellationToken cancellationToken)
+        {
+            var resposta = Mapear(aula);
+            await PreencherCobrancaAsync(resposta, aula, cancellationToken);
+            return resposta;
+        }
+
+        private async Task PreencherCobrancaAsync(AulaResponse resposta, Aula aula, CancellationToken cancellationToken)
+        {
+            if (_cobranca is null || aula.AulaAlunos.Count == 0)
+            {
+                return;
+            }
+
+            var selos = await _cobranca.ResumirParaGrupoAsync(aula.AulaAlunos.Select(aa => aa.Aluno).ToList(), aula.TurmaId, cancellationToken);
+            foreach (var aluno in resposta.Alunos)
+            {
+                aluno.Cobranca = selos.GetValueOrDefault(aluno.AlunoId);
+            }
+        }
 
         private AulaResponse MapearEm(Aula aula, DateTime agora)
         {

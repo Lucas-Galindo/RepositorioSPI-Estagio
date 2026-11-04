@@ -7,6 +7,7 @@ import { Icon } from "@/components/shared/Icon";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
+import { SeloCobranca } from "@/components/alunos/SeloCobranca";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
@@ -203,6 +204,7 @@ export default function AulaDetailPage({ params }: { params: Promise<{ id: strin
           {al.nome}
         </Link>
         <div className="who">RA {al.ra}</div>
+        <SeloCobranca selo={al.cobranca} modo="grupo" />
       </div>
 
       {al.reposicao && aula.status === "Agendada" && (

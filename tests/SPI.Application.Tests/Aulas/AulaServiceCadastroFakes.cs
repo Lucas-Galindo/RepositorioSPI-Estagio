@@ -1,4 +1,5 @@
 using SPI.Application.Aulas.Services;
+using SPI.Application.VinculosCobranca.Services;
 using SPI.Domain.Entities;
 using SPI.Domain.Repositories;
 
@@ -68,7 +69,11 @@ namespace SPI.Application.Tests.Aulas
         public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default) =>
             Task.FromResult(Aulas.ToList());
 
-        public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        // specs/068: presencas ja contadas por pacote (o resumo de cobranca pede em lote); vazio por padrao.
+        public Dictionary<int, int> PresencasPorVinculo { get; } = new();
+
+        public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default) =>
+            Task.FromResult(PresencasPorVinculo.Where(p => vinculoIds.Contains(p.Key)).ToDictionary(p => p.Key, p => p.Value));
         public Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<List<Aula>> ListarNaJanelaDeAvisoAsync(DateTime agora, int diasAntes, TimeOnly hora, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
@@ -140,6 +145,9 @@ namespace SPI.Application.Tests.Aulas
         public FakeTurmaRepositoryParaCadastro TurmasRepo { get; } = new();
         public AulaService Servico { get; }
 
+        // specs/068: o mesmo servico, mas com o resumo de cobranca ligado (o padrao dos testes antigos segue sem ele).
+        public AulaService ServicoComCobranca { get; }
+
         // specs/064: relogio do servico; comeca depois de qualquer data dos testes (a aula "ja comecou").
         public RelogioFalso Relogio { get; } = RelogioFalso.Depois();
 
@@ -159,7 +167,7 @@ namespace SPI.Application.Tests.Aulas
                 AlunosRepo.Alunos[aluno.Id] = aluno;
             }
 
-            Servico = new AulaService(
+            AulaService NovoServico(IResumoCobrancaService? cobranca) => new(
                 Aulas,
                 AlunosRepo,
                 TurmasRepo,
@@ -173,7 +181,11 @@ namespace SPI.Application.Tests.Aulas
                 },
                 Vinculos,
                 Relogio,
-                links: Links);
+                links: Links,
+                cobranca: cobranca);
+
+            Servico = NovoServico(null);
+            ServicoComCobranca = NovoServico(new ResumoCobrancaService(Vinculos, Aulas));
         }
 
         public static Aluno NovoAluno(int id, string nome) => new() { Id = id, Nome = nome, Ra = $"RA{id}", Ativo = true, ValorAula = 80m };
