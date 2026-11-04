@@ -1,7 +1,7 @@
 "use client";
 
 import { LembretePagamentoSection } from "@/components/lembretes/LembretePagamentoSection";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
@@ -35,6 +35,9 @@ import { ApiError } from "@/lib/api/client";
 // Diferença do protótipo: la, clicar numa linha ia pro detalhe da turma
 // (nao existia edicao de lembrete). Aqui, como o backend ja suporta
 // editar/excluir um lembrete especifico, a linha leva direto pra edicao.
+// specs/066: titulo das duas secoes da aba (icone + texto na mesma linha).
+const TITULO_SECAO: CSSProperties = { display: "flex", alignItems: "center", gap: 8 };
+
 const LABEL_DESTINATARIOS: Record<string, string> = {
   Alunos: "Alunos",
   Responsaveis: "Responsáveis",
@@ -177,7 +180,7 @@ export default function LembretesPage() {
     <>
       {/* specs/066: a aba tem duas mensagerias. Esta e a de aula; os indicadores, filtros e a tabela abaixo
           valem so para ela. A de pagamento pendente vem depois, separada. */}
-      <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="section-title" style={TITULO_SECAO}>
         <Icon name="cal" size={15} /> Lembretes de aula
       </div>
       <p className="section-sub">
@@ -328,7 +331,7 @@ export default function LembretesPage() {
       {/* specs/066: segunda mensageria, separada da de aula por uma divisoria. */}
       <div style={{ height: 1, marginTop: 32, background: "var(--c-text-muted)", opacity: 0.3 }} role="separator" />
       <div style={{ marginTop: 24 }}>
-        <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="section-title" style={TITULO_SECAO}>
           <Icon name="money" size={15} /> Lembretes de pagamento
         </div>
         <p className="section-sub">E-mail semanal para alunos e responsáveis com os pagamentos vencidos sem baixa.</p>
