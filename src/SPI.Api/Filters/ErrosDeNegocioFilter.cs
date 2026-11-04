@@ -11,10 +11,18 @@ namespace SPI.Api.Filters
     /// NaoEncontradoException vira 404 e ConflitoException vira 409 so quando a acao declara esse status;
     /// qualquer outra excecao (ou uma dessas duas numa acao que nao declara) vira 500 "Erro inesperado".
     /// Acoes com resposta propria para uma excecao (ex.: login) continuam com o catch no controller.
-    /// Nao registra log: o tratamento que existia antes tambem nao registrava.
     /// </summary>
     public class ErrosDeNegocioFilter : IExceptionFilter
     {
+        private readonly ILogger<ErrosDeNegocioFilter> _logger;
+        private readonly IHostEnvironment _ambiente;
+
+        public ErrosDeNegocioFilter(ILogger<ErrosDeNegocioFilter> logger, IHostEnvironment ambiente)
+        {
+            _logger = logger;
+            _ambiente = ambiente;
+        }
+
         public void OnException(ExceptionContext context)
         {
             context.Result = context.Exception switch
@@ -31,15 +39,26 @@ namespace SPI.Api.Filters
                 .OfType<ProducesResponseTypeAttribute>()
                 .Any(a => a.StatusCode == statusCode);
 
-        // Mesmo corpo que ControllerBase.Problem(title, detail, 500) monta.
-        private static ObjectResult ErroInesperado(ExceptionContext context)
+        // 500: a excecao completa vai para o LOG do servidor; o cliente nunca recebe a mensagem dela
+        // fora do ambiente de desenvolvimento, porque ela pode trazer texto interno (consulta SQL,
+        // caminho de arquivo, nome de servidor). Ele recebe so o codigo de rastreio (traceId), que a
+        // professora informa e permite achar a excecao no log. O restante do corpo e o mesmo que
+        // ControllerBase.Problem(title, statusCode) monta.
+        private ObjectResult ErroInesperado(ExceptionContext context)
         {
             var fabrica = context.HttpContext.RequestServices.GetRequiredService<ProblemDetailsFactory>();
             var problema = fabrica.CreateProblemDetails(
                 context.HttpContext,
                 statusCode: StatusCodes.Status500InternalServerError,
-                title: "Erro inesperado",
-                detail: context.Exception.Message);
+                title: "Erro inesperado");
+
+            var traceId = problema.Extensions.TryGetValue("traceId", out var valor) ? valor?.ToString() : context.HttpContext.TraceIdentifier;
+            _logger.LogError(context.Exception, "Erro inesperado em {Acao}. TraceId: {TraceId}", context.ActionDescriptor.DisplayName, traceId);
+
+            problema.Detail = _ambiente.IsDevelopment()
+                ? context.Exception.Message
+                : $"Ocorreu um erro inesperado. Se o problema continuar, informe o codigo {traceId}.";
+
             return new ObjectResult(problema) { StatusCode = problema.Status };
         }
     }

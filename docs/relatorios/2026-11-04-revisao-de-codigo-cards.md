@@ -95,3 +95,27 @@
 | 063 Pacote fora da turma | 3 | 507 testes |
 
 Nenhum comportamento foi quebrado; o único ajuste de comportamento é o do item 4 do 064 (aula excluída).
+
+---
+
+## Correção aplicada depois da revisão: o erro 500 não vaza mais texto interno (2026-11-04)
+
+**Pedido**: aplicar a sugestão do card 065 com cuidado com vazamentos.
+
+**Problema**: o 500 devolvia `Exception.Message` em `detail` para qualquer cliente. Essa mensagem pode trazer texto interno (consulta SQL, nome de tabela, caminho de arquivo, nome de servidor).
+
+**O que mudou** (`src/SPI.Api/Filters/ErrosDeNegocioFilter.cs`)
+- Fora de **Development** o cliente recebe só um texto genérico com o **código de rastreio** (`traceId`): "Ocorreu um erro inesperado. Se o problema continuar, informe o codigo …". Em Development a mensagem continua, para depurar.
+- A exceção **completa** agora vai para o **log do servidor** (nível Error, com o mesmo `traceId`); antes não era registrada. Os logs ficam fora do git (`src/SPI.Api/logs/`).
+- Uma exceção de negócio **não declarada** (404/409 sem o `ProducesResponseType`) também cai nesse caminho e **não** expõe a mensagem dela.
+- O frontend já mostra `detail`/`title` do corpo, então a professora passa a ver o texto genérico com o código.
+
+**Conferido e sem vazamento**: o login devolve sempre a mesma exceção e mensagem genérica (não revela se o e-mail existe); o Swagger só existe em Development; nenhum `UseDeveloperExceptionPage` explícito; 404 e 409 devolvem só mensagens de negócio.
+
+**Visto e não alterado**: o histórico de e-mails de pagamento guarda em `Detalhe` o texto de erro do SMTP (até 500 caracteres) e a tela o mostra como dica ao passar o mouse, só para a professora autenticada. É informação de diagnóstico dela; se algum dia houver mais de um usuário, vale filtrar.
+
+**Testes** (511, com 4 novos): produção e staging não vazam a mensagem nem trechos internos e trazem o `traceId`; a exceção completa é registrada uma vez com o mesmo código; Development mantém a mensagem; a estrutura do corpo continua igual à do `Problem` do controller (título, status, tipo, instância, extensões). Validação real da API: 404 e 401 como antes e o filtro resolvido pela injeção.
+
+**Limite da validação**: o caminho do 500 em produção foi provado por teste de unidade; não foi exercitado numa API em modo Production (os segredos de desenvolvimento só carregam em Development).
+
+**Sugestões restantes (não feitas)**: a busca de alunos desnecessária na página da turma de pacote e o `DateTime.Now` fora do relógio de São Paulo.
