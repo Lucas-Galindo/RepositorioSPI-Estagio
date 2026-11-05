@@ -368,7 +368,7 @@ export function Calendario({ modo, valor, min, ancora, aoEscolher, aoLimpar, aoF
   const painel = (
     <div ref={painelRef} className="cal-painel" role="dialog" aria-modal="true" aria-label="Calendário" onKeyDown={prenderFoco}>
       <div className="cal-topo">
-        <button type="button" className="cal-nav" aria-label={rotuloAnterior} disabled={noLimiteAnterior} onClick={anterior}>
+        <button type="button" className="cal-seta" aria-label={rotuloAnterior} disabled={noLimiteAnterior} onClick={anterior}>
           <Icon name="back" size={14} />
         </button>
         {visao === "dias" && (
@@ -386,7 +386,7 @@ export function Calendario({ modo, valor, min, ancora, aoEscolher, aoLimpar, aoF
             {anosPagina[0]} – {anosPagina[anosPagina.length - 1]}
           </div>
         )}
-        <button type="button" className="cal-nav cal-nav-prox" aria-label={rotuloProximo} disabled={noLimiteProximo} onClick={proximo}>
+        <button type="button" className="cal-seta cal-seta-prox" aria-label={rotuloProximo} disabled={noLimiteProximo} onClick={proximo}>
           <Icon name="back" size={14} />
         </button>
       </div>

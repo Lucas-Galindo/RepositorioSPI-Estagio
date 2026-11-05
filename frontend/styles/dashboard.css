@@ -1939,7 +1939,7 @@ tbody tr.row-link:hover {
   gap: 6px;
   margin-bottom: 10px;
 }
-.cal-nav {
+.cal-seta {
   display: grid;
   place-items: center;
   flex: none;
@@ -1953,13 +1953,13 @@ tbody tr.row-link:hover {
   box-shadow: var(--shadow-out-sm);
   cursor: pointer;
 }
-.cal-nav-prox svg {
+.cal-seta-prox svg {
   transform: rotate(180deg);
 }
-.cal-nav:hover:not(:disabled) {
+.cal-seta:hover:not(:disabled) {
   box-shadow: var(--shadow-press);
 }
-.cal-nav:disabled {
+.cal-seta:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -2023,7 +2023,7 @@ tbody tr.row-link:hover {
 }
 .cal-dia:focus-visible,
 .cal-item:focus-visible,
-.cal-nav:focus-visible,
+.cal-seta:focus-visible,
 .cal-titulo:focus-visible {
   outline: 2px solid var(--c-accent-text);
   outline-offset: -2px;
