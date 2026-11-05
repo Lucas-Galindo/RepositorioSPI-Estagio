@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+> **Nota (2026-11-05, spec 070):** o calendário que o botão abre passou a ser o **calendário próprio do sistema** (`specs/070-calendario-proprio/`), no lugar do calendário do navegador; o `<input type="date">` auxiliar, o `showPicker()` e as regras `color-scheme` desta spec foram removidos. O botão dentro do campo, o `min` e a regra "o texto exibido manda" continuam valendo.
+
 **Input**: Card do Trello "Ajustar filtros de datas" (Backlog): "Fazer uma revisão geral no sistema procurando filtros e colocar o botão dentro do campo para abrir o calendário. Ajustar o botão de clicar no calendário em relação às cores dele, onde se a cor for escura o tema dele é claro (assim como outros elementos) e vice e versa."
 
 ## Contexto (estado atual, lido do código)

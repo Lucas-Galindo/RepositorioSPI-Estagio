@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
+import { Calendario } from "@/components/shared/Calendario";
 import { Icon } from "@/components/shared/Icon";
 
 /**
@@ -49,22 +50,25 @@ interface DateInputProps {
   ariaLabel?: string;
   /** Estilo do involucro do campo (ex.: `flex` e `minWidth` em linhas de formulario). */
   style?: CSSProperties;
-  /** yyyy-MM-dd: o calendario do navegador nao deixa escolher dias anteriores. A digitacao nao e bloqueada (o servidor valida). */
+  /** yyyy-MM-dd: o calendario do sistema bloqueia dias anteriores. A digitacao nao e bloqueada (o servidor valida). */
   min?: string;
 }
 
 /**
- * Campo de data mascarado dd/mm/aaaa — substitui `<input type="date">` nativo para que o
+ * Campo de data mascarado dd/mm/aaaa — substitui o campo de data nativo do navegador para que o
  * formato exibido/aceito nao dependa do idioma/SO do navegador da usuaria. O valor
  * emitido/recebido continua `yyyy-MM-dd`, o mesmo contrato do input nativo que substitui.
  *
- * specs/069: dentro do campo ha um botao de calendario. Ele abre o calendario do proprio navegador por meio
- * de um `<input type="date">` auxiliar invisivel (sem foco, fora da navegacao por teclado): o dia escolhido
- * volta ja em `yyyy-MM-dd`, entao nao ha conversao de data nem risco de dia deslocado por fuso. O campo de
- * texto continua sendo o que a usuaria ve e digita.
+ * specs/069/070: dentro do campo ha um botao de calendario que abre o calendario proprio do sistema
+ * (`Calendario`), desenhado fora do campo para nao ser cortado por modais e tabelas. O dia escolhido volta
+ * ja em `yyyy-MM-dd`, entao nao ha conversao de data nem risco de dia deslocado por fuso. O campo de texto
+ * continua sendo o que a usuaria ve e digita; o calendario abre no mes da data completa do TEXTO exibido
+ * (texto vazio, parcial ou invalido: abre em hoje, sem mexer no que ela digitou).
  */
 export function DateInput({ value, onChange, required, id, className, title, disabled, ariaLabel, style, min }: DateInputProps) {
-  const auxiliarRef = useRef<HTMLInputElement>(null);
+  const [envolucro, setEnvolucro] = useState<HTMLSpanElement | null>(null);
+  const botaoRef = useRef<HTMLButtonElement>(null);
+  const [aberto, setAberto] = useState(false);
   const [texto, setTexto] = useState(() => isoParaTexto(value));
   const [ultimoValue, setUltimoValue] = useState(value);
 
@@ -88,20 +92,16 @@ export function DateInput({ value, onChange, required, id, className, title, dis
     if (iso) onChange(iso);
   }
 
-  // showPicker() abre o calendario a partir do clique; sem suporte (ou se o navegador recusar) so foca o
-  // auxiliar, sem propagar erro -- a digitacao continua funcionando.
-  function abrirCalendario() {
-    const auxiliar = auxiliarRef.current;
-    if (!auxiliar) return;
-    try {
-      auxiliar.showPicker();
-    } catch {
-      auxiliar.focus();
-    }
+  function fechar() {
+    setAberto(false);
+    botaoRef.current?.focus();
   }
 
+  // Campo desabilitado depois de aberto: o calendario nao fica solto.
+  const calendarioAberto = aberto && !disabled;
+
   return (
-    <span className="date-wrap" style={style}>
+    <span ref={setEnvolucro} className="date-wrap" style={style}>
       <input
         type="text"
         inputMode="numeric"
@@ -117,24 +117,30 @@ export function DateInput({ value, onChange, required, id, className, title, dis
         className={["date-input", className].filter(Boolean).join(" ")}
         maxLength={10}
       />
-      <button type="button" className="date-cal-btn" aria-label="Abrir calendário" title="Abrir calendário" disabled={disabled} onClick={abrirCalendario}>
+      <button
+        ref={botaoRef}
+        type="button"
+        className="date-cal-btn"
+        aria-label="Abrir calendário"
+        title="Abrir calendário"
+        aria-haspopup="dialog"
+        aria-expanded={calendarioAberto}
+        disabled={disabled}
+        onClick={() => setAberto((a) => !a)}
+      >
         <Icon name="cal" size={14} />
       </button>
-      {/* So abre o calendario e devolve o dia escolhido. Recebe a data do TEXTO exibido, e so quando esta completa
-          (texto vazio, parcial ou invalido: o calendario abre em hoje, sem mexer no que a usuaria digitou). */}
-      <input
-        ref={auxiliarRef}
-        type="date"
-        className="date-nativo"
-        tabIndex={-1}
-        aria-hidden="true"
-        disabled={disabled}
-        min={min}
-        value={textoParaIso(texto) ?? ""}
-        onChange={(e) => {
-          if (e.target.value) onChange(e.target.value);
-        }}
-      />
+      {calendarioAberto && (
+        <Calendario
+          modo="dia"
+          valor={textoParaIso(texto) ?? ""}
+          min={min}
+          ancora={envolucro}
+          aoEscolher={onChange}
+          aoLimpar={() => onChange("")}
+          aoFechar={fechar}
+        />
+      )}
     </span>
   );
 }

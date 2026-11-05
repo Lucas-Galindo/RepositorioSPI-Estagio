@@ -1908,29 +1908,165 @@ tbody tr.row-link:hover {
   opacity: 0.45;
   cursor: not-allowed;
 }
-/* Auxiliar que so serve para abrir o calendario nativo. O seletor e mais especifico que ".field input", para o
-   preenchimento e a sombra dos formularios nao o atingirem. */
-.date-wrap .date-nativo {
-  position: absolute;
+
+/* ===== specs/070: calendario proprio (so tokens do tema; pares ja cobertos por verificar-contraste) ===== */
+.cal-painel {
+  position: fixed;
+  top: 0;
   left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 0;
+  z-index: 120;
+  box-sizing: border-box;
+  width: 288px;
+  max-width: calc(100vw - 16px);
+  padding: 14px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-out);
+  font-size: 12.5px;
+}
+/* Celular (ate 640 px): janela centralizada sobre o fundo escurecido dos modais, acima deles. */
+.cal-overlay {
+  z-index: 120;
+}
+.cal-overlay .cal-painel {
+  position: relative;
+  width: min(320px, 100%);
+}
+.cal-topo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.cal-nav {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: none;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+  color: var(--c-text);
+  box-shadow: var(--shadow-out-sm);
+  cursor: pointer;
 }
-/* O calendario e o icone nativos seguem o tema (sem isso ficam escuros sobre fundo escuro). Vale so para estes
-   controles, nao para a pagina inteira (que mudaria barras de rolagem e listas). */
-.date-wrap .date-nativo,
-input[type="month"] {
-  color-scheme: light;
+.cal-nav-prox svg {
+  transform: rotate(180deg);
 }
-.dark-mode .date-wrap .date-nativo,
-.dark-mode input[type="month"] {
-  color-scheme: dark;
+.cal-nav:hover:not(:disabled) {
+  box-shadow: var(--shadow-press);
+}
+.cal-nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cal-titulo {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+.cal-titulo:hover {
+  background: var(--c-accent-tint);
+  color: var(--c-accent-text);
+}
+.cal-titulo-fixo {
+  cursor: default;
+}
+.cal-titulo-fixo:hover {
+  background: transparent;
+  color: var(--c-text);
+}
+.cal-semana,
+.cal-linha {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.cal-semana span {
+  padding: 4px 0;
+  color: var(--c-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.cal-dia,
+.cal-item {
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-text);
+  font: inherit;
+  cursor: pointer;
+}
+.cal-dia {
+  height: 34px;
+}
+.cal-fora {
+  color: var(--c-text-muted);
+}
+.cal-dia:hover,
+.cal-item:hover {
+  background: var(--c-accent-tint);
+  color: var(--c-accent-text);
+}
+.cal-dia:focus-visible,
+.cal-item:focus-visible,
+.cal-nav:focus-visible,
+.cal-titulo:focus-visible {
+  outline: 2px solid var(--c-accent-text);
+  outline-offset: -2px;
+}
+.cal-hoje {
+  box-shadow: inset 0 0 0 2px var(--c-accent-text);
+}
+/* Bloqueado: apagado (cor suave + riscado), mas legivel; sem clique. */
+.cal-dia[aria-disabled="true"],
+.cal-dia[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--c-text-muted);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+.cal-dia[aria-selected="true"],
+.cal-item[aria-pressed="true"],
+.cal-dia[aria-selected="true"]:hover,
+.cal-item[aria-pressed="true"]:hover {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  box-shadow: var(--shadow-out-sm);
+}
+.cal-dia.cal-hoje[aria-selected="true"],
+.cal-item.cal-hoje[aria-pressed="true"] {
+  box-shadow: var(--shadow-out-sm), inset 0 0 0 2px var(--c-on-accent);
+}
+.cal-grade3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 6px;
+  height: 240px;
+}
+.cal-item {
+  font-size: 13px;
+  font-weight: 600;
+}
+.cal-rodape {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
 }
 .filter-clear {
   background: var(--c-bg);

@@ -1,5 +1,6 @@
 "use client";
 
+import { MonthInput } from "@/components/shared/MonthInput";
 import { use, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -150,7 +151,7 @@ export default function EditarContaAReceberPage({ params }: { params: Promise<{ 
               </div>
               <div className="field">
                 <label>Competência</label>
-                <input type="month" value={competencia} onChange={(e) => setCompetencia(e.target.value)} />
+                <MonthInput value={competencia} onChange={setCompetencia} />
               </div>
             </div>
             <div className="field-grid two" style={{ marginTop: 15 }}>
