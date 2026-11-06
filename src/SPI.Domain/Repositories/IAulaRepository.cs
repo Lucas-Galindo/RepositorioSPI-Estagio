@@ -12,7 +12,9 @@ namespace SPI.Domain.Repositories
             int? alunoId,
             DateOnly? dataInicio,
             DateOnly? dataFim,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken = default,
+            // specs/074: filtros opcionais por materia e por horario de inicio (limites inclusos).
+            int? materiaId = null, TimeOnly? horaInicioDe = null, TimeOnly? horaInicioAte = null);
 
         // Estorias 4 e 10: duas aulas ativas (nao canceladas) da mesma
         // professora nao podem se sobrepor no mesmo dia.

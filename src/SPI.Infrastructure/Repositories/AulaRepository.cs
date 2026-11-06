@@ -80,7 +80,8 @@ namespace SPI.Infrastructure.Repositories
             int? alunoId,
             DateOnly? dataInicio,
             DateOnly? dataFim,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            int? materiaId = null, TimeOnly? horaInicioDe = null, TimeOnly? horaInicioAte = null)
         {
             var query = _dbContext.Aulas
                 .Include(a => a.Materia)
@@ -112,6 +113,21 @@ namespace SPI.Infrastructure.Repositories
             if (dataFim.HasValue)
             {
                 query = query.Where(a => a.DataInicio <= dataFim.Value);
+            }
+
+            if (materiaId.HasValue)
+            {
+                query = query.Where(a => a.MateriaId == materiaId.Value);
+            }
+
+            if (horaInicioDe.HasValue)
+            {
+                query = query.Where(a => a.HoraInicio >= horaInicioDe.Value);
+            }
+
+            if (horaInicioAte.HasValue)
+            {
+                query = query.Where(a => a.HoraInicio <= horaInicioAte.Value);
             }
 
             return await query.OrderBy(a => a.DataInicio).ThenBy(a => a.HoraInicio).ToListAsync(cancellationToken);

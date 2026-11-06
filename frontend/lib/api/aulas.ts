@@ -62,6 +62,10 @@ export function listarAulas(
     alunoId?: number;
     dataInicio?: string;
     dataFim?: string;
+    /** specs/074: materia e horario de inicio (HH:mm, limites inclusos); o servidor filtra. */
+    materiaId?: number;
+    horaInicioDe?: string;
+    horaInicioAte?: string;
   }
 ): Promise<Aula[]> {
   return apiGet<Aula[]>("/api/aulas", accessToken, filtros);

@@ -26,7 +26,7 @@ namespace SPI.Application.Tests.Aulas
             return Task.CompletedTask;
         }
 
-        public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default) =>
+        public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default, int? materiaId = null, TimeOnly? horaInicioDe = null, TimeOnly? horaInicioAte = null) =>
             throw new NotImplementedException();
 
         public Task<bool> ExisteConflitoAsync(int professorId, DateOnly data, TimeOnly horaInicio, TimeOnly horaFim, int? ignorarAulaId, CancellationToken cancellationToken = default) =>

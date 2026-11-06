@@ -158,7 +158,7 @@ namespace SPI.Application.Tests.Relatorios
 
             public Task<List<Aula>> ListarAsync(
                 string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim,
-                CancellationToken cancellationToken = default) => Task.FromResult(Aulas.ToList());
+                CancellationToken cancellationToken = default, int? materiaId = null, TimeOnly? horaInicioDe = null, TimeOnly? horaInicioAte = null) => Task.FromResult(Aulas.ToList());
 
             public Task<Aula?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) =>
                 Task.FromResult<Aula?>(null);

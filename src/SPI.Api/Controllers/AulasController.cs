@@ -44,15 +44,21 @@ namespace SPI.Api.Controllers
         /// <param name="alunoId">Filtro por aluno</param>
         /// <param name="dataInicio">Filtro por data inicial do periodo</param>
         /// <param name="dataFim">Filtro por data final do periodo</param>
+        /// <param name="materiaId">Filtro por materia (specs/074)</param>
+        /// <param name="horaInicioDe">Horario de inicio da aula a partir de (HH:mm, inclusivo - specs/074)</param>
+        /// <param name="horaInicioAte">Horario de inicio da aula ate (HH:mm, inclusivo - specs/074)</param>
         /// <returns>Retorna a lista de aulas que atendem aos filtros</returns>
         public async Task<IActionResult> Listar(
             [FromQuery] string? status,
             [FromQuery] int? turmaId,
             [FromQuery] int? alunoId,
             [FromQuery] DateOnly? dataInicio,
-            [FromQuery] DateOnly? dataFim)
+            [FromQuery] DateOnly? dataFim,
+            [FromQuery] int? materiaId,
+            [FromQuery] TimeOnly? horaInicioDe,
+            [FromQuery] TimeOnly? horaInicioAte)
         {
-            return Ok(await _aulaService.ListarAsync(status, turmaId, alunoId, dataInicio, dataFim));
+            return Ok(await _aulaService.ListarAsync(status, turmaId, alunoId, dataInicio, dataFim, materiaId: materiaId, horaInicioDe: horaInicioDe, horaInicioAte: horaInicioAte));
         }
 
         [HttpGet("{id}")]

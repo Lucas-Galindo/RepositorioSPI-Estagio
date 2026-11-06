@@ -66,8 +66,14 @@ namespace SPI.Application.Tests.Aulas
             return Task.CompletedTask;
         }
 
-        public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Aulas.ToList());
+        // specs/074: ultimos filtros extras recebidos (materia e horario de inicio), para o teste de repasse.
+        public (int? MateriaId, TimeOnly? HoraInicioDe, TimeOnly? HoraInicioAte) UltimosFiltrosExtras { get; private set; }
+
+        public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default, int? materiaId = null, TimeOnly? horaInicioDe = null, TimeOnly? horaInicioAte = null)
+        {
+            UltimosFiltrosExtras = (materiaId, horaInicioDe, horaInicioAte);
+            return Task.FromResult(Aulas.ToList());
+        }
 
         // specs/068: presencas ja contadas por pacote (o resumo de cobranca pede em lote); vazio por padrao.
         public Dictionary<int, int> PresencasPorVinculo { get; } = new();

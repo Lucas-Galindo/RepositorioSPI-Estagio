@@ -261,7 +261,7 @@ namespace SPI.Application.Tests.VinculosCobranca
             Task.FromResult(Presencas.Count(p => p.VinculoCobrancaId == vinculoCobrancaId && p.Ano == competencia.Year && p.Mes == competencia.Month));
 
         public Task<Aula?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task<List<Aula>> ListarAsync(string? status, int? turmaId, int? alunoId, DateOnly? dataInicio, DateOnly? dataFim, CancellationToken cancellationToken = default, int? materiaId = null, TimeOnly? horaInicioDe = null, TimeOnly? horaInicioAte = null) => throw new NotImplementedException();
         public Task<bool> ExisteConflitoAsync(int professorId, DateOnly data, TimeOnly horaInicio, TimeOnly horaFim, int? ignorarAulaId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task AdicionarAsync(Aula aula, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task DefinirAlunosAsync(int aulaId, IEnumerable<int> alunoIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();

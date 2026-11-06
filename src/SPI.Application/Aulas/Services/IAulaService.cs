@@ -10,7 +10,8 @@ namespace SPI.Application.Aulas.Services
             int? alunoId,
             DateOnly? dataInicio,
             DateOnly? dataFim,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken = default,
+            int? materiaId = null, TimeOnly? horaInicioDe = null, TimeOnly? horaInicioAte = null);
 
         Task<AulaResponse> ObterPorIdAsync(int id, CancellationToken cancellationToken = default);
 

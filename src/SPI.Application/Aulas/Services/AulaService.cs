@@ -54,9 +54,10 @@ namespace SPI.Application.Aulas.Services
             int? alunoId,
             DateOnly? dataInicio,
             DateOnly? dataFim,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            int? materiaId = null, TimeOnly? horaInicioDe = null, TimeOnly? horaInicioAte = null)
         {
-            var aulas = await _aulaRepository.ListarAsync(status, turmaId, alunoId, dataInicio, dataFim, cancellationToken);
+            var aulas = await _aulaRepository.ListarAsync(status, turmaId, alunoId, dataInicio, dataFim, cancellationToken, materiaId, horaInicioDe, horaInicioAte);
             // Uma leitura do relogio para a lista inteira: todas as aulas usam o mesmo instante.
             var agora = _relogio.AgoraLocal();
             return aulas.Select(a => MapearEm(a, agora)).ToList();
