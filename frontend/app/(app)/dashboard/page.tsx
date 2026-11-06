@@ -73,7 +73,9 @@ export default function DashboardPage() {
   }, [sessao, periodoInicio, periodoFim, alunoId]);
 
   const alunosAtendidos = dashboard?.alunosAtendidosNoPeriodo ?? null;
-  const recebidoMes = dashboard?.valorFaturadoNoPeriodo ?? null;
+  const recebidoNoPeriodo = dashboard?.valorFaturadoNoPeriodo ?? null;
+  // specs/071: com aluno escolhido o servidor filtra os dois cards por ele; aqui so muda o texto da legenda.
+  const sufixoAluno = alunoId ? " · do aluno selecionado" : "";
 
   const aulasHoje = (aulas ?? []).filter((a) => a.dataInicio === hojeIso).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
   const proxima = aulasHoje.find((a) => a.status === "Agendada") ?? aulasHoje[0];
@@ -111,7 +113,7 @@ export default function DashboardPage() {
           </div>
           <div className="card-eyebrow">Alunos atendidos</div>
           <div className="big-value">{alunosAtendidos ?? "—"}</div>
-          <div className="big-label">Com aula realizada este mês</div>
+          <div className="big-label">Com aula realizada no período{sufixoAluno}</div>
         </div>
 
         <div className="card card-small">
@@ -119,11 +121,11 @@ export default function DashboardPage() {
             <Icon name="wallet" size={16} />
           </div>
           <div className="card-eyebrow">
-            Recebido este mês
-            <InfoTooltip text="Total de contas a receber que já foram pagas dentro do mês atual." />
+            Recebidos no período
+            <InfoTooltip text="Total de contas a receber que já foram pagas dentro do período escolhido (sem período, o mês atual)." />
           </div>
-          <div className="big-value">{recebidoMes !== null ? currency(recebidoMes) : "—"}</div>
-          <div className="big-label">Contas a receber pagas no mês</div>
+          <div className="big-value">{recebidoNoPeriodo !== null ? currency(recebidoNoPeriodo) : "—"}</div>
+          <div className="big-label">Contas a receber pagas no período{sufixoAluno}</div>
         </div>
       </div>
 

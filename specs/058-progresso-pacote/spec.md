@@ -8,6 +8,8 @@
 
 **Status**: Draft
 
+> **Nota (2026-11-05, spec 071):** o período da Home (só o "até" começa no 1º dia do mês do "até") e o filtro de aluno passaram a valer também para os cards "Alunos atendidos" e "Recebidos no período" (antes só filtravam a seção de pacotes). Ver `specs/071-home-recebidos-periodo/`.
+
 **Input**: Card Trello "Administração de aulas vencidas", mais as decisões do usuário em 2026-10-19:
 - **aulas dadas** = presenças registradas no pacote;
 - **aulas restantes** = total do pacote − aulas dadas.

@@ -25,15 +25,14 @@ namespace SPI.Application.Dashboard.Services
             // Sem periodo informado, assume o mes corrente (Estoria 11 nao
             // fixa um periodo padrao explicito).
             var hoje = DateOnly.FromDateTime(DateTime.Now);
-            var inicio = periodoInicio ?? new DateOnly(hoje.Year, hoje.Month, 1);
-            var fim = periodoFim ?? inicio.AddMonths(1).AddDays(-1);
+            var (inicio, fim) = ResolverPeriodo(periodoInicio, periodoFim, hoje);
 
             var totalAulas = await _relatorioRepository.ContarAulasAgendadasNoPeriodoAsync(inicio, fim, cancellationToken);
             var totalAlunos = await _relatorioRepository.ContarAlunosAtivosAsync(cancellationToken);
-            var alunosAtendidos = await _relatorioRepository.ContarAlunosAtendidosNoPeriodoAsync(inicio, fim, cancellationToken);
+            var alunosAtendidos = await _relatorioRepository.ContarAlunosAtendidosNoPeriodoAsync(inicio, fim, cancellationToken, alunoId);
             var totalTurmas = await _relatorioRepository.ContarTurmasAtivasAsync(cancellationToken);
             var valorPendente = await _relatorioRepository.ObterValorPendenteAsync(cancellationToken);
-            var valorFaturado = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(inicio, fim, cancellationToken);
+            var valorFaturado = await _relatorioRepository.ObterValorFaturadoNoPeriodoAsync(inicio, fim, cancellationToken, alunoId: alunoId);
             var proximasAulas = await _relatorioRepository.ObterProximasAulasHojeAsync(cancellationToken);
             var lembretesPendentes = await _relatorioRepository.ContarLembretesPendentesAsync(cancellationToken);
             // specs/058: pacotes (ativos e inativos) e as aulas dadas de cada um,
@@ -64,6 +63,17 @@ namespace SPI.Application.Dashboard.Services
                 }).ToList(),
                 Pacotes = MontarResumoPacotes(pacotes, presencas, presencasNoPeriodo.Values.Sum())
             };
+        }
+
+        // specs/071: o periodo e unico para o dashboard todo. Sem nenhum limite, vale o mes de `hoje`; so com o
+        // "ate", comeca no 1o dia do mes do "ate"; o fim, quando nao informado, e um mes depois do inicio menos um dia (como ja era).
+        // Estatica e pura (testavel sem banco).
+        public static (DateOnly Inicio, DateOnly Fim) ResolverPeriodo(DateOnly? periodoInicio, DateOnly? periodoFim, DateOnly hoje)
+        {
+            var inicio = periodoInicio
+                ?? (periodoFim is { } ate ? new DateOnly(ate.Year, ate.Month, 1) : new DateOnly(hoje.Year, hoje.Month, 1));
+            var fim = periodoFim ?? inicio.AddMonths(1).AddDays(-1);
+            return (inicio, fim);
         }
 
         // specs/058: visao de negocio dos pacotes. Estatica e pura (testavel sem

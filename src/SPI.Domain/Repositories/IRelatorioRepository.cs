@@ -100,7 +100,8 @@ namespace SPI.Domain.Repositories
         // Alunos distintos com pelo menos uma aula Realizada no periodo
         // (distinto de ContarAlunosAtivosAsync, que conta todo aluno ativo
         // independente de ter tido aula no periodo).
-        Task<int> ContarAlunosAtendidosNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default);
+        // specs/071: com alunoId, conta so esse aluno (resultado 0 ou 1).
+        Task<int> ContarAlunosAtendidosNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default, int? alunoId = null);
 
         // Taxa de inadimplencia: total (em valor) das contas a receber com
         // vencimento no periodo (exclui Canceladas) vs. quanto desse total

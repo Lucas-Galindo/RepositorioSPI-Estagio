@@ -23,9 +23,9 @@ namespace SPI.Api.Controllers
         /// <summary>
         /// Endpoint para obter os indicadores resumidos do dashboard (Estoria 11)
         /// </summary>
-        /// <param name="periodoInicio">Inicio do periodo considerado para aulas/faturamento (padrao: inicio do mes corrente)</param>
+        /// <param name="periodoInicio">Inicio do periodo considerado para aulas/faturamento (padrao: inicio do mes corrente; so com o fim informado, o 1o dia do mes do fim - specs/071)</param>
         /// <param name="periodoFim">Fim do periodo considerado (padrao: fim do mes corrente)</param>
-        /// <param name="alunoId">Filtra a secao de pacotes por aluno (specs/058)</param>
+        /// <param name="alunoId">Filtra por aluno a secao de pacotes (specs/058) e os cards de alunos atendidos e recebidos no periodo (specs/071)</param>
         /// <returns>Retorna os indicadores consolidados em tempo real</returns>
         public async Task<IActionResult> Obter([FromQuery] DateOnly? periodoInicio, [FromQuery] DateOnly? periodoFim, [FromQuery] int? alunoId)
         {
