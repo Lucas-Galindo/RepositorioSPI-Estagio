@@ -28,3 +28,5 @@ Thumbs.db
 ## nunca versionar; scripts/README continuam rastreados normalmente
 database/backup/*.sql
 database/backup/backup.log
+
+.fake
