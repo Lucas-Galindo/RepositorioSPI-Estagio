@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+> **Nota (2026-11-05, spec 072):** na lista de Alunos, a pílula do tipo de cobrança passou para uma coluna própria, "Tipo", depois de "Cobrança"; a coluna "Cobrança" mostra só valor e turma. O modo "grupo" (turma e aula) não mudou. Ver `specs/072-alunos-coluna-tipo/`.
+
 **Input**: Card do Trello "Exibir o vínculo de cobrança do aluno para o professor" (prioridade 3 do backlog). A professora precisa identificar, direto na tela e de forma rápida, **qual é o vínculo de cobrança** do aluno (mensalidade, pacote, avulsa; semestral e anual quando existirem), de preferência por um selo (badge), sem abrir a ficha do aluno.
 
 ## Contexto (estado atual, lido do código)

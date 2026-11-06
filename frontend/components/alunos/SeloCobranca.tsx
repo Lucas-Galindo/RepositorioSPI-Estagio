@@ -5,8 +5,11 @@ import { currency } from "@/lib/format";
 interface SeloCobrancaProps {
   /** Resumo calculado pelo servidor; nulo quando nao veio (mostra um traco). */
   selo: SeloCobrancaDados | null | undefined;
-  /** "lista" = resumo do aluno (turma, +N e dica); "grupo" = o que vale na turma ou na aula. */
-  modo: "lista" | "grupo";
+  /**
+   * specs/072, lista de Alunos: "tipo" = so a pilula (com "+N" e a dica dos vinculos); "detalhe" = valor, turma e aviso
+   * de pacote esgotado. "grupo" = o que vale na turma ou na aula (pilula e valor juntos).
+   */
+  modo: "tipo" | "detalhe" | "grupo";
 }
 
 const ROTULO: Record<string, string> = { SemVinculo: "Sem vínculo" };
@@ -32,7 +35,7 @@ export function SeloCobranca({ selo, modo }: SeloCobrancaProps) {
   const restantes = selo.progresso?.aulasRestantes;
   const rotulo = ROTULO[selo.categoria] ?? selo.categoria;
   const dica =
-    modo === "lista" && selo.detalhes.length > 1
+    modo === "tipo" && selo.detalhes.length > 1
       ? selo.detalhes
           .map((d) => {
             const resta = d.progresso?.aulasRestantes;
@@ -43,18 +46,29 @@ export function SeloCobranca({ selo, modo }: SeloCobrancaProps) {
           .join("\n")
       : undefined;
 
-  return (
-    <div title={dica}>
+  const pilula = (
+    <>
       <span className={`status-pill ${classeDaPilula(selo)}`} style={{ whiteSpace: "nowrap" }}>
         {rotulo}
         {selo.categoria === "Pacote" && restantes != null ? ` · restam ${restantes}` : ""}
       </span>
       {selo.outrosVinculos > 0 && <span className="who"> +{selo.outrosVinculos}</span>}
-      <div className="who">
-        {currency(selo.valor)}
-        {modo === "lista" && selo.turmaNome ? ` · ${selo.turmaNome}` : ""}
-        {selo.avisoPacoteEsgotado ? " · pacote esgotado" : ""}
-      </div>
+    </>
+  );
+  const valor = (
+    <div className="who">
+      {currency(selo.valor)}
+      {modo === "detalhe" && selo.turmaNome ? ` · ${selo.turmaNome}` : ""}
+      {selo.avisoPacoteEsgotado ? " · pacote esgotado" : ""}
+    </div>
+  );
+
+  if (modo === "tipo") return <div title={dica}>{pilula}</div>;
+  if (modo === "detalhe") return valor;
+  return (
+    <div title={dica}>
+      {pilula}
+      {valor}
     </div>
   );
 }

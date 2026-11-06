@@ -129,6 +129,7 @@ export default function AlunosPage() {
                   <th>Telefone</th>
                   <th>Valor da aula</th>
                   <th>Cobrança</th>
+                  <th>Tipo</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -148,7 +149,10 @@ export default function AlunosPage() {
                     <td>{a.telefoneAluno ?? "—"}</td>
                     <td>R$ {a.valorAula.toFixed(2)}</td>
                     <td>
-                      <SeloCobranca selo={a.cobranca} modo="lista" />
+                      <SeloCobranca selo={a.cobranca} modo="detalhe" />
+                    </td>
+                    <td>
+                      <SeloCobranca selo={a.cobranca} modo="tipo" />
                     </td>
                     <td>
                       <StatusPill status={a.ativo ? "Ativo" : "Inativo"} />
