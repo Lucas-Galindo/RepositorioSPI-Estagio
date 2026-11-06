@@ -15,6 +15,10 @@ namespace SPI.Application.Turmas.Dtos
         public DateOnly? DataInicio { get; set; }
         public DateOnly? DataFim { get; set; }
 
+        // specs/075: materia da turma (nula = sem materia). O nome vale mesmo se a materia foi inativada depois.
+        public int? MateriaId { get; set; }
+        public string? MateriaNome { get; set; }
+
         /// <summary>
         /// Turma de pacote ja iniciada: ninguem novo entra (nem por matricula, nem por
         /// pacote). Calculado no servidor para a tela nao repetir a regra (Principio II).

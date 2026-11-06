@@ -23,5 +23,12 @@ namespace SPI.Application.Turmas.Dtos
         /// (prorrogar ou antecipar), com fim >= inicio.
         /// </summary>
         public DateOnly? DataFim { get; set; }
+
+        /// <summary>
+        /// specs/075: materia da turma (opcional). Deve existir e estar ativa ao criar o vinculo ou troca-lo; manter
+        /// a mesma materia ja vinculada nao revalida. No PUT, ausente/nulo REMOVE o vinculo (o formulario sempre
+        /// envia o valor atual).
+        /// </summary>
+        public int? MateriaId { get; set; }
     }
 }

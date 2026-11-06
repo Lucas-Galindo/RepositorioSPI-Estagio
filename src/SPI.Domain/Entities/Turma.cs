@@ -19,6 +19,10 @@ namespace SPI.Domain.Entities
         public DateOnly? DataInicio { get; set; }
         public DateOnly? DataFim { get; set; }
 
+        // specs/075: materia da turma (opcional, uma so). Nao restringe as aulas da turma.
+        public int? MateriaId { get; set; }
+        public Materia? Materia { get; set; }
+
         // specs/063: turma de pacote ja iniciada (data de inicio anterior a `hoje`)
         // esta fechada: ninguem novo entra.
         public bool EstaIniciada(DateOnly hoje) => DataInicio.HasValue && DataInicio.Value < hoje;

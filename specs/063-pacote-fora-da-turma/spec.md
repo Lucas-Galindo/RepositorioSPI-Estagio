@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+> **Nota (2026-11-05, spec 075):** a turma passou a ter uma matéria opcional (`turma.materia_id`, migração `database/27_turma_materia.sql`); não muda o tipo, as datas nem as regras de pacote. Ver `specs/075-turma-materia/`.
+
 **Input**: Card Trello "Alunos de pacote fora do cadastro fixo das turmas" (origem: anotações da reunião do dia 22). As dúvidas de negócio do card foram respondidas pelo usuário em 2026-10-29 e 2026-10-30 e estão registradas nesta spec. **Esta spec muda parte da regra da spec 056** (ver "O que muda em relação à spec 056").
 
 > **Revisão de 2026-10-30.** A primeira versão desta spec assumia que o aluno de pacote *não ficava matriculado* na turma. O usuário esclareceu que o aluno **pode se matricular na turma e contratar o pacote**, participando junto com os demais ("pacote coletivo"). A spec foi refeita nesse modelo, que é mais simples: a participação continua pela matrícula, e o pacote passa a pertencer a uma turma.

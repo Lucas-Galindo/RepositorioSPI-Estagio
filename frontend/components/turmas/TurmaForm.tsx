@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { ApiError } from "@/lib/api/client";
 import { cadastrarTurma, atualizarTurma, type Turma, type TurmaRequest, type TipoTurma } from "@/lib/api/turmas";
+import { listarMaterias, type Materia } from "@/lib/api/materias";
 import { DateInput } from "@/components/shared/DateInput";
 
 export function TurmaForm({ turma }: { turma?: Turma }) {
@@ -20,8 +21,16 @@ export function TurmaForm({ turma }: { turma?: Turma }) {
   const [tipo, setTipo] = useState<TipoTurma>(turma?.tipo ?? "Mensalidade");
   const [dataInicio, setDataInicio] = useState(turma?.dataInicio ?? "");
   const [dataFim, setDataFim] = useState(turma?.dataFim ?? "");
+  // specs/075: materia opcional. So as ativas sao oferecidas; a atual da turma aparece mesmo inativada (e pode ser mantida).
+  const [materias, setMaterias] = useState<Materia[]>([]);
+  const [materiaId, setMateriaId] = useState(turma?.materiaId?.toString() ?? "");
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    if (!sessao) return;
+    listarMaterias(sessao.accessToken, { ativo: true }).then(setMaterias).catch(() => setMaterias([]));
+  }, [sessao]);
 
   const ehPacote = tipo === "Pacote";
   // A data de inicio nao muda depois de preenchida (o servidor recusa); aqui so a travamos na tela.
@@ -38,6 +47,7 @@ export function TurmaForm({ turma }: { turma?: Turma }) {
       tipo,
       dataInicio: ehPacote && dataInicio ? dataInicio : null,
       dataFim: ehPacote && dataFim ? dataFim : null,
+      materiaId: materiaId ? Number(materiaId) : null,
     };
 
     try {
@@ -85,6 +95,24 @@ export function TurmaForm({ turma }: { turma?: Turma }) {
                   ? "O tipo não muda depois que a turma é criada."
                   : "Turma de pacote é fechada: começa e termina junto, e depois que começa ninguém novo entra."}
               </span>
+            </div>
+          </div>
+
+          <div className="field-grid two" style={{ marginTop: 14 }}>
+            <div className="field">
+              <label>Matéria (opcional)</label>
+              <select value={materiaId} onChange={(e) => setMateriaId(e.target.value)}>
+                <option value="">Sem matéria</option>
+                {turma?.materiaId && !materias.some((m) => m.id === turma.materiaId) && (
+                  <option value={turma.materiaId}>{turma.materiaNome} (inativa)</option>
+                )}
+                {materias.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nome}
+                  </option>
+                ))}
+              </select>
+              <span className="hint">Ajuda a filtrar as turmas e já vem escolhida ao agendar uma aula da turma.</span>
             </div>
           </div>
 

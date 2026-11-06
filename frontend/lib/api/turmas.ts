@@ -26,6 +26,9 @@ export interface Turma {
   dataFim: string | null;
   /** Calculado no servidor: turma de pacote ja iniciada. A tela so exibe; nao recalcula. */
   fechada: boolean;
+  /** specs/075: materia da turma (opcional); o nome vale mesmo se a materia foi inativada depois. */
+  materiaId: number | null;
+  materiaNome: string | null;
   alunos: AlunoResumo[];
   /** Turma de pacote: quem saiu mas ainda tem o pacote ativo dela (so esses podem voltar pela matricula direta). */
   alunosComPacoteForaDaTurma: AlunoResumo[];
@@ -39,6 +42,8 @@ export interface TurmaRequest {
   /** Somente Pacote; obrigatorias no cadastro. A data de inicio nao muda depois de preenchida. */
   dataInicio?: string | null;
   dataFim?: string | null;
+  /** specs/075: opcional; null/ausente na edicao REMOVE a materia (o formulario sempre envia o valor atual). */
+  materiaId?: number | null;
 }
 
 export function listarTurmas(accessToken: string, filtros?: { nome?: string; ativo?: boolean }): Promise<Turma[]> {

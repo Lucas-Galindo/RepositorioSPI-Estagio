@@ -15,11 +15,11 @@ namespace SPI.Infrastructure.Repositories
         }
 
         public Task<Turma?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) =>
-            _dbContext.Turmas.Include(t => t.AlunosTurma).ThenInclude(at => at.Aluno).FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+            _dbContext.Turmas.Include(t => t.Materia).Include(t => t.AlunosTurma).ThenInclude(at => at.Aluno).FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
         public async Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default)
         {
-            var query = _dbContext.Turmas.Include(t => t.AlunosTurma).ThenInclude(at => at.Aluno).AsQueryable();
+            var query = _dbContext.Turmas.Include(t => t.Materia).Include(t => t.AlunosTurma).ThenInclude(at => at.Aluno).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(nome))
             {

@@ -134,6 +134,11 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
           <div className="meta">
             <span>{turma.alunos.length} aluno(s)</span>·<StatusPill status={turma.ativo ? "Ativo" : "Inativo"} />·
             <span>Turma de {turma.tipo === "Pacote" ? "pacote" : "mensalidade"}</span>
+            {turma.materiaNome && (
+              <>
+                ·<span>{turma.materiaNome}</span>
+              </>
+            )}
             {turma.tipo === "Pacote" && (turma.dataInicio || turma.dataFim) && (
               <>
                 ·

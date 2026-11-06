@@ -15,15 +15,18 @@ namespace SPI.Application.Turmas.Services
         private readonly IVinculoCobrancaRepository _vinculoRepository;
         private readonly IEncerramentoTurmaPacoteService _encerramentoPacotes;
         private readonly IResumoCobrancaService? _cobranca;
+        private readonly IMateriaRepository? _materias;
 
         public TurmaService(
             ITurmaRepository turmaRepository,
             IAlunoRepository alunoRepository,
             IVinculoCobrancaRepository vinculoRepository,
             IEncerramentoTurmaPacoteService encerramentoPacotes,
-            IResumoCobrancaService? cobranca = null)
+            IResumoCobrancaService? cobranca = null,
+            IMateriaRepository? materias = null)
         {
             _cobranca = cobranca;
+            _materias = materias;
             _turmaRepository = turmaRepository;
             _alunoRepository = alunoRepository;
             _vinculoRepository = vinculoRepository;
@@ -31,6 +34,30 @@ namespace SPI.Application.Turmas.Services
         }
 
         private static DateOnly Hoje() => DateOnly.FromDateTime(DateTime.Now);
+
+        // specs/075: materia opcional. Nula = sem materia. Inexistente = 404; inativa = 409 (so se escolhe ativa).
+        private async Task<Materia?> ValidarMateriaAsync(int? materiaId, CancellationToken cancellationToken)
+        {
+            if (!materiaId.HasValue)
+            {
+                return null;
+            }
+
+            if (_materias is null)
+            {
+                throw new InvalidOperationException("O repositorio de materias nao foi configurado no TurmaService.");
+            }
+
+            var materia = await _materias.ObterPorIdAsync(materiaId.Value, cancellationToken)
+                ?? throw new NaoEncontradoException("Materia nao encontrada.");
+
+            if (!materia.Ativo)
+            {
+                throw new ConflitoException("A materia esta inativa e nao pode ser vinculada a turma.");
+            }
+
+            return materia;
+        }
 
         public async Task<List<TurmaResponse>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default)
         {
@@ -70,9 +97,13 @@ namespace SPI.Application.Turmas.Services
                 }
             }
 
+            var materia = await ValidarMateriaAsync(request.MateriaId, cancellationToken);
+
             var turma = new Turma
             {
                 Nome = request.Nome,
+                MateriaId = materia?.Id,
+                Materia = materia,
                 ProfessorId = professorId,
                 Ativo = true,
                 Tipo = tipo,
@@ -131,6 +162,15 @@ namespace SPI.Application.Turmas.Services
                 {
                     throw new ConflitoException("A data de fim nao pode ser anterior a data de inicio.");
                 }
+            }
+
+            // specs/075: so valida quando o vinculo muda (a mesma materia, mesmo inativada depois, pode ser mantida);
+            // nulo remove o vinculo.
+            if (request.MateriaId != turma.MateriaId)
+            {
+                var materia = await ValidarMateriaAsync(request.MateriaId, cancellationToken);
+                turma.MateriaId = materia?.Id;
+                turma.Materia = materia;
             }
 
             turma.Nome = request.Nome;
@@ -266,6 +306,8 @@ namespace SPI.Application.Turmas.Services
             Tipo = turma.Tipo,
             DataInicio = turma.DataInicio,
             DataFim = turma.DataFim,
+            MateriaId = turma.MateriaId,
+            MateriaNome = turma.Materia?.Nome,
             Fechada = turma.Tipo == TipoTurma.Pacote && turma.EstaIniciada(Hoje()),
             Alunos = turma.AlunosTurma.Select(at => new AlunoResumoResponse
             {

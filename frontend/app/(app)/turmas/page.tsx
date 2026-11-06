@@ -79,6 +79,7 @@ export default function TurmasPage() {
                 </div>
                 <h3>{t.nome}</h3>
                 <p>{t.alunos.length} aluno(s) vinculado(s)</p>
+                {t.materiaNome && <p>Matéria: {t.materiaNome}</p>}
                 <StatusPill status={t.ativo ? "Ativo" : "Inativo"} />
               </div>
             ))

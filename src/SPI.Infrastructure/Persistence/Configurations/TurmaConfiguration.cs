@@ -18,11 +18,19 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(t => t.Tipo).HasColumnName("tipo").HasMaxLength(20).IsRequired().HasConversion<string>();
             builder.Property(t => t.DataInicio).HasColumnName("data_inicio");
             builder.Property(t => t.DataFim).HasColumnName("data_fim");
+            builder.Property(t => t.MateriaId).HasColumnName("materia_id");
 
             builder.HasOne(t => t.Professor)
                 .WithMany(p => p.Turmas)
                 .HasForeignKey(t => t.ProfessorId)
                 .HasConstraintName("fk_turma_professor");
+
+            // specs/075: sem ON DELETE (materias tem exclusao logica); o vinculo e opcional.
+            builder.HasOne(t => t.Materia)
+                .WithMany()
+                .HasForeignKey(t => t.MateriaId)
+                .HasConstraintName("fk_turma_materia")
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

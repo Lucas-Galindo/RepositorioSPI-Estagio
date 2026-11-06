@@ -135,6 +135,12 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
                 onChange={(e) => {
                   setTurmaId(e.target.value);
                   if (e.target.value) setAlunoId("");
+                  // specs/075: so na criacao, so se a materia da aula ainda nao foi escolhida e a da turma esta entre as
+                  // ativas; a escolha da professora nunca e sobrescrita e a troca continua livre.
+                  if (!editando && e.target.value && !materiaId) {
+                    const daTurma = turmas.find((t) => String(t.id) === e.target.value)?.materiaId;
+                    if (daTurma && materias.some((m) => m.id === daTurma)) setMateriaId(String(daTurma));
+                  }
                 }}
               >
                 <option value="">Atendimento individual</option>
