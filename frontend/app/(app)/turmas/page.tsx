@@ -18,20 +18,40 @@ export default function TurmasPage() {
   const [turmas, setTurmas] = useState<Turma[] | null>(null);
   const [erro, setErro] = useState("");
   const [nome, setNome] = useState("");
+  // specs/073: o servidor filtra (parametro `ativo`); aqui so o estado do seletor.
+  const [status, setStatus] = useState<"" | "Ativo" | "Inativo">("");
 
   useEffect(() => {
     if (!sessao) return;
-    listarTurmas(sessao.accessToken, { nome: nome || undefined })
+    listarTurmas(sessao.accessToken, { nome: nome || undefined, ativo: status === "" ? undefined : status === "Ativo" })
       .then(setTurmas)
       .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as turmas."));
-  }, [sessao, nome]);
+  }, [sessao, nome, status]);
 
   const total = turmas?.length ?? 0;
+  const semFiltros = !nome && !status;
 
   return (
     <>
       <div className="filter-bar">
+        <select className="filter-select" value={status} onChange={(e) => setStatus(e.target.value as "" | "Ativo" | "Inativo")}>
+          <option value="">Status — todos</option>
+          <option value="Ativo">Ativo</option>
+          <option value="Inativo">Inativo</option>
+        </select>
         <input className="filter-input" placeholder="Buscar por nome..." value={nome} onChange={(e) => setNome(e.target.value)} />
+        {!semFiltros && (
+          <button
+            type="button"
+            className="filter-clear"
+            onClick={() => {
+              setNome("");
+              setStatus("");
+            }}
+          >
+            <Icon name="x" size={12} /> Limpar filtros
+          </button>
+        )}
       </div>
 
       <div className="row-gap">
