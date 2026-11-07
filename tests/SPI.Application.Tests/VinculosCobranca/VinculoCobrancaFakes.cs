@@ -158,8 +158,14 @@ namespace SPI.Application.Tests.VinculosCobranca
         public Task<Turma?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) =>
             Task.FromResult(Turmas.FirstOrDefault(t => t.Id == id));
 
-        public Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Turmas.ToList());
+        // specs/076: ultimos filtros extras recebidos (materia e sem materia), para o teste de repasse.
+        public (int? MateriaId, bool? SemMateria) UltimosFiltrosExtras { get; private set; }
+
+        public Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default, int? materiaId = null, bool? semMateria = null)
+        {
+            UltimosFiltrosExtras = (materiaId, semMateria);
+            return Task.FromResult(Turmas.ToList());
+        }
 
         public Task AdicionarAsync(Turma turma, CancellationToken cancellationToken = default)
         {

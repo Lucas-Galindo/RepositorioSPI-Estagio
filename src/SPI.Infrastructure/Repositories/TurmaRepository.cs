@@ -17,7 +17,7 @@ namespace SPI.Infrastructure.Repositories
         public Task<Turma?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) =>
             _dbContext.Turmas.Include(t => t.Materia).Include(t => t.AlunosTurma).ThenInclude(at => at.Aluno).FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
-        public async Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default)
+        public async Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default, int? materiaId = null, bool? semMateria = null)
         {
             var query = _dbContext.Turmas.Include(t => t.Materia).Include(t => t.AlunosTurma).ThenInclude(at => at.Aluno).AsQueryable();
 
@@ -29,6 +29,16 @@ namespace SPI.Infrastructure.Repositories
             if (ativo.HasValue)
             {
                 query = query.Where(t => t.Ativo == ativo.Value);
+            }
+
+            if (materiaId.HasValue)
+            {
+                query = query.Where(t => t.MateriaId == materiaId.Value);
+            }
+
+            if (semMateria == true)
+            {
+                query = query.Where(t => t.MateriaId == null);
             }
 
             return await query.OrderBy(t => t.Nome).ToListAsync(cancellationToken);

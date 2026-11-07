@@ -59,9 +59,9 @@ namespace SPI.Application.Turmas.Services
             return materia;
         }
 
-        public async Task<List<TurmaResponse>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default)
+        public async Task<List<TurmaResponse>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default, int? materiaId = null, bool? semMateria = null)
         {
-            var turmas = await _turmaRepository.ListarAsync(nome, ativo, cancellationToken);
+            var turmas = await _turmaRepository.ListarAsync(nome, ativo, cancellationToken, materiaId, semMateria);
             return turmas.Select(Mapear).ToList();
         }
 

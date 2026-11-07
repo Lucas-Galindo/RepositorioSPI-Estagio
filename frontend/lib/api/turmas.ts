@@ -46,7 +46,7 @@ export interface TurmaRequest {
   materiaId?: number | null;
 }
 
-export function listarTurmas(accessToken: string, filtros?: { nome?: string; ativo?: boolean }): Promise<Turma[]> {
+export function listarTurmas(accessToken: string, filtros?: { nome?: string; ativo?: boolean; materiaId?: number; semMateria?: boolean }): Promise<Turma[]> {
   return apiGet<Turma[]>("/api/turmas", accessToken, filtros);
 }
 

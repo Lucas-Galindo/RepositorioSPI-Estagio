@@ -8,6 +8,7 @@ import { StatusPill } from "@/components/shared/StatusPill";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageHeader } from "@/lib/usePageHeader";
+import { listarMaterias, type Materia } from "@/lib/api/materias";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
 import { ApiError } from "@/lib/api/client";
 
@@ -20,16 +21,30 @@ export default function TurmasPage() {
   const [nome, setNome] = useState("");
   // specs/073: o servidor filtra (parametro `ativo`); aqui so o estado do seletor.
   const [status, setStatus] = useState<"" | "Ativo" | "Inativo">("");
+  // specs/076: "" = todas, "sem" = turmas sem materia, ou o id da materia. O servidor filtra; aqui so o estado do seletor.
+  const [materia, setMateria] = useState("");
+  const [materias, setMaterias] = useState<Materia[]>([]);
 
   useEffect(() => {
     if (!sessao) return;
-    listarTurmas(sessao.accessToken, { nome: nome || undefined, ativo: status === "" ? undefined : status === "Ativo" })
+    // Todas as materias (inclusive inativas): turmas antigas podem ter uma materia inativada depois.
+    listarMaterias(sessao.accessToken).then(setMaterias).catch(() => setMaterias([]));
+  }, [sessao]);
+
+  useEffect(() => {
+    if (!sessao) return;
+    listarTurmas(sessao.accessToken, {
+      nome: nome || undefined,
+      ativo: status === "" ? undefined : status === "Ativo",
+      materiaId: materia && materia !== "sem" ? Number(materia) : undefined,
+      semMateria: materia === "sem" ? true : undefined,
+    })
       .then(setTurmas)
       .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as turmas."));
-  }, [sessao, nome, status]);
+  }, [sessao, nome, status, materia]);
 
   const total = turmas?.length ?? 0;
-  const semFiltros = !nome && !status;
+  const semFiltros = !nome && !status && !materia;
 
   return (
     <>
@@ -39,6 +54,15 @@ export default function TurmasPage() {
           <option value="Ativo">Ativo</option>
           <option value="Inativo">Inativo</option>
         </select>
+        <select className="filter-select" value={materia} onChange={(e) => setMateria(e.target.value)}>
+          <option value="">Matéria — todas</option>
+          <option value="sem">Sem matéria</option>
+          {materias.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nome}
+            </option>
+          ))}
+        </select>
         <input className="filter-input" placeholder="Buscar por nome..." value={nome} onChange={(e) => setNome(e.target.value)} />
         {!semFiltros && (
           <button
@@ -47,6 +71,7 @@ export default function TurmasPage() {
             onClick={() => {
               setNome("");
               setStatus("");
+              setMateria("");
             }}
           >
             <Icon name="x" size={12} /> Limpar filtros

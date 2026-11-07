@@ -27,16 +27,24 @@ namespace SPI.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         /// <summary>
         /// Endpoint para listar e buscar turmas
         /// </summary>
         /// <param name="nome">Filtro por nome (busca parcial)</param>
         /// <param name="ativo">Filtro por status</param>
+        /// <param name="materiaId">Filtro por materia da turma (specs/076)</param>
+        /// <param name="semMateria">true = so turmas sem materia (specs/076); nao combina com materiaId</param>
         /// <returns>Retorna a lista de turmas que atendem aos filtros</returns>
-        public async Task<IActionResult> Listar([FromQuery] string? nome, [FromQuery] bool? ativo)
+        public async Task<IActionResult> Listar([FromQuery] string? nome, [FromQuery] bool? ativo, [FromQuery] int? materiaId, [FromQuery] bool? semMateria)
         {
-            return Ok(await _turmaService.ListarAsync(nome, ativo));
+            if (materiaId.HasValue && semMateria == true)
+            {
+                return BadRequest(new[] { "Informe materiaId ou semMateria, nao os dois." });
+            }
+
+            return Ok(await _turmaService.ListarAsync(nome, ativo, materiaId: materiaId, semMateria: semMateria));
         }
 
         [HttpGet("{id}")]

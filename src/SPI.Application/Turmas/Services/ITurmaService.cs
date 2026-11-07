@@ -4,7 +4,7 @@ namespace SPI.Application.Turmas.Services
 {
     public interface ITurmaService
     {
-        Task<List<TurmaResponse>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default);
+        Task<List<TurmaResponse>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default, int? materiaId = null, bool? semMateria = null);
 
         Task<TurmaResponse> ObterPorIdAsync(int id, CancellationToken cancellationToken = default);
 

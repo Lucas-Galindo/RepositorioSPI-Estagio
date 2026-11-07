@@ -42,7 +42,7 @@ namespace SPI.Application.Tests.Lembretes
         private class FakeTurmaRepositoryVazia : ITurmaRepository
         {
             public Task<Turma?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-            public Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default, int? materiaId = null, bool? semMateria = null) => throw new NotImplementedException();
             public Task AdicionarAsync(Turma turma, CancellationToken cancellationToken = default) => throw new NotImplementedException();
             public Task VincularAlunoAsync(int turmaId, int alunoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
             public Task DesvincularAlunoAsync(int turmaId, int alunoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();

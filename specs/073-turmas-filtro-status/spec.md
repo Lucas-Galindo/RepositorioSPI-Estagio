@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+> **Nota (2026-11-05, spec 076):** a tela de Turmas ganhou também o filtro de matéria (com a opção "Sem matéria"), junto do filtro de status; ver `specs/076-turmas-filtro-materia/`.
+
 **Input**: Pedido do usuário (2026-11-05), card do Trello "Turmas: filtro de status (ativas/inativas)" (dividido do card "Turmas: filtros por status e matéria"): "Dentro da aba turma, coloque filtro para observarmos turmas inativas e ativas". O filtro de matéria ficou em outro card, que depende do vínculo Turma ↔ Matéria.
 
 ## Contexto (estado atual, lido do código)

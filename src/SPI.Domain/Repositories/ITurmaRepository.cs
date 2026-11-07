@@ -6,7 +6,8 @@ namespace SPI.Domain.Repositories
     {
         Task<Turma?> ObterPorIdAsync(int id, CancellationToken cancellationToken = default);
 
-        Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default);
+        // specs/076: filtros opcionais por materia (materiaId) ou por turmas sem materia (semMateria = true).
+        Task<List<Turma>> ListarAsync(string? nome, bool? ativo, CancellationToken cancellationToken = default, int? materiaId = null, bool? semMateria = null);
 
         Task AdicionarAsync(Turma turma, CancellationToken cancellationToken = default);
 
