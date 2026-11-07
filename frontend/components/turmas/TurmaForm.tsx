@@ -22,7 +22,7 @@ export function TurmaForm({ turma }: { turma?: Turma }) {
   const [dataInicio, setDataInicio] = useState(turma?.dataInicio ?? "");
   const [dataFim, setDataFim] = useState(turma?.dataFim ?? "");
   // specs/075: materia opcional. So as ativas sao oferecidas; a atual da turma aparece mesmo inativada (e pode ser mantida).
-  const [materias, setMaterias] = useState<Materia[]>([]);
+  const [materias, setMaterias] = useState<Materia[] | null>(null);
   const [materiaId, setMateriaId] = useState(turma?.materiaId?.toString() ?? "");
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
@@ -103,10 +103,10 @@ export function TurmaForm({ turma }: { turma?: Turma }) {
               <label>Matéria (opcional)</label>
               <select value={materiaId} onChange={(e) => setMateriaId(e.target.value)}>
                 <option value="">Sem matéria</option>
-                {turma?.materiaId && !materias.some((m) => m.id === turma.materiaId) && (
+                {turma?.materiaId && materias !== null && !materias.some((m) => m.id === turma.materiaId) && (
                   <option value={turma.materiaId}>{turma.materiaNome} (inativa)</option>
                 )}
-                {materias.map((m) => (
+                {(materias ?? []).map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.nome}
                   </option>

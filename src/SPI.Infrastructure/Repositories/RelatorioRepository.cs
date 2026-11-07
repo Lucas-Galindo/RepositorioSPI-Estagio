@@ -292,7 +292,7 @@ namespace SPI.Infrastructure.Repositories
 
         public Task<int> ContarAlunosAtendidosNoPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken = default, int? alunoId = null) =>
             _dbContext.AulaAlunos
-                .Where(aa => aa.Aula.Status == "Realizada" && aa.Aula.DataInicio >= inicio && aa.Aula.DataInicio <= fim
+                .Where(aa => aa.Aula.Ativo && aa.Aula.Status == "Realizada" && aa.Aula.DataInicio >= inicio && aa.Aula.DataInicio <= fim
                     && (alunoId == null || aa.AlunoId == alunoId))
                 .Select(aa => aa.AlunoId)
                 .Distinct()

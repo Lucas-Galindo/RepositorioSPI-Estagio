@@ -33,14 +33,25 @@ export default function TurmasPage() {
 
   useEffect(() => {
     if (!sessao) return;
+    // So a resposta da ultima combinacao de filtros vale; um erro passado some quando uma nova consulta der certo.
+    let atual = true;
     listarTurmas(sessao.accessToken, {
       nome: nome || undefined,
       ativo: status === "" ? undefined : status === "Ativo",
       materiaId: materia && materia !== "sem" ? Number(materia) : undefined,
       semMateria: materia === "sem" ? true : undefined,
     })
-      .then(setTurmas)
-      .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as turmas."));
+      .then((r) => {
+        if (!atual) return;
+        setErro("");
+        setTurmas(r);
+      })
+      .catch((excecao) => {
+        if (atual) setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as turmas.");
+      });
+    return () => {
+      atual = false;
+    };
   }, [sessao, nome, status, materia]);
 
   const total = turmas?.length ?? 0;

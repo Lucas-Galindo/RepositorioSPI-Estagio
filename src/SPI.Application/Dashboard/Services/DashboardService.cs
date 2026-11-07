@@ -22,8 +22,7 @@ namespace SPI.Application.Dashboard.Services
 
         public async Task<DashboardResponse> ObterAsync(DateOnly? periodoInicio, DateOnly? periodoFim, int? alunoId, CancellationToken cancellationToken = default)
         {
-            // Sem periodo informado, assume o mes corrente (Estoria 11 nao
-            // fixa um periodo padrao explicito).
+            // O periodo unico do dashboard (inclusive o padrao: o mes corrente) sai de ResolverPeriodo.
             var hoje = DateOnly.FromDateTime(DateTime.Now);
             var (inicio, fim) = ResolverPeriodo(periodoInicio, periodoFim, hoje);
 

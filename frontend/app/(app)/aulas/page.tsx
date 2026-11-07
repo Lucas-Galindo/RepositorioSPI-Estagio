@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DateInput } from "@/components/shared/DateInput";
@@ -15,6 +15,9 @@ import { listarMaterias, type Materia } from "@/lib/api/materias";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
 import { fmtData, fmtHora } from "@/lib/format";
 import { ApiError } from "@/lib/api/client";
+
+// specs/074: agrupa o rotulo e os dois campos De/Ate para quebrarem de linha juntos.
+const grupoDeFiltro: CSSProperties = { display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 9, maxWidth: "100%" };
 
 export default function AulasPage() {
   usePageHeader("Aulas", "Agenda de aulas individuais e de turma");
@@ -41,6 +44,8 @@ export default function AulasPage() {
 
   useEffect(() => {
     if (!sessao) return;
+    // So a resposta da ultima combinacao de filtros vale; um erro passado some quando uma nova consulta der certo.
+    let atual = true;
     listarAulas(sessao.accessToken, {
       status: status || undefined,
       turmaId: turmaId ? Number(turmaId) : undefined,
@@ -50,8 +55,17 @@ export default function AulasPage() {
       horaInicioDe: horaDe || undefined,
       horaInicioAte: horaAte || undefined,
     })
-      .then(setAulas)
-      .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as aulas."));
+      .then((r) => {
+        if (!atual) return;
+        setErro("");
+        setAulas(r);
+      })
+      .catch((excecao) => {
+        if (atual) setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as aulas.");
+      });
+    return () => {
+      atual = false;
+    };
   }, [sessao, status, turmaId, materiaId, dataDe, dataAte, horaDe, horaAte]);
 
   const total = aulas?.length ?? 0;
@@ -82,13 +96,13 @@ export default function AulasPage() {
             </option>
           ))}
         </select>
-        <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 9, maxWidth: "100%" }}>
+        <span style={grupoDeFiltro}>
           <span className="count-text">Data</span>
           <DateInput className="filter-input filter-date" value={dataDe} onChange={setDataDe} title="Data a partir de" />
           <span className="count-text">a</span>
           <DateInput className="filter-input filter-date" value={dataAte} onChange={setDataAte} title="Data até" />
         </span>
-        <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 9, maxWidth: "100%" }}>
+        <span style={grupoDeFiltro}>
           <span className="count-text">Horário</span>
           <TimeInput className="filter-input filter-date" value={horaDe} onChange={setHoraDe} title="Horário de início a partir de" />
           <span className="count-text">a</span>

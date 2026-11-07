@@ -63,13 +63,22 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!sessao) return;
+    // So a resposta da ultima combinacao de filtros vale (as antigas, que chegarem depois, sao descartadas).
+    let atual = true;
     obterDashboard(sessao.accessToken, {
       periodoInicio: periodoInicio || undefined,
       periodoFim: periodoFim || undefined,
       alunoId: alunoId ? Number(alunoId) : undefined,
     })
-      .then(setDashboard)
-      .catch(() => setDashboard(null));
+      .then((r) => {
+        if (atual) setDashboard(r);
+      })
+      .catch(() => {
+        if (atual) setDashboard(null);
+      });
+    return () => {
+      atual = false;
+    };
   }, [sessao, periodoInicio, periodoFim, alunoId]);
 
   const alunosAtendidos = dashboard?.alunosAtendidosNoPeriodo ?? null;
