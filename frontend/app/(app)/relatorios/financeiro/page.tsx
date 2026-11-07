@@ -137,7 +137,10 @@ export default function RelatorioFinanceiroPage() {
       materiaId: materiaId ? Number(materiaId) : undefined,
     })
       .then((resultado) => {
-        if (idDestaRequisicao === requisicaoAtual.current) setDados(resultado);
+        if (idDestaRequisicao === requisicaoAtual.current) {
+          setErro("");
+          setDados(resultado);
+        }
       })
       .catch((excecao) => {
         if (idDestaRequisicao === requisicaoAtual.current) {
@@ -161,7 +164,10 @@ export default function RelatorioFinanceiroPage() {
       alunoId: alunoId ? Number(alunoId) : undefined,
     })
       .then((resultado) => {
-        if (idDestaRequisicao === requisicaoIndicadoresAtual.current) setIndicadoresDados(resultado);
+        if (idDestaRequisicao === requisicaoIndicadoresAtual.current) {
+          setErroIndicadores("");
+          setIndicadoresDados(resultado);
+        }
       })
       .catch((excecao) => {
         if (idDestaRequisicao === requisicaoIndicadoresAtual.current) {

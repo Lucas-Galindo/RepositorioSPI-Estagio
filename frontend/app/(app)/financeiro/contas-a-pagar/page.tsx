@@ -58,7 +58,10 @@ export default function ContasAPagarPage() {
       vencimentoFim: vencimentoFim || undefined,
     })
       .then((dados) => {
-        if (idDestaRequisicao === requisicaoAtual.current) setContas(dados);
+        if (idDestaRequisicao === requisicaoAtual.current) {
+          setErro("");
+          setContas(dados);
+        }
       })
       .catch((excecao) => {
         if (idDestaRequisicao === requisicaoAtual.current) {

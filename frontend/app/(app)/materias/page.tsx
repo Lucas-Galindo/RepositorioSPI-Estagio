@@ -21,9 +21,20 @@ export default function MateriasPage() {
 
   useEffect(() => {
     if (!sessao) return;
+    // So a resposta da ultima busca vale; um erro passado some quando uma nova consulta der certo.
+    let atual = true;
     listarMaterias(sessao.accessToken, { nome: nome || undefined })
-      .then(setMaterias)
-      .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as matérias."));
+      .then((r) => {
+        if (!atual) return;
+        setErro("");
+        setMaterias(r);
+      })
+      .catch((excecao) => {
+        if (atual) setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar as matérias.");
+      });
+    return () => {
+      atual = false;
+    };
   }, [sessao, nome]);
 
   const total = materias?.length ?? 0;

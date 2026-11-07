@@ -26,6 +26,8 @@ export default function AlunosPage() {
 
   useEffect(() => {
     if (!sessao) return;
+    // So a resposta da ultima combinacao de filtros vale (as antigas, que chegarem depois, sao descartadas).
+    let atual = true;
 
     listarAlunos(sessao.accessToken, {
       nome: nome || undefined,
@@ -35,10 +37,16 @@ export default function AlunosPage() {
       incluirCobranca: true,
     })
       .then((lista) => {
+        if (!atual) return;
         setErro("");
         setAlunos(lista);
       })
-      .catch((excecao) => setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar os alunos."));
+      .catch((excecao) => {
+        if (atual) setErro(excecao instanceof ApiError ? excecao.message : "Não foi possível carregar os alunos.");
+      });
+    return () => {
+      atual = false;
+    };
   }, [sessao, nome, ra, status]);
 
   const total = alunos?.length ?? 0;

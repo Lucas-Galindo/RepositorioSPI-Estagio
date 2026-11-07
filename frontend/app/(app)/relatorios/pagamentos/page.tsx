@@ -82,7 +82,10 @@ export default function DashboardPagamentosPage() {
       vencimentoFim: vencimentoFim || undefined,
     })
       .then((dados) => {
-        if (idDestaRequisicao === requisicaoAtual.current) setPagamentos(dados);
+        if (idDestaRequisicao === requisicaoAtual.current) {
+          setErro("");
+          setPagamentos(dados);
+        }
       })
       .catch((excecao) => {
         if (idDestaRequisicao === requisicaoAtual.current) {

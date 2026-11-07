@@ -30,6 +30,23 @@ const CHAVE_REFRESH_TOKEN = "spi.refreshToken";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// O refresh token e rotativo: o backend revoga o token usado, entao ele so pode ser trocado UMA vez. Em modo dev o React
+// executa o efeito de restauracao duas vezes; sem compartilhar a troca em andamento, a segunda recebia 401 e o `catch`
+// apagava o token salvo ("Manter conectada" se perdia). As duas execucoes passam a aguardar a mesma chamada.
+let restauracaoEmAndamento: { token: string; promessa: Promise<LoginResponse> } | null = null;
+
+function restaurarSessao(token: string): Promise<LoginResponse> {
+  if (restauracaoEmAndamento?.token === token) return restauracaoEmAndamento.promessa;
+
+  const atual = { token, promessa: refresh(token) };
+  restauracaoEmAndamento = atual;
+  const limpar = () => {
+    if (restauracaoEmAndamento === atual) restauracaoEmAndamento = null;
+  };
+  atual.promessa.then(limpar, limpar);
+  return atual.promessa;
+}
+
 function montarSessao(resposta: LoginResponse): Sessao {
   return {
     perfil: resposta.perfil,
@@ -55,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const tokenSalvo = localStorage.getItem(CHAVE_REFRESH_TOKEN);
 
     const restaurada = tokenSalvo
-      ? refresh(tokenSalvo)
+      ? restaurarSessao(tokenSalvo)
           .then((resposta) => {
             setSessao(montarSessao(resposta));
             // Rotacao: o backend revoga o token usado e emite um novo a cada troca.

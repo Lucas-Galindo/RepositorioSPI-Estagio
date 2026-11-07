@@ -44,7 +44,10 @@ export default function FinanceiroPage() {
       alunoBusca: alunoBusca || undefined,
     })
       .then((resultado) => {
-        if (idDestaRequisicao === requisicaoAtual.current) setDados(resultado);
+        if (idDestaRequisicao === requisicaoAtual.current) {
+          setErro("");
+          setDados(resultado);
+        }
       })
       .catch((excecao) => {
         if (idDestaRequisicao === requisicaoAtual.current) {
