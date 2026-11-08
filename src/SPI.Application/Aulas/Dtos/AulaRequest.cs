@@ -1,6 +1,6 @@
 namespace SPI.Application.Aulas.Dtos
 {
-    public record AulaRequest
+    public record AulaRequest : IReferenciasDaAula
     {
         public string? Descricao { get; set; }
         public int MateriaId { get; set; }

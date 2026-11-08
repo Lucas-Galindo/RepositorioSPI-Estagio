@@ -10,7 +10,7 @@ namespace SPI.Application.Aulas.Dtos
     }
 
     // specs/077: pedido de uma serie semanal de aulas (previa e criacao usam o mesmo corpo).
-    public record RecorrenciaAulaRequest
+    public record RecorrenciaAulaRequest : IReferenciasDaAula
     {
         public string? Descricao { get; set; }
         public int MateriaId { get; set; }

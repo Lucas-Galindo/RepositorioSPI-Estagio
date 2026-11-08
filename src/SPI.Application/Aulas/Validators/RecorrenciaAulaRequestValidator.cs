@@ -10,19 +10,7 @@ namespace SPI.Application.Aulas.Validators
     {
         public RecorrenciaAulaRequestValidator()
         {
-            RuleFor(x => x.MateriaId)
-                .GreaterThan(0).WithMessage("O campo MateriaId e obrigatorio.");
-
-            // Mesma regra da aula unica: individual precisa do aluno; de turma nao aceita aluno avulso.
-            When(x => x.TurmaId is null, () =>
-            {
-                RuleFor(x => x.AlunoId)
-                    .NotNull().WithMessage("AlunoId e obrigatorio quando a aula nao esta vinculada a uma Turma.");
-            }).Otherwise(() =>
-            {
-                RuleFor(x => x.AlunoId)
-                    .Null().WithMessage("AlunoId nao deve ser informado quando a aula esta vinculada a uma Turma.");
-            });
+            this.ExigirMateriaETurmaOuAluno();
 
             RuleFor(x => x.Horarios)
                 .NotEmpty().WithMessage("Informe ao menos um dia da semana com horario.");

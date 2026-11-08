@@ -40,3 +40,21 @@ Regras decididas com a professora (todas no servidor, Princípio II):
 - **Layout estreito (celular)**: o shell do app tem largura mínima de desktop e o layout para celular está **fora de escopo** no projeto; por isso o item "360 px" do quickstart foi trocado por medir o **bloco da série num contêiner de 330 px**: sem estouro de largura, linhas quebram e o campo de data ficou com 260 px depois de um ajuste de CSS. A única verificação que falhou no Chrome (bloco dentro de 360 px da tela) mediu a página inteira e não se aplica a este app.
 - Erros que apareciam nos meus roteiros de teste (descobertos e corrigidos **no roteiro**, não no produto): checkbox "Repetir" contado como campo de data no teste da aula única; matéria não escolhida no teste de prévia (a mensagem "O campo MateriaId e obrigatorio." apareceu corretamente no aviso da prévia).
 - **Sem commit nem push**, a pedido: todas as mudanças estão só no diretório de trabalho.
+
+## Revisão de código e refatoração (2026-11-08)
+
+Depois do commit inicial, o código da série foi relido à procura de redundâncias e inconsistências. O comportamento não mudou (764 testes, API 27/27 e Chrome repetidos); o que mudou:
+
+| Onde | Problema | Correção |
+|---|---|---|
+| `AulaService` | O objeto `Aula` nascia em dois lugares (aula única e série) e os alunos da aula em dois trechos iguais | `NovaAulaAgendada` e `ObterAlunoIdsDaNovaAulaAsync`, usados pelos dois |
+| `AulaService` | A série montava um `AulaRequest` falso só para validar matéria/turma/aluno | `ValidarReferenciasAsync` passou a receber os três ids; a série valida as referências **antes** de gerar as datas |
+| `AulaService` | Duas listas paralelas (datas e conflitos) casadas pelo índice; contas duplicadas para o total de conflitos | Uma lista de pares (data, conflito); `PodeCriar = conflitos == 0` |
+| `AulaService` | Formatação de horário com escape desnecessário (`HH\:mm`) | `HH:mm` com cultura invariável e helper da mensagem de conflito |
+| `GeradorSerieAulas` | Parâmetro `limite` que ninguém usava, `break` e proteção de fim de calendário redundantes | Percorre por número do dia (sem estourar perto do fim do calendário) e usa só a constante |
+| Validadores | A regra "matéria obrigatória / turma OU aluno" e as 3 mensagens estavam copiadas em `AulaRequestValidator` e no da série | Uma só fonte: `ExigirMateriaETurmaOuAluno` (interface `IReferenciasDaAula` nos dois pedidos), sem mudar nenhuma mensagem |
+| `AulaForm` | Dois blocos `try/catch` quase iguais e os campos da aula copiados no pedido da série | Um só envio e `camposDaAula()` compartilhado; `repetir && !editando` virou `repetir` (a caixa não existe na edição) |
+| `AulaForm` (bug) | Uma resposta **atrasada** de uma prévia antiga podia reaparecer depois de a série mudar | Número do pedido de prévia: respostas de pedidos antigos são ignoradas (testado no Chrome com a resposta atrasada em 3 s) |
+| `AulaForm` | Com conflito na prévia o botão "Agendar aulas" continuava ativo (o servidor recusava) | Fica desligado quando o servidor diz `podeCriar = false` (só exibe o que o servidor decidiu); a mudança da série reabilita |
+
+Fora do que foi alterado, de propósito: as 60 leituras por chave ao montar a resposta da série (o cadastro único faz o mesmo, e o repositório não tem consulta em lote); os `409` para as regras de negócio da série (é o padrão do projeto, como na spec 064).

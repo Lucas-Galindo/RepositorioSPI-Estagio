@@ -19,8 +19,7 @@ namespace SPI.Application.Aulas.Services
             DateOnly dataInicial,
             IReadOnlyList<HorarioSerieRequest> horarios,
             int? quantidade,
-            DateOnly? dataFinal,
-            int limite = LimitePadrao)
+            DateOnly? dataFinal)
         {
             var ocorrencias = new List<OcorrenciaSerie>();
             var porDia = horarios
@@ -32,39 +31,31 @@ namespace SPI.Application.Aulas.Services
                 return new ResultadoGeracao(ocorrencias, false);
             }
 
-            var data = dataInicial;
-            while (!dataFinal.HasValue || data <= dataFinal.Value)
+            // Percorre por numero do dia (sem DateOnly.AddDays), entao uma data perto do fim do calendario nao estoura.
+            var ultimoDia = (dataFinal ?? DateOnly.MaxValue).DayNumber;
+            for (var numeroDoDia = dataInicial.DayNumber; numeroDoDia <= ultimoDia; numeroDoDia++)
             {
-                if (porDia.TryGetValue((int)data.DayOfWeek, out var doDia))
+                var data = DateOnly.FromDayNumber(numeroDoDia);
+                if (!porDia.TryGetValue((int)data.DayOfWeek, out var doDia))
                 {
-                    foreach (var horario in doDia)
+                    continue;
+                }
+
+                foreach (var horario in doDia)
+                {
+                    if (quantidade.HasValue && ocorrencias.Count >= quantidade.Value)
                     {
-                        if (quantidade.HasValue && ocorrencias.Count >= quantidade.Value)
-                        {
-                            return new ResultadoGeracao(ocorrencias, false);
-                        }
+                        return new ResultadoGeracao(ocorrencias, false);
+                    }
 
-                        ocorrencias.Add(new OcorrenciaSerie(data, data.DayOfWeek, horario.HoraInicio, horario.HoraFim));
+                    ocorrencias.Add(new OcorrenciaSerie(data, data.DayOfWeek, horario.HoraInicio, horario.HoraFim));
 
-                        // Passou do limite: para na hora, sem varrer um periodo enorme.
-                        if (ocorrencias.Count > limite)
-                        {
-                            return new ResultadoGeracao(ocorrencias, true);
-                        }
+                    // Passou do limite: para na hora, sem varrer um periodo enorme.
+                    if (ocorrencias.Count > LimitePadrao)
+                    {
+                        return new ResultadoGeracao(ocorrencias, true);
                     }
                 }
-
-                if (quantidade.HasValue && ocorrencias.Count >= quantidade.Value)
-                {
-                    break;
-                }
-
-                if (data == DateOnly.MaxValue)
-                {
-                    break;
-                }
-
-                data = data.AddDays(1);
             }
 
             return new ResultadoGeracao(ocorrencias, false);

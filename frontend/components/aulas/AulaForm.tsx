@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import { DateInput } from "@/components/shared/DateInput";
@@ -71,6 +71,8 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
   const [previa, setPrevia] = useState<PreviaSerie | null>(null);
   const [carregandoPrevia, setCarregandoPrevia] = useState(false);
   const [erroPrevia, setErroPrevia] = useState<string | null>(null);
+  // Numero do ultimo pedido de previa: uma resposta atrasada de um pedido antigo nao pode reaparecer depois de a serie mudar.
+  const pedidoPrevia = useRef(0);
 
   // De uma aula ja realizada so a descricao pode mudar (o backend recusa o resto);
   // os demais campos ficam travados pra nao oferecer uma edicao que vai falhar.
@@ -83,12 +85,17 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
     listarAlunos(sessao.accessToken, { ativo: true }).then(setAlunos).catch(() => setAlunos([]));
   }, [sessao]);
 
-  // Monta o pedido da serie com o que foi digitado; o servidor calcula as datas e valida tudo.
-  const montarSerie = (): SerieAulasRequest => ({
+  // O que a aula unica e a serie dividem; o servidor valida tudo (inclusive turma OU aluno).
+  const camposDaAula = () => ({
     descricao: descricao || null,
     materiaId: Number(materiaId),
     turmaId: turmaId ? Number(turmaId) : null,
     alunoId: turmaId ? null : Number(alunoId),
+  });
+
+  // Monta o pedido da serie com o que foi digitado; o servidor calcula as datas.
+  const montarSerie = (): SerieAulasRequest => ({
+    ...camposDaAula(),
     dataInicial: recorrencia.dataInicial,
     horarios: recorrencia.linhas.map((l) => ({
       diaSemana: Number(l.diaSemana),
@@ -99,32 +106,41 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
     dataFinal: recorrencia.termino === "dataFinal" ? recorrencia.dataFinal : null,
   });
 
-  const mudarRecorrencia = (dados: DadosRecorrencia) => {
-    setRecorrencia(dados);
+  // Qualquer mudanca na serie invalida a previa mostrada (e ignora a resposta de um pedido ainda em andamento).
+  const limparPrevia = () => {
+    pedidoPrevia.current += 1;
     setPrevia(null);
     setErroPrevia(null);
+    setCarregandoPrevia(false);
+  };
+
+  const mudarRecorrencia = (dados: DadosRecorrencia) => {
+    setRecorrencia(dados);
+    limparPrevia();
   };
 
   const alternarRepetir = (marcado: boolean) => {
     setRepetir(marcado);
     setErros([]);
-    setPrevia(null);
-    setErroPrevia(null);
+    limparPrevia();
     // Leva a data ja escolhida (ex.: clique na Agenda) para o inicio da serie.
     if (marcado && !recorrencia.dataInicial && dataInicio) setRecorrencia({ ...recorrencia, dataInicial: dataInicio });
   };
 
   const verPrevia = async () => {
     if (!sessao) return;
-    setErroPrevia(null);
-    setPrevia(null);
+    limparPrevia();
+    const pedido = pedidoPrevia.current;
     setCarregandoPrevia(true);
     try {
-      setPrevia(await previaSerieAulas(montarSerie(), sessao.accessToken));
+      const resposta = await previaSerieAulas(montarSerie(), sessao.accessToken);
+      if (pedido === pedidoPrevia.current) setPrevia(resposta);
     } catch (excecao) {
-      setErroPrevia(excecao instanceof ApiError ? (excecao.details ?? [excecao.message])[0] : "Não foi possível calcular a prévia.");
+      if (pedido === pedidoPrevia.current) {
+        setErroPrevia(excecao instanceof ApiError ? (excecao.details ?? [excecao.message])[0] : "Não foi possível calcular a prévia.");
+      }
     } finally {
-      setCarregandoPrevia(false);
+      if (pedido === pedidoPrevia.current) setCarregandoPrevia(false);
     }
   };
 
@@ -135,46 +151,39 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
     setErros([]);
     setSalvando(true);
 
-    if (repetir && !editando) {
-      try {
-        const serie = await cadastrarSerieAulas(montarSerie(), sessao.accessToken);
-        mostrarToast(`${serie.quantidade} ${serie.quantidade === 1 ? "aula agendada" : "aulas agendadas"} com sucesso.`);
-        if (onSalvo) {
-          onSalvo(serie.aulas[0]);
-        } else {
-          router.push("/aulas");
-        }
-      } catch (excecao) {
-        setErros(excecao instanceof ApiError ? excecao.details ?? [excecao.message] : ["Não foi possível agendar as aulas."]);
-      } finally {
-        setSalvando(false);
-      }
-      return;
-    }
-
-    const request: AulaRequest = {
-      descricao: descricao || null,
-      materiaId: Number(materiaId),
-      turmaId: turmaId ? Number(turmaId) : null,
-      alunoId: turmaId ? null : Number(alunoId),
-      dataInicio,
-      horaInicio: `${horaInicio}:00`,
-      horaFim: `${horaFim}:00`,
-    };
-
     try {
-      const resultado = editando && aula
-        ? await atualizarAula(aula.id, request, sessao.accessToken)
-        : await cadastrarAula(request, sessao.accessToken);
-      // specs/064: o formulario so agenda; a chamada se faz nos detalhes da aula, depois do inicio.
-      mostrarToast(editando ? "Aula atualizada com sucesso." : "Aula agendada com sucesso.");
-      if (onSalvo) {
-        onSalvo(resultado);
+      let salva: Aula;
+      let mensagem: string;
+      let destino: string;
+
+      if (repetir) {
+        const serie = await cadastrarSerieAulas(montarSerie(), sessao.accessToken);
+        salva = serie.aulas[0];
+        mensagem = `${serie.quantidade} ${serie.quantidade === 1 ? "aula agendada" : "aulas agendadas"} com sucesso.`;
+        destino = "/aulas";
       } else {
-        router.push(`/aulas/${resultado.id}`);
+        const request: AulaRequest = {
+          ...camposDaAula(),
+          dataInicio,
+          horaInicio: `${horaInicio}:00`,
+          horaFim: `${horaFim}:00`,
+        };
+        salva = editando && aula
+          ? await atualizarAula(aula.id, request, sessao.accessToken)
+          : await cadastrarAula(request, sessao.accessToken);
+        // specs/064: o formulario so agenda; a chamada se faz nos detalhes da aula, depois do inicio.
+        mensagem = editando ? "Aula atualizada com sucesso." : "Aula agendada com sucesso.";
+        destino = `/aulas/${salva.id}`;
+      }
+
+      mostrarToast(mensagem);
+      if (onSalvo) {
+        onSalvo(salva);
+      } else {
+        router.push(destino);
       }
     } catch (excecao) {
-      setErros(excecao instanceof ApiError ? excecao.details ?? [excecao.message] : ["Não foi possível salvar a aula."]);
+      setErros(excecao instanceof ApiError ? excecao.details ?? [excecao.message] : [repetir ? "Não foi possível agendar as aulas." : "Não foi possível salvar a aula."]);
     } finally {
       setSalvando(false);
     }
@@ -270,7 +279,7 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
               Repetir esta aula toda semana
             </label>
           )}
-          {repetir && !editando ? (
+          {repetir ? (
             <RecorrenciaAulas
               dados={recorrencia}
               onChange={mudarRecorrencia}
@@ -311,7 +320,7 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
           >
             Cancelar
           </button>
-          <button type="submit" className="btn btn-primary" disabled={salvando}>
+          <button type="submit" className="btn btn-primary" disabled={salvando || (repetir && previa?.podeCriar === false)}>
             {salvando ? "Salvando..." : editando ? "Salvar alterações" : repetir ? "Agendar aulas" : "Agendar aula"}
           </button>
         </div>
