@@ -8,6 +8,8 @@
 
 **Input**: Pedido do usuário em 2026-10-31 (card Trello "Bloquear chamada no agendamento; liberar frequência só nos detalhes após o início da aula"). **Esta spec substitui em parte a spec 055** (lançamento retroativo de presença ao criar a aula) e **evolui a spec 059** (aviso de aula pendente): ver "O que muda em relação às specs 055 e 059".
 
+> **Nota (specs/077, 2026-11-07):** o cadastro de nova aula ganhou a opção **Repetir** (série semanal, até 60 aulas, de hoje em diante). Cada aula criada pela série nasce "Agendada" e segue estas mesmas regras de chamada; ver `specs/077-recorrencia-aulas/`.
+
 ## Contexto (estado atual, lido do código)
 
 - O formulário "Agendar aula" decide que a aula é "realizada" **só pela data**: se a data é de hoje ou do passado, mostra a seção "Presença", o texto "A data já chegou, então a aula será registrada como realizada. Desmarque quem faltou." e troca o botão por "Registrar aula realizada". O servidor repete a mesma comparação só por data e cria a aula já "Realizada", com presença e cobrança (spec 055).

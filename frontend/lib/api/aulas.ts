@@ -79,6 +79,57 @@ export function cadastrarAula(request: AulaRequest, accessToken: string): Promis
   return apiPost<Aula>("/api/aulas", request, accessToken);
 }
 
+// ---- specs/077: serie semanal de aulas (criar varias aulas de uma vez) ----
+
+/** Espelha SPI.Application.Aulas.Dtos.HorarioSerieRequest. diaSemana: 0 = domingo ... 6 = sabado. */
+export interface HorarioSerie {
+  diaSemana: number;
+  horaInicio: string;
+  horaFim: string;
+}
+
+/** Espelha SPI.Application.Aulas.Dtos.RecorrenciaAulaRequest. Informe quantidadeAulas OU dataFinal (nunca os dois). */
+export interface SerieAulasRequest {
+  descricao?: string | null;
+  materiaId: number;
+  turmaId?: number | null;
+  alunoId?: number | null;
+  dataInicial: string;
+  horarios: HorarioSerie[];
+  quantidadeAulas?: number | null;
+  dataFinal?: string | null;
+}
+
+/** Uma data da serie calculada pelo servidor; conflito = a professora ja tem aula nesse horario. */
+export interface OcorrenciaSerie {
+  data: string;
+  diaSemana: number;
+  horaInicio: string;
+  horaFim: string;
+  conflito: boolean;
+}
+
+export interface PreviaSerie {
+  total: number;
+  limite: number;
+  conflitos: number;
+  podeCriar: boolean;
+  aulas: OcorrenciaSerie[];
+}
+
+export interface SerieCriada {
+  quantidade: number;
+  aulas: Aula[];
+}
+
+export function previaSerieAulas(request: SerieAulasRequest, accessToken: string): Promise<PreviaSerie> {
+  return apiPost<PreviaSerie>("/api/aulas/serie/previa", request, accessToken);
+}
+
+export function cadastrarSerieAulas(request: SerieAulasRequest, accessToken: string): Promise<SerieCriada> {
+  return apiPost<SerieCriada>("/api/aulas/serie", request, accessToken);
+}
+
 export function atualizarAula(id: number, request: AulaRequest, accessToken: string): Promise<Aula> {
   return apiPut<Aula>(`/api/aulas/${id}`, request, accessToken);
 }

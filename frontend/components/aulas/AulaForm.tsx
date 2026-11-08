@@ -11,7 +11,25 @@ import { ApiError } from "@/lib/api/client";
 import { listarMaterias, type Materia } from "@/lib/api/materias";
 import { listarTurmas, type Turma } from "@/lib/api/turmas";
 import { listarAlunos, type Aluno } from "@/lib/api/alunos";
-import { cadastrarAula, atualizarAula, type Aula, type AulaRequest } from "@/lib/api/aulas";
+import {
+  cadastrarAula,
+  atualizarAula,
+  cadastrarSerieAulas,
+  previaSerieAulas,
+  type Aula,
+  type AulaRequest,
+  type PreviaSerie,
+  type SerieAulasRequest,
+} from "@/lib/api/aulas";
+import { RecorrenciaAulas, type DadosRecorrencia } from "@/components/aulas/RecorrenciaAulas";
+
+const RECORRENCIA_VAZIA: DadosRecorrencia = {
+  dataInicial: "",
+  linhas: [{ chave: 1, diaSemana: "", horaInicio: "", horaFim: "" }],
+  termino: "quantidade",
+  quantidade: "",
+  dataFinal: "",
+};
 
 interface AulaFormProps {
   aula?: Aula;
@@ -47,6 +65,13 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
 
+  // specs/077: "Repetir esta aula" so existe ao criar; a edicao continua de uma aula so.
+  const [repetir, setRepetir] = useState(false);
+  const [recorrencia, setRecorrencia] = useState<DadosRecorrencia>(RECORRENCIA_VAZIA);
+  const [previa, setPrevia] = useState<PreviaSerie | null>(null);
+  const [carregandoPrevia, setCarregandoPrevia] = useState(false);
+  const [erroPrevia, setErroPrevia] = useState<string | null>(null);
+
   // De uma aula ja realizada so a descricao pode mudar (o backend recusa o resto);
   // os demais campos ficam travados pra nao oferecer uma edicao que vai falhar.
   const somenteDescricao = editando && aula?.status === "Realizada";
@@ -58,12 +83,74 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
     listarAlunos(sessao.accessToken, { ativo: true }).then(setAlunos).catch(() => setAlunos([]));
   }, [sessao]);
 
+  // Monta o pedido da serie com o que foi digitado; o servidor calcula as datas e valida tudo.
+  const montarSerie = (): SerieAulasRequest => ({
+    descricao: descricao || null,
+    materiaId: Number(materiaId),
+    turmaId: turmaId ? Number(turmaId) : null,
+    alunoId: turmaId ? null : Number(alunoId),
+    dataInicial: recorrencia.dataInicial,
+    horarios: recorrencia.linhas.map((l) => ({
+      diaSemana: Number(l.diaSemana),
+      horaInicio: `${l.horaInicio}:00`,
+      horaFim: `${l.horaFim}:00`,
+    })),
+    quantidadeAulas: recorrencia.termino === "quantidade" ? Number(recorrencia.quantidade) : null,
+    dataFinal: recorrencia.termino === "dataFinal" ? recorrencia.dataFinal : null,
+  });
+
+  const mudarRecorrencia = (dados: DadosRecorrencia) => {
+    setRecorrencia(dados);
+    setPrevia(null);
+    setErroPrevia(null);
+  };
+
+  const alternarRepetir = (marcado: boolean) => {
+    setRepetir(marcado);
+    setErros([]);
+    setPrevia(null);
+    setErroPrevia(null);
+    // Leva a data ja escolhida (ex.: clique na Agenda) para o inicio da serie.
+    if (marcado && !recorrencia.dataInicial && dataInicio) setRecorrencia({ ...recorrencia, dataInicial: dataInicio });
+  };
+
+  const verPrevia = async () => {
+    if (!sessao) return;
+    setErroPrevia(null);
+    setPrevia(null);
+    setCarregandoPrevia(true);
+    try {
+      setPrevia(await previaSerieAulas(montarSerie(), sessao.accessToken));
+    } catch (excecao) {
+      setErroPrevia(excecao instanceof ApiError ? (excecao.details ?? [excecao.message])[0] : "Não foi possível calcular a prévia.");
+    } finally {
+      setCarregandoPrevia(false);
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!sessao) return;
 
     setErros([]);
     setSalvando(true);
+
+    if (repetir && !editando) {
+      try {
+        const serie = await cadastrarSerieAulas(montarSerie(), sessao.accessToken);
+        mostrarToast(`${serie.quantidade} ${serie.quantidade === 1 ? "aula agendada" : "aulas agendadas"} com sucesso.`);
+        if (onSalvo) {
+          onSalvo(serie.aulas[0]);
+        } else {
+          router.push("/aulas");
+        }
+      } catch (excecao) {
+        setErros(excecao instanceof ApiError ? excecao.details ?? [excecao.message] : ["Não foi possível agendar as aulas."]);
+      } finally {
+        setSalvando(false);
+      }
+      return;
+    }
 
     const request: AulaRequest = {
       descricao: descricao || null,
@@ -177,26 +264,43 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
           <div className="fs-title">
             <span className="fs-num">2</span> Data e horário
           </div>
-          <div className="field-grid">
-            <div className="field">
-              <label>
-                Data<span className="req">*</span>
-              </label>
-              <DateInput required disabled={somenteDescricao} value={dataInicio} onChange={setDataInicio} />
+          {!editando && (
+            <label className="recorrencia-opcao" style={{ marginBottom: 12 }}>
+              <input type="checkbox" checked={repetir} onChange={(e) => alternarRepetir(e.target.checked)} />
+              Repetir esta aula toda semana
+            </label>
+          )}
+          {repetir && !editando ? (
+            <RecorrenciaAulas
+              dados={recorrencia}
+              onChange={mudarRecorrencia}
+              previa={previa}
+              carregandoPrevia={carregandoPrevia}
+              onPrevia={verPrevia}
+              erroPrevia={erroPrevia}
+            />
+          ) : (
+            <div className="field-grid">
+              <div className="field">
+                <label>
+                  Data<span className="req">*</span>
+                </label>
+                <DateInput required disabled={somenteDescricao} value={dataInicio} onChange={setDataInicio} />
+              </div>
+              <div className="field">
+                <label>
+                  Horário início<span className="req">*</span>
+                </label>
+                <TimeInput required disabled={somenteDescricao} value={horaInicio} onChange={setHoraInicio} />
+              </div>
+              <div className="field">
+                <label>
+                  Horário fim<span className="req">*</span>
+                </label>
+                <TimeInput required disabled={somenteDescricao} value={horaFim} onChange={setHoraFim} />
+              </div>
             </div>
-            <div className="field">
-              <label>
-                Horário início<span className="req">*</span>
-              </label>
-              <TimeInput required disabled={somenteDescricao} value={horaInicio} onChange={setHoraInicio} />
-            </div>
-            <div className="field">
-              <label>
-                Horário fim<span className="req">*</span>
-              </label>
-              <TimeInput required disabled={somenteDescricao} value={horaFim} onChange={setHoraFim} />
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="form-actions">
@@ -208,7 +312,7 @@ export function AulaForm({ aula, dataPadrao, onSalvo, onCancelar }: AulaFormProp
             Cancelar
           </button>
           <button type="submit" className="btn btn-primary" disabled={salvando}>
-            {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Agendar aula"}
+            {salvando ? "Salvando..." : editando ? "Salvar alterações" : repetir ? "Agendar aulas" : "Agendar aula"}
           </button>
         </div>
       </form>

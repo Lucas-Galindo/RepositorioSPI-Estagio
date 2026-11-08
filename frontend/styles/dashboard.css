@@ -1529,6 +1529,64 @@ tbody tr.row-link:hover {
   line-height: 1.45;
   color: var(--c-text-muted);
 }
+/* specs/077: repetir a aula toda semana (so tokens de tema; sem cor fixa). */
+.recorrencia-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--c-text);
+  cursor: pointer;
+}
+.recorrencia .field-grid {
+  grid-template-columns: minmax(200px, 260px);
+}
+.recorrencia-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.recorrencia-linha select {
+  flex: 1 1 170px;
+  min-width: 0;
+}
+.recorrencia-linha > :not(select):not(button) {
+  flex: 0 1 110px;
+  min-width: 90px;
+}
+.recorrencia-termino {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin-bottom: 10px;
+}
+.recorrencia-previa {
+  margin-top: 14px;
+}
+.recorrencia-lista {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+}
+.recorrencia-lista li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--c-text);
+}
+.recorrencia-lista li + li {
+  border-top: 1px solid var(--c-bg);
+}
 .field .hint {
   font-size: 10px;
   color: var(--c-text-muted);

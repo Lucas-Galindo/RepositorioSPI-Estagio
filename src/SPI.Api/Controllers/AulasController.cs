@@ -15,6 +15,7 @@ namespace SPI.Api.Controllers
     {
         private readonly IAulaService _aulaService;
         private readonly IValidator<AulaRequest> _aulaValidator;
+        private readonly IValidator<RecorrenciaAulaRequest> _serieValidator;
         private readonly IValidator<RegistrarSessaoRequest> _sessaoValidator;
         private readonly IValidator<DefinirLinkAulaRequest> _linkValidator;
         private readonly ILogger<AulasController> _logger;
@@ -22,12 +23,14 @@ namespace SPI.Api.Controllers
         public AulasController(
             IAulaService aulaService,
             IValidator<AulaRequest> aulaValidator,
+            IValidator<RecorrenciaAulaRequest> serieValidator,
             IValidator<RegistrarSessaoRequest> sessaoValidator,
             IValidator<DefinirLinkAulaRequest> linkValidator,
             ILogger<AulasController> logger)
         {
             _aulaService = aulaService;
             _aulaValidator = aulaValidator;
+            _serieValidator = serieValidator;
             _sessaoValidator = sessaoValidator;
             _linkValidator = linkValidator;
             _logger = logger;
@@ -97,6 +100,52 @@ namespace SPI.Api.Controllers
             var response = await _aulaService.CadastrarAsync(User.ObterUsuarioId(), request);
             _logger.LogInformation("Aula {Id} cadastrada para {Data} {HoraInicio}-{HoraFim}", response.Id, response.DataInicio, response.HoraInicio, response.HoraFim);
             return CreatedAtAction(nameof(ObterPorId), new { id = response.Id }, response);
+        }
+
+        [HttpPost("serie/previa")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Previa de uma serie semanal de aulas (specs/077): lista as datas e marca as que conflitam. Nao grava nada.
+        /// </summary>
+        /// <param name="request">Data inicial, dias da semana com horarios e termino (numero de aulas ou data final)</param>
+        /// <returns>Retorna as datas da serie, o total e se ela pode ser criada</returns>
+        public async Task<IActionResult> PreVisualizarSerie([FromBody] RecorrenciaAulaRequest request)
+        {
+            var validacao = await _serieValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
+            {
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
+
+            return Ok(await _aulaService.PreVisualizarSerieAsync(User.ObterUsuarioId(), request));
+        }
+
+        [HttpPost("serie")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Cria uma serie semanal de aulas (specs/077): todas ou nenhuma; qualquer conflito de horario recusa a serie inteira
+        /// </summary>
+        /// <param name="request">Data inicial, dias da semana com horarios e termino (numero de aulas ou data final)</param>
+        /// <returns>Retorna as aulas criadas, na ordem das datas</returns>
+        public async Task<IActionResult> CadastrarSerie([FromBody] RecorrenciaAulaRequest request)
+        {
+            var validacao = await _serieValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
+            {
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
+
+            var response = await _aulaService.CadastrarSerieAsync(User.ObterUsuarioId(), request);
+            _logger.LogInformation("Serie de {Quantidade} aulas cadastrada a partir de {Data}", response.Quantidade, request.DataInicial);
+            return StatusCode(StatusCodes.Status201Created, response);
         }
 
         [HttpPut("{id}")]

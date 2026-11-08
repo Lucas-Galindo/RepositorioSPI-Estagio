@@ -115,6 +115,138 @@ namespace SPI.Application.Aulas.Services
             return Mapear(aulaCompleta);
         }
 
+        // specs/077: previa da serie. Calcula as datas e marca as que conflitam; nao grava nada.
+        public async Task<PreviaSerieResponse> PreVisualizarSerieAsync(int professorId, RecorrenciaAulaRequest request, CancellationToken cancellationToken = default)
+        {
+            var (ocorrencias, conflitos) = await AvaliarSerieAsync(professorId, request, cancellationToken);
+
+            return new PreviaSerieResponse
+            {
+                Total = ocorrencias.Count,
+                Limite = GeradorSerieAulas.LimitePadrao,
+                Conflitos = conflitos.Count(c => c),
+                PodeCriar = !conflitos.Any(c => c),
+                Aulas = ocorrencias
+                    .Select((o, i) => new OcorrenciaSerieResponse
+                    {
+                        Data = o.Data,
+                        DiaSemana = (int)o.DiaSemana,
+                        HoraInicio = o.HoraInicio,
+                        HoraFim = o.HoraFim,
+                        Conflito = conflitos[i],
+                    })
+                    .ToList(),
+            };
+        }
+
+        // specs/077: cria a serie inteira ou nada. Qualquer data em conflito recusa tudo (FR-005); as aulas ja vao com
+        // os alunos preenchidos e UM unico salvamento as grava (o EF usa uma transacao so), entao nao ha serie pela metade.
+        // Cada aula e uma aula comum "Agendada" (specs/064), sem vinculo com as demais.
+        public async Task<SerieCriadaResponse> CadastrarSerieAsync(int professorId, RecorrenciaAulaRequest request, CancellationToken cancellationToken = default)
+        {
+            var (ocorrencias, conflitos) = await AvaliarSerieAsync(professorId, request, cancellationToken);
+
+            var emConflito = ocorrencias.Where((_, i) => conflitos[i]).ToList();
+            if (emConflito.Count > 0)
+            {
+                var datas = string.Join(", ", emConflito.Take(10).Select(o =>
+                    $"{o.Data.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture)} {o.HoraInicio.ToString("HH\\:mm", System.Globalization.CultureInfo.InvariantCulture)}"));
+                var resto = emConflito.Count > 10 ? $" e mais {emConflito.Count - 10}" : string.Empty;
+                throw new ConflitoException($"Ja existe aula nesse horario em: {datas}{resto}. Nenhuma aula foi criada.");
+            }
+
+            // Mesma regra do cadastro unico: alunos ativos da turma naquele momento, ou o aluno da aula individual.
+            var alunoIds = request.TurmaId.HasValue
+                ? await _aulaRepository.ObterAlunosAtivosDaTurmaAsync(request.TurmaId.Value, cancellationToken)
+                : new List<int> { request.AlunoId!.Value };
+
+            var novas = new List<Aula>();
+            foreach (var o in ocorrencias)
+            {
+                var aula = new Aula
+                {
+                    Descricao = request.Descricao,
+                    MateriaId = request.MateriaId,
+                    ProfessorId = professorId,
+                    TurmaId = request.TurmaId,
+                    DataInicio = o.Data,
+                    HoraInicio = o.HoraInicio,
+                    HoraFim = o.HoraFim,
+                    Status = "Agendada",
+                    Ativo = true,
+                };
+                foreach (var alunoId in alunoIds)
+                {
+                    aula.AulaAlunos.Add(new AulaAluno { AlunoId = alunoId });
+                }
+
+                await _aulaRepository.AdicionarAsync(aula, cancellationToken);
+                novas.Add(aula);
+            }
+
+            await _aulaRepository.SalvarAlteracoesAsync(cancellationToken);
+
+            // As aulas novas mudam a "proxima aula" da turma: recalcula os lembretes uma vez so.
+            if (request.TurmaId.HasValue)
+            {
+                await _lembreteService.RecalcularAsync(request.TurmaId.Value, cancellationToken);
+            }
+
+            var respostas = new List<AulaResponse>();
+            foreach (var aula in novas)
+            {
+                var completa = (await _aulaRepository.ObterPorIdAsync(aula.Id, cancellationToken))!;
+                respostas.Add(Mapear(completa));
+            }
+
+            return new SerieCriadaResponse { Quantidade = respostas.Count, Aulas = respostas };
+        }
+
+        // Regras da serie que dependem do relogio e do banco: so de hoje em diante, no maximo 60 aulas, referencias
+        // existentes e conflito por data. As regras de formato ficam no RecorrenciaAulaRequestValidator.
+        private async Task<(List<OcorrenciaSerie> Ocorrencias, List<bool> Conflitos)> AvaliarSerieAsync(
+            int professorId, RecorrenciaAulaRequest request, CancellationToken cancellationToken)
+        {
+            var hoje = DateOnly.FromDateTime(_relogio.AgoraLocal());
+            if (request.DataInicial < hoje)
+            {
+                throw new ConflitoException("A serie so pode comecar de hoje em diante.");
+            }
+
+            var gerado = GeradorSerieAulas.Gerar(request.DataInicial, request.Horarios, request.QuantidadeAulas, request.DataFinal);
+            if (gerado.Excedeu)
+            {
+                throw new ConflitoException($"A serie teria mais de {GeradorSerieAulas.LimitePadrao} aulas (maximo {GeradorSerieAulas.LimitePadrao}). Reduza o termino.");
+            }
+
+            if (gerado.Ocorrencias.Count == 0)
+            {
+                throw new ConflitoException("Nenhuma aula cai nos dias e no periodo informados.");
+            }
+
+            var primeira = gerado.Ocorrencias[0];
+            await ValidarReferenciasAsync(
+                new AulaRequest
+                {
+                    MateriaId = request.MateriaId,
+                    TurmaId = request.TurmaId,
+                    AlunoId = request.AlunoId,
+                    DataInicio = primeira.Data,
+                    HoraInicio = primeira.HoraInicio,
+                    HoraFim = primeira.HoraFim,
+                },
+                cancellationToken);
+
+            var ocorrencias = gerado.Ocorrencias.ToList();
+            var conflitos = new List<bool>();
+            foreach (var o in ocorrencias)
+            {
+                conflitos.Add(await _aulaRepository.ExisteConflitoAsync(professorId, o.Data, o.HoraInicio, o.HoraFim, null, cancellationToken));
+            }
+
+            return (ocorrencias, conflitos);
+        }
+
         public async Task<AulaResponse> AtualizarAsync(int id, AulaRequest request, CancellationToken cancellationToken = default)
         {
             var aula = await _aulaRepository.ObterPorIdAsync(id, cancellationToken)

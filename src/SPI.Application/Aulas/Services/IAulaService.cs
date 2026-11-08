@@ -17,6 +17,11 @@ namespace SPI.Application.Aulas.Services
 
         Task<AulaResponse> CadastrarAsync(int professorId, AulaRequest request, CancellationToken cancellationToken = default);
 
+        // specs/077: serie semanal de aulas (previa sem gravar; criacao atomica, bloqueada por qualquer conflito).
+        Task<PreviaSerieResponse> PreVisualizarSerieAsync(int professorId, RecorrenciaAulaRequest request, CancellationToken cancellationToken = default);
+
+        Task<SerieCriadaResponse> CadastrarSerieAsync(int professorId, RecorrenciaAulaRequest request, CancellationToken cancellationToken = default);
+
         Task<AulaResponse> AtualizarAsync(int id, AulaRequest request, CancellationToken cancellationToken = default);
 
         Task ExcluirAsync(int id, CancellationToken cancellationToken = default);

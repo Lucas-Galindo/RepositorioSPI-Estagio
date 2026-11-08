@@ -28,6 +28,13 @@ namespace SPI.Application.Tests.Aulas
             aula.Id = _proximoId++;
             aula.Materia = Materia;
             aula.Turma = aula.TurmaId.HasValue ? Turma : null;
+            // specs/077: aula que ja chega com os AulaAlunos (serie): preenche as navegacoes como o Include faria.
+            foreach (var aa in aula.AulaAlunos)
+            {
+                aa.Aula = aula;
+                aa.Aluno = AlunosConhecidos[aa.AlunoId];
+            }
+
             Aulas.Add(aula);
             return Task.CompletedTask;
         }
@@ -52,12 +59,15 @@ namespace SPI.Application.Tests.Aulas
         // specs/063 (FR-016): a regra de conflito de horario e da PROFESSORA (qualquer aula dela), nunca do
         // aluno. O fake so registra as consultas e devolve o resultado configurado.
         public bool ConflitoSimulado { get; set; }
+
+        // specs/077: conflito so em (data, hora de inicio) especificos (a serie tem varias datas).
+        public HashSet<(DateOnly Data, TimeOnly Inicio)> ConflitosEm { get; } = new();
         public List<(int ProfessorId, DateOnly Data, TimeOnly Inicio, TimeOnly Fim)> ConsultasDeConflito { get; } = new();
 
         public Task<bool> ExisteConflitoAsync(int professorId, DateOnly data, TimeOnly horaInicio, TimeOnly horaFim, int? ignorarAulaId, CancellationToken cancellationToken = default)
         {
             ConsultasDeConflito.Add((professorId, data, horaInicio, horaFim));
-            return Task.FromResult(ConflitoSimulado);
+            return Task.FromResult(ConflitoSimulado || ConflitosEm.Contains((data, horaInicio)));
         }
 
         public Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
