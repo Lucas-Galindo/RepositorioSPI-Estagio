@@ -8,6 +8,8 @@ export interface AlunoResumo {
   nome: string;
   /** specs/068: a cobranca que vale nesta turma (alunos matriculados); null quando nao calculada. */
   cobranca?: SeloCobranca | null;
+  /** specs/078: o servidor diz se a saida com acerto esta disponivel (turma de pacote em andamento e pacote ativo). */
+  podeRegistrarSaida?: boolean;
 }
 
 /** Espelha SPI.Domain.Enums.TipoTurma (serializado como string). */
@@ -76,4 +78,58 @@ export function vincularAluno(turmaId: number, alunoId: number, accessToken: str
 
 export function desvincularAluno(turmaId: number, alunoId: number, accessToken: string): Promise<void> {
   return apiDelete(`/api/turmas/${turmaId}/alunos/${alunoId}`, accessToken);
+}
+
+// ---- specs/078: saida do aluno de turma de pacote com acerto proporcional ao consumo ----
+
+/** Espelha SPI.Application.VinculosCobranca.Dtos.SaidaPacoteRequest. */
+export interface SaidaPacoteRequest {
+  /** Quanto o aluno ja pagou pelo pacote (o pacote nao registra pagamentos). */
+  valorPago: number;
+  /** Vencimento da conta da diferenca; obrigatorio so quando ha diferenca a receber. */
+  vencimento?: string | null;
+}
+
+/** Espelha SPI.Application.VinculosCobranca.Dtos.ConfirmarSaidaPacoteRequest: os ecos sao os numeros da previa. */
+export interface ConfirmarSaidaPacoteRequest extends SaidaPacoteRequest {
+  consumidasEsperadas: number;
+  valorDevidoEsperado: number;
+}
+
+/** Espelha SPI.Application.VinculosCobranca.Services.ConsequenciaAcerto (serializado como string). */
+export type ConsequenciaAcerto = "GerarConta" | "Fechado" | "ExcedenteNaoDevolvido";
+
+/** Espelha SPI.Application.VinculosCobranca.Dtos.AcertoSaidaPacoteResponse: todo numero vem do servidor. */
+export interface AcertoSaidaPacote {
+  alunoId: number;
+  alunoNome: string;
+  turmaId: number;
+  turmaNome: string;
+  valorPacote: number;
+  totalAulas: number;
+  totalEstimado: boolean;
+  aulasConsumidas: number;
+  valorPorAula: number;
+  valorDevido: number;
+  valorPago: number;
+  diferenca: number;
+  excedente: number;
+  consequencia: ConsequenciaAcerto;
+  precisaVencimento: boolean;
+  aulasAgendadasQueSairao: number;
+}
+
+/** Espelha SPI.Application.VinculosCobranca.Dtos.SaidaPacoteRegistradaResponse. */
+export interface SaidaPacoteRegistrada {
+  acerto: AcertoSaidaPacote;
+  /** A conta a receber da diferenca; null quando nada foi gerado. */
+  pagamentoId: number | null;
+}
+
+export function previaSaidaPacote(turmaId: number, alunoId: number, request: SaidaPacoteRequest, accessToken: string): Promise<AcertoSaidaPacote> {
+  return apiPost<AcertoSaidaPacote>(`/api/turmas/${turmaId}/alunos/${alunoId}/saida/previa`, request, accessToken);
+}
+
+export function registrarSaidaPacote(turmaId: number, alunoId: number, request: ConfirmarSaidaPacoteRequest, accessToken: string): Promise<SaidaPacoteRegistrada> {
+  return apiPost<SaidaPacoteRegistrada>(`/api/turmas/${turmaId}/alunos/${alunoId}/saida`, request, accessToken);
 }

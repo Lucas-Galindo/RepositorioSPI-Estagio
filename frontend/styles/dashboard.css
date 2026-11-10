@@ -1069,6 +1069,52 @@ nav.nav-group {
 .modal-vinculo h3 {
   margin-bottom: 18px;
 }
+/* specs/078: saida do aluno de turma de pacote (so tokens de tema). */
+.modal.modal-saida {
+  max-width: 560px;
+  padding: 32px;
+}
+.modal-saida h3 {
+  margin-bottom: 8px;
+}
+.saida-resumo {
+  background: var(--c-surface-2);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  transition: opacity 0.15s;
+}
+.saida-resumo dl {
+  margin: 0;
+}
+.saida-resumo dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--c-text);
+}
+.saida-resumo dt {
+  color: var(--c-text-muted);
+}
+.saida-resumo dd {
+  margin: 0;
+  text-align: right;
+}
+.saida-consequencia {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--c-bg);
+  font-size: 13px;
+  color: var(--c-text);
+}
+.saida-avisos {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-text-muted);
+}
 .modal-vinculo .form-wrap {
   padding: 0;
   background: none;

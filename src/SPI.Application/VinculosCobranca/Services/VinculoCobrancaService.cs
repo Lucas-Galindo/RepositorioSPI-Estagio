@@ -324,6 +324,12 @@ namespace SPI.Application.VinculosCobranca.Services
                 return await MapearAsync(vinculo, presencasPorPacote: null, parcelasPorVinculo: null, cancellationToken);
             }
 
+            // specs/078 (FR-010): o pacote encerrado pela saida do aluno nao volta (o acerto ja foi feito).
+            if (vinculo.SaidaRegistradaEm.HasValue)
+            {
+                throw new ConflitoException("Este pacote foi encerrado pela saida do aluno e nao pode ser reativado.");
+            }
+
             // specs/062 (FR-013): as parcelas do plano excluido foram canceladas e nao sao recriadas.
             if (vinculo.Modalidade.ComPeriodo())
             {
@@ -610,7 +616,8 @@ namespace SPI.Application.VinculosCobranca.Services
                 DataInicio = vinculo.DataInicio,
                 DataFim = vinculo.DataFim,
                 Parcelas = parcelas,
-                Ativo = vinculo.Ativo
+                Ativo = vinculo.Ativo,
+                SaidaRegistradaEm = vinculo.SaidaRegistradaEm
             };
         }
     }

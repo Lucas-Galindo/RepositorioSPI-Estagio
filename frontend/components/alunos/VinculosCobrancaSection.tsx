@@ -180,6 +180,8 @@ export function VinculosCobrancaSection({ aluno }: { aluno: Aluno }) {
                       <Icon name="trash" size={13} /> Excluir
                     </button>
                   </>
+                ) : v.saidaRegistradaEm ? (
+                  <span className="count-text">Saída registrada em {fmtData(v.saidaRegistradaEm.slice(0, 10))}</span>
                 ) : (
                   !ehPlano(v.modalidade) && (
                     <button className="btn btn-success btn-sm" type="button" onClick={() => handleReativar(v)} disabled={reativandoId === v.id}>

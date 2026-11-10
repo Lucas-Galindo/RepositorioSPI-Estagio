@@ -5,6 +5,8 @@ using SPI.Api.Extensions;
 using SPI.Application.Turmas.Dtos;
 using SPI.Application.Turmas.Validators;
 using SPI.Application.Turmas.Services;
+using SPI.Application.VinculosCobranca.Dtos;
+using SPI.Application.VinculosCobranca.Services;
 using SPI.Domain.Enums;
 
 namespace SPI.Api.Controllers
@@ -16,12 +18,24 @@ namespace SPI.Api.Controllers
     {
         private readonly ITurmaService _turmaService;
         private readonly IValidator<TurmaRequest> _validator;
+        private readonly ISaidaPacoteService _saidaPacoteService;
+        private readonly IValidator<SaidaPacoteRequest> _saidaValidator;
+        private readonly IValidator<ConfirmarSaidaPacoteRequest> _confirmarSaidaValidator;
         private readonly ILogger<TurmasController> _logger;
 
-        public TurmasController(ITurmaService turmaService, IValidator<TurmaRequest> validator, ILogger<TurmasController> logger)
+        public TurmasController(
+            ITurmaService turmaService,
+            IValidator<TurmaRequest> validator,
+            ISaidaPacoteService saidaPacoteService,
+            IValidator<SaidaPacoteRequest> saidaValidator,
+            IValidator<ConfirmarSaidaPacoteRequest> confirmarSaidaValidator,
+            ILogger<TurmasController> logger)
         {
             _turmaService = turmaService;
             _validator = validator;
+            _saidaPacoteService = saidaPacoteService;
+            _saidaValidator = saidaValidator;
+            _confirmarSaidaValidator = confirmarSaidaValidator;
             _logger = logger;
         }
 
@@ -160,6 +174,58 @@ namespace SPI.Api.Controllers
         {
             var response = await _turmaService.VincularAlunoAsync(id, alunoId);
             _logger.LogInformation("Aluno {AlunoId} vinculado a turma {TurmaId}", alunoId, id);
+            return Ok(response);
+        }
+
+        [HttpPost("{id}/alunos/{alunoId}/saida/previa")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Resumo do acerto da saida de um aluno de turma de pacote (specs/078): consumido, devido, pago informado e a
+        /// consequencia. Nao grava nada.
+        /// </summary>
+        /// <param name="id">Id da turma</param>
+        /// <param name="alunoId">Id do aluno</param>
+        /// <param name="request">Quanto o aluno ja pagou e, se quiser, o vencimento da conta da diferenca</param>
+        /// <returns>Retorna o resumo do acerto</returns>
+        public async Task<IActionResult> PreVisualizarSaida(int id, int alunoId, [FromBody] SaidaPacoteRequest request)
+        {
+            var validacao = await _saidaValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
+            {
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
+
+            return Ok(await _saidaPacoteService.PreVisualizarAsync(id, alunoId, request));
+        }
+
+        [HttpPost("{id}/alunos/{alunoId}/saida")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        /// <summary>
+        /// Registra a saida do aluno da turma de pacote (specs/078), de forma atomica: desvincula, tira das aulas que ainda
+        /// nao comecaram, encerra o pacote e gera a conta a receber da diferenca (quando ele pagou menos do que consumiu)
+        /// </summary>
+        /// <param name="id">Id da turma</param>
+        /// <param name="alunoId">Id do aluno</param>
+        /// <param name="request">O que foi informado e os numeros do resumo confirmado pela professora</param>
+        /// <returns>Retorna o acerto e o id da conta gerada (se houve)</returns>
+        public async Task<IActionResult> RegistrarSaida(int id, int alunoId, [FromBody] ConfirmarSaidaPacoteRequest request)
+        {
+            var validacao = await _confirmarSaidaValidator.ValidateAsync(request);
+            if (!validacao.IsValid)
+            {
+                return BadRequest(validacao.Errors.Select(e => e.ErrorMessage));
+            }
+
+            var response = await _saidaPacoteService.RegistrarAsync(id, alunoId, request);
+            _logger.LogInformation("Saida do aluno {AlunoId} da turma {TurmaId} registrada", alunoId, id);
             return Ok(response);
         }
 

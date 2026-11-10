@@ -28,6 +28,14 @@ namespace SPI.Domain.Repositories
 
         Task AdicionarAsync(Aula aula, CancellationToken cancellationToken = default);
 
+        // specs/078: as participacoes do aluno, como MATRICULADO (nao reposicao), em aulas da turma que ainda estao
+        // agendadas e ainda nao comecaram (data + hora de inicio depois de agoraLocal). Rastreadas, para a saida
+        // remove-las na mesma transacao dos demais efeitos.
+        Task<List<AulaAluno>> ListarParticipacoesAgendadasQueNaoComecaramAsync(int turmaId, int alunoId, DateTime agoraLocal, CancellationToken cancellationToken = default);
+
+        // specs/078: marca as participacoes para remocao; nao salva (quem chama salva junto com o resto).
+        void RemoverParticipacoes(IEnumerable<AulaAluno> participacoes);
+
         Task DefinirAlunosAsync(int aulaId, IEnumerable<int> alunoIds, CancellationToken cancellationToken = default);
 
         Task<List<int>> ObterAlunosAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default);

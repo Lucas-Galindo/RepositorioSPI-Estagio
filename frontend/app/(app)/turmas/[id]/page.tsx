@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { SeloCobranca } from "@/components/alunos/SeloCobranca";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
+import { SaidaPacoteModal } from "@/components/turmas/SaidaPacoteModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { usePageHeader } from "@/lib/usePageHeader";
@@ -27,6 +28,8 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
 
   const [turma, setTurma] = useState<Turma | null>(null);
   const [aulas, setAulas] = useState<Aula[]>([]);
+  // specs/078: aluno cuja saida com acerto esta aberta no modal.
+  const [saidaDoAluno, setSaidaDoAluno] = useState<AlunoResumo | null>(null);
   const [alunosDisponiveis, setAlunosDisponiveis] = useState<AlunoResumo[]>([]);
   const [alunoParaVincular, setAlunoParaVincular] = useState("");
   const [erro, setErro] = useState("");
@@ -189,6 +192,11 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
                   <div className="who">RA {a.ra}</div>
                   <SeloCobranca selo={a.cobranca} modo="grupo" />
                 </div>
+                {a.podeRegistrarSaida && (
+                  <button className="btn btn-danger btn-sm" type="button" disabled={processando} onClick={() => setSaidaDoAluno(a)}>
+                    Registrar saída
+                  </button>
+                )}
                 <button
                   className="btn btn-ghost btn-sm"
                   type="button"
@@ -268,6 +276,18 @@ export default function TurmaDetailPage({ params }: { params: Promise<{ id: stri
           onConfirmar={handleExcluir}
           onCancelar={() => setConfirmandoExclusao(false)}
           confirmando={excluindo}
+        />
+      )}
+
+      {saidaDoAluno && (
+        <SaidaPacoteModal
+          turmaId={turma.id}
+          aluno={saidaDoAluno}
+          onCancelar={() => setSaidaDoAluno(null)}
+          onRegistrada={() => {
+            setSaidaDoAluno(null);
+            carregar();
+          }}
         />
       )}
     </>

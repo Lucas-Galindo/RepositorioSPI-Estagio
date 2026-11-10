@@ -11,5 +11,9 @@ namespace SPI.Application.Common.Dtos
 
         // specs/068: o vinculo de cobranca que vale no contexto da tela (a turma); nulo quando nao calculado.
         public SeloCobrancaResponse? Cobranca { get; set; }
+
+        // specs/078: calculado no servidor (turma de pacote em andamento e o aluno matriculado tem pacote ativo dela): a
+        // tela so mostra o botao "Registrar saida" quando for verdadeiro.
+        public bool PodeRegistrarSaida { get; set; }
     }
 }

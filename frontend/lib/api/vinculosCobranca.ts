@@ -88,6 +88,8 @@ export interface VinculoCobranca {
   dataFim: string | null;
   parcelas: ParcelaPlano[] | null;
   ativo: boolean;
+  /** specs/078: quando a saida do aluno foi registrada com acerto (so pacote inativo); esse pacote nao e reativado. */
+  saidaRegistradaEm: string | null;
   /** specs/056: combinacao herdada hoje proibida (so na listagem); null = sem conflito. */
   conflito: string | null;
 }

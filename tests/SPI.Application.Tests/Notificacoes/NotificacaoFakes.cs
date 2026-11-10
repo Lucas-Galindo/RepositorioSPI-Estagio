@@ -13,6 +13,10 @@ namespace SPI.Application.Tests.Notificacoes
     {
         public List<Aula> Aulas { get; } = new();
 
+        public Task<List<AulaAluno>> ListarParticipacoesAgendadasQueNaoComecaramAsync(int turmaId, int alunoId, DateTime agoraLocal, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        public void RemoverParticipacoes(IEnumerable<AulaAluno> participacoes) => throw new NotImplementedException();
+
         public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default)
         {
             DateTime Termino(Aula a) => a.DataInicio.ToDateTime(a.HoraFim);

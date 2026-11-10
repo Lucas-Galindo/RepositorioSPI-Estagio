@@ -172,6 +172,8 @@ namespace SPI.Application.Tests.Relatorios
             public Task<Dictionary<int, int>> ContarPresencasPorVinculosAsync(IReadOnlyCollection<int> vinculoIds, DateOnly? de, DateOnly? ate, CancellationToken cancellationToken = default) => throw new NotImplementedException();
             public Task<List<AulaAluno>> ListarPresencasDoVinculoAsync(int vinculoId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
             public Task<List<Aula>> ListarNaJanelaDeAvisoAsync(DateTime agora, int diasAntes, TimeOnly hora, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public Task<List<AulaAluno>> ListarParticipacoesAgendadasQueNaoComecaramAsync(int turmaId, int alunoId, DateTime agoraLocal, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public void RemoverParticipacoes(IEnumerable<AulaAluno> participacoes) => throw new NotImplementedException();
             public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
             public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>

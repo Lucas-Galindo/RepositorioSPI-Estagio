@@ -261,6 +261,26 @@ namespace SPI.Application.Tests.VinculosCobranca
             Task.FromResult(PresencasComAula.Where(aa => aa.VinculoCobrancaId == vinculoId).OrderByDescending(aa => aa.Aula.DataInicio).ToList());
 
         public Task<List<Aula>> ListarNaJanelaDeAvisoAsync(DateTime agora, int diasAntes, TimeOnly hora, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        // specs/078: participacoes que a saida retira (o filtro real -- agendada, nao comecou, nao reposicao -- e do repositorio
+        // de verdade; aqui o teste semeia so o que ele devolveria).
+        public List<AulaAluno> ParticipacoesFuturas { get; } = new();
+        public List<AulaAluno> ParticipacoesRemovidas { get; } = new();
+        public DateTime? UltimoAgoraLocalConsultado { get; private set; }
+
+        public Task<List<AulaAluno>> ListarParticipacoesAgendadasQueNaoComecaramAsync(int turmaId, int alunoId, DateTime agoraLocal, CancellationToken cancellationToken = default)
+        {
+            UltimoAgoraLocalConsultado = agoraLocal;
+            return Task.FromResult(ParticipacoesFuturas.Where(aa => aa.AlunoId == alunoId && aa.Aula.TurmaId == turmaId).ToList());
+        }
+
+        public void RemoverParticipacoes(IEnumerable<AulaAluno> participacoes)
+        {
+            foreach (var participacao in participacoes.ToList())
+            {
+                ParticipacoesFuturas.Remove(participacao);
+                ParticipacoesRemovidas.Add(participacao);
+            }
+        }
         public Task<List<Aula>> ListarPendentesDeStatusAsync(DateTime agora, int? professorId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public Task<int> ContarPresencasPorVinculoECompetenciaAsync(int vinculoCobrancaId, DateOnly competencia, CancellationToken cancellationToken = default) =>

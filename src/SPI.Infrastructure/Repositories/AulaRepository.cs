@@ -161,6 +161,25 @@ namespace SPI.Infrastructure.Repositories
             }
         }
 
+        public Task<List<AulaAluno>> ListarParticipacoesAgendadasQueNaoComecaramAsync(int turmaId, int alunoId, DateTime agoraLocal, CancellationToken cancellationToken = default)
+        {
+            var hoje = DateOnly.FromDateTime(agoraLocal);
+            var agora = TimeOnly.FromDateTime(agoraLocal);
+
+            // Aula iniciada (mesmo ainda "Agendada", sem chamada) fica de fora: a professora ainda registra a frequencia dela.
+            return _dbContext.AulaAlunos
+                .Where(aa => aa.AlunoId == alunoId
+                    && !aa.Reposicao
+                    && aa.Aula.TurmaId == turmaId
+                    && aa.Aula.Ativo
+                    && aa.Aula.Status == "Agendada"
+                    && (aa.Aula.DataInicio > hoje || (aa.Aula.DataInicio == hoje && aa.Aula.HoraInicio > agora)))
+                .ToListAsync(cancellationToken);
+        }
+
+        public void RemoverParticipacoes(IEnumerable<AulaAluno> participacoes) =>
+            _dbContext.AulaAlunos.RemoveRange(participacoes);
+
         public async Task<List<int>> ObterAlunosAtivosDaTurmaAsync(int turmaId, CancellationToken cancellationToken = default) =>
             await _dbContext.AlunosTurma
                 .Where(at => at.TurmaId == turmaId && at.Aluno.Ativo)

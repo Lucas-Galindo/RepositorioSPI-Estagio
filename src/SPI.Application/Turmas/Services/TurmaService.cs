@@ -288,6 +288,17 @@ namespace SPI.Application.Turmas.Services
             {
                 var pacotes = await _vinculoRepository.ListarPacotesAtivosDaTurmaAsync(turma.Id, cancellationToken);
                 var matriculados = turma.AlunosTurma.Select(at => at.AlunoId).ToHashSet();
+
+                // specs/078: a saida com acerto vale para quem tem pacote ativo dela, enquanto a turma esta em andamento.
+                if (turma.EstaEmAndamento(Hoje()))
+                {
+                    var comPacote = pacotes.Select(p => p.AlunoId).ToHashSet();
+                    foreach (var aluno in resposta.Alunos)
+                    {
+                        aluno.PodeRegistrarSaida = comPacote.Contains(aluno.Id);
+                    }
+                }
+
                 resposta.AlunosComPacoteForaDaTurma = pacotes
                     .Where(p => p.Aluno is { Ativo: true } && !matriculados.Contains(p.AlunoId))
                     .Select(p => new AlunoResumoResponse { Id = p.Aluno.Id, Ra = p.Aluno.Ra, Nome = p.Aluno.Nome })

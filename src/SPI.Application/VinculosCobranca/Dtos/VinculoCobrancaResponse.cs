@@ -23,6 +23,8 @@ namespace SPI.Application.VinculosCobranca.Dtos
         public DateOnly? DataFim { get; set; }
         public List<ParcelaResponse>? Parcelas { get; set; }
         public bool Ativo { get; set; }
+        // specs/078: quando a saida do aluno foi registrada com acerto (so pacote inativo). O pacote encerrado assim nao e reativado.
+        public DateTime? SaidaRegistradaEm { get; set; }
         // specs/056: combinacao herdada da regra antiga que hoje e proibida (ex.:
         // mensalidade + pacote ativos). So a listagem preenche; nunca e resolvida sozinha.
         public string? Conflito { get; set; }

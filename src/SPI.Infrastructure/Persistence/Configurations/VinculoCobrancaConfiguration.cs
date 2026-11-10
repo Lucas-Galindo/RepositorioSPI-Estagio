@@ -22,6 +22,7 @@ namespace SPI.Infrastructure.Persistence.Configurations
             builder.Property(v => v.DataInicio).HasColumnName("data_inicio");
             builder.Property(v => v.DataFim).HasColumnName("data_fim");
             builder.Property(v => v.Ativo).HasColumnName("ativo").HasDefaultValue(true);
+            builder.Property(v => v.SaidaRegistradaEm).HasColumnName("saida_registrada_em");
 
             // A coluna gerada chave_ativa (unicidade dos vinculos ativos) e gerida
             // somente pelo banco -- de proposito nao e mapeada aqui.

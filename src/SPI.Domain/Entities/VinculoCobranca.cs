@@ -35,6 +35,11 @@ namespace SPI.Domain.Entities
 
         public bool Ativo { get; set; }
 
+        // specs/078: quando a saida do aluno foi registrada com acerto. So um pacote inativo a tem: o pacote
+        // encerrado pela saida nao e reativado (o aluno nao volta pelo pacote). Nulo nos demais casos, inclusive no
+        // pacote que so ficou inativo porque a turma acabou.
+        public DateTime? SaidaRegistradaEm { get; set; }
+
         public Aluno Aluno { get; set; } = null!;
         public Turma? Turma { get; set; }
     }

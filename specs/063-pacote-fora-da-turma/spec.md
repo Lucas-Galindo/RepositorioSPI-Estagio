@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+> **Nota (2026-11-08, spec 078):** o acerto financeiro da saída do aluno, que esta spec deixava para o card "Saída do aluno de turma de pacote", é o botão **"Registrar saída"** (acerto proporcional ao consumo: devido = valor × consumidas ÷ total; pagou menos gera uma conta a receber da diferença; pagou mais não devolve; o pacote é encerrado, o aluno sai das aulas agendadas que ainda não começaram e **não volta pelo pacote**). **"Desvincular" continua exatamente como descrito aqui** (reversível, sem acerto, pacote intacto). Ver [specs/078-saida-pacote-acerto](../078-saida-pacote-acerto/spec.md).
+
 > **Nota (2026-11-05, spec 075):** a turma passou a ter uma matéria opcional (`turma.materia_id`, migração `database/27_turma_materia.sql`); não muda o tipo, as datas nem as regras de pacote. Ver `specs/075-turma-materia/`.
 
 **Input**: Card Trello "Alunos de pacote fora do cadastro fixo das turmas" (origem: anotações da reunião do dia 22). As dúvidas de negócio do card foram respondidas pelo usuário em 2026-10-29 e 2026-10-30 e estão registradas nesta spec. **Esta spec muda parte da regra da spec 056** (ver "O que muda em relação à spec 056").
