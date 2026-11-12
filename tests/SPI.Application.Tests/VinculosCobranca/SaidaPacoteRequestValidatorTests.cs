@@ -56,6 +56,7 @@ namespace SPI.Application.Tests.VinculosCobranca
             _confirmar.TestValidate(ok with { ValorPago = -5m }).ShouldHaveValidationErrorFor(x => x.ValorPago);
             _confirmar.TestValidate(ok with { ConsumidasEsperadas = -1 }).ShouldHaveValidationErrorFor(x => x.ConsumidasEsperadas);
             _confirmar.TestValidate(ok with { ValorDevidoEsperado = -1m }).ShouldHaveValidationErrorFor(x => x.ValorDevidoEsperado);
+            _confirmar.TestValidate(ok with { AulasQueSairaoEsperadas = -1 }).ShouldHaveValidationErrorFor(x => x.AulasQueSairaoEsperadas);
         }
     }
 }

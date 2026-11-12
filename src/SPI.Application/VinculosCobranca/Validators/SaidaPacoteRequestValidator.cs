@@ -30,6 +30,9 @@ namespace SPI.Application.VinculosCobranca.Validators
 
             RuleFor(x => x.ValorDevidoEsperado)
                 .GreaterThanOrEqualTo(0).WithMessage("O valor devido esperado nao pode ser negativo.");
+
+            RuleFor(x => x.AulasQueSairaoEsperadas)
+                .GreaterThanOrEqualTo(0).WithMessage("As aulas esperadas nao podem ser negativas.");
         }
     }
 }

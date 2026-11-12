@@ -39,7 +39,7 @@ SELECT 'Acerto de pacote', TRUE FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM catego
 | DTO | Campos |
 |---|---|
 | `SaidaPacoteRequest` (prévia e gravação) | `ValorPago` (decimal ≥ 0, ≤ 2 casas), `Vencimento` (DateOnly?) |
-| `ConfirmarSaidaPacoteRequest` : `SaidaPacoteRequest` | `ConsumidasEsperadas` (int), `ValorDevidoEsperado` (decimal) — ecos da prévia |
+| `ConfirmarSaidaPacoteRequest` : `SaidaPacoteRequest` | `ConsumidasEsperadas` (int), `ValorDevidoEsperado` (decimal), `AulasQueSairaoEsperadas` (int) — ecos da prévia |
 | `AcertoSaidaPacoteResponse` | `AlunoId`, `AlunoNome`, `TurmaId`, `TurmaNome`, `ValorPacote`, `TotalAulas`, `TotalEstimado`, `AulasConsumidas`, `ValorPorAula`, `ValorDevido`, `ValorPago`, `Diferenca`, `Excedente`, `Consequencia` (`GerarConta` \| `Fechado` \| `ExcedenteNaoDevolvido`), `PrecisaVencimento`, `AulasAgendadasQueSairao` (int: aulas agendadas que ainda não começaram das quais o aluno será retirado) |
 | `SaidaPacoteRegistradaResponse` | `Acerto` (acima), `PagamentoId` (int?, só se gerou conta) |
 | `AlunoResumoResponse` (existente) | + `PodeRegistrarSaida` (bool) |

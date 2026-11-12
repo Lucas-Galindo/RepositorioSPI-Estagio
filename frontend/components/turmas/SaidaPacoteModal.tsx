@@ -17,6 +17,9 @@ interface SaidaPacoteModalProps {
   onRegistrada: () => void;
 }
 
+// A mensagem que o servidor devolve (primeira da lista de validacao ou o texto do erro).
+const mensagemDe = (excecao: unknown, padrao: string) => (excecao instanceof ApiError ? (excecao.details ?? [excecao.message])[0] : padrao);
+
 /**
  * specs/078: "Registrar saida" de um aluno de turma de pacote. Mostra o resumo do acerto -- TODO numero vem do servidor
  * (Principio II): aqui so se converte o texto digitado em numero, se envia e se exibe. Nada e gravado antes de
@@ -34,55 +37,52 @@ export function SaidaPacoteModal({ turmaId, aluno, onCancelar, onRegistrada }: S
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  // Numero do ultimo pedido de resumo: a resposta de um pedido antigo nao pode sobrescrever a mais nova.
+  // Numero do ultimo pedido de resumo: so a resposta do pedido mais novo vale -- nem a de um valor antigo, nem a que
+  // chega depois de a professora mudar o valor ou fechar o modal.
   const pedido = useRef(0);
   const atraso = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Em branco = 0. So converte o texto; o servidor valida (negativo, casas decimais).
   const comoNumero = (texto: string) => (texto.trim() === "" ? 0 : Number(texto));
 
-  const buscarResumo = async (texto: string) => {
-    if (!sessao) return;
+  // Consulta o resumo do valor digitado. Devolve a promessa para quem precisar esperar (ex.: depois de um 409).
+  const consultar = (texto: string) => {
+    if (!sessao) return Promise.resolve();
     const meu = ++pedido.current;
-    try {
-      const resposta = await previaSaidaPacote(turmaId, aluno.id, { valorPago: comoNumero(texto) }, sessao.accessToken);
-      if (meu !== pedido.current) return;
-      setAcerto(resposta);
-      setErro(null);
-    } catch (excecao) {
-      if (meu !== pedido.current) return;
-      setAcerto(null);
-      setErro(excecao instanceof ApiError ? (excecao.details ?? [excecao.message])[0] : "Não foi possível calcular o acerto.");
-    } finally {
-      if (meu === pedido.current) setCarregando(false);
-    }
-  };
-
-  // Uma consulta ao abrir (valor pago em branco); as seguintes saem do campo (mudarValor).
-  useEffect(() => {
-    if (!sessao) return;
-    const meu = ++pedido.current;
-    previaSaidaPacote(turmaId, aluno.id, { valorPago: 0 }, sessao.accessToken)
+    return previaSaidaPacote(turmaId, aluno.id, { valorPago: comoNumero(texto) }, sessao.accessToken)
       .then((resposta) => {
-        if (meu === pedido.current) setAcerto(resposta);
+        if (meu !== pedido.current) return;
+        setAcerto(resposta);
+        setErro(null);
       })
       .catch((excecao) => {
-        if (meu === pedido.current) setErro(excecao instanceof ApiError ? (excecao.details ?? [excecao.message])[0] : "Não foi possível calcular o acerto.");
+        if (meu !== pedido.current) return;
+        setAcerto(null);
+        setErro(mensagemDe(excecao, "Não foi possível calcular o acerto."));
       })
       .finally(() => {
         if (meu === pedido.current) setCarregando(false);
       });
+  };
 
+  // Uma consulta ao abrir (valor pago em branco); as seguintes saem do campo (mudarValor).
+  useEffect(() => {
+    consultar("");
     return () => {
+      pedido.current += 1;
       if (atraso.current) clearTimeout(atraso.current);
     };
+    // Abre uma vez por aluno/turma; "consultar" e recriada a cada render e so le o que esta nas dependencias.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessao, turmaId, aluno.id]);
 
   const mudarValor = (texto: string) => {
     setValorPago(texto);
     setCarregando(true);
+    // Invalida na hora o pedido em andamento: sua resposta (de um valor antigo) nao pode reaparecer enquanto o novo espera.
+    pedido.current += 1;
     if (atraso.current) clearTimeout(atraso.current);
-    atraso.current = setTimeout(() => buscarResumo(texto), 350);
+    atraso.current = setTimeout(() => consultar(texto), 350);
   };
 
   const confirmar = async () => {
@@ -90,7 +90,7 @@ export function SaidaPacoteModal({ turmaId, aluno, onCancelar, onRegistrada }: S
     setEnviando(true);
     setErro(null);
     try {
-      // Os ecos (consumidas e devido) sao os numeros que o servidor mostrou; ele recalcula e recusa se mudaram.
+      // Os ecos sao os numeros que o servidor mostrou (consumo, devido e aulas); ele recalcula e recusa se mudaram.
       const resultado = await registrarSaidaPacote(
         turmaId,
         aluno.id,
@@ -99,6 +99,7 @@ export function SaidaPacoteModal({ turmaId, aluno, onCancelar, onRegistrada }: S
           vencimento: acerto.precisaVencimento ? vencimento : null,
           consumidasEsperadas: acerto.aulasConsumidas,
           valorDevidoEsperado: acerto.valorDevido,
+          aulasQueSairaoEsperadas: acerto.aulasAgendadasQueSairao,
         },
         sessao.accessToken
       );
@@ -109,20 +110,17 @@ export function SaidaPacoteModal({ turmaId, aluno, onCancelar, onRegistrada }: S
       );
       onRegistrada();
     } catch (excecao) {
-      setErro(excecao instanceof ApiError ? (excecao.details ?? [excecao.message])[0] : "Não foi possível registrar a saída.");
-      // O consumo pode ter mudado: mostra o resumo atual para a professora conferir.
-      if (excecao instanceof ApiError && excecao.status === 409) {
-        const mensagem = (excecao.details ?? [excecao.message])[0];
-        await buscarResumo(valorPago);
-        setErro(mensagem);
-      }
+      const mensagem = mensagemDe(excecao, "Não foi possível registrar a saída.");
+      // Resumo desatualizado (409): refaz o resumo e mantem a mensagem para a professora conferir.
+      if (excecao instanceof ApiError && excecao.status === 409) await consultar(valorPago);
+      setErro(mensagem);
     } finally {
       setEnviando(false);
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={onCancelar}>
+    <div className="modal-overlay" onClick={() => !enviando && onCancelar()}>
       <div className="modal modal-saida" onClick={(e) => e.stopPropagation()}>
         <h3>Registrar saída de {aluno.nome}</h3>
         <p className="hint" style={{ marginBottom: 16 }}>

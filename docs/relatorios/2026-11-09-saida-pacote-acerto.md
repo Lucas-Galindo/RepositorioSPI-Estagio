@@ -42,3 +42,20 @@ Regras decididas com a professora (todas no servidor, Princípio II):
 - Dois itens "falharam" na primeira execução dos meus roteiros e **não eram falhas do produto**: o roteiro chamou `POST` em vez de `PATCH` para reativar (refeito: 409 com a mensagem certa) e procurei a conta por um nome de campo errado e o pacote encerrado sem marcar "Mostrar excluídos" na ficha (refeito: tudo aprovado).
 - **Observação fora desta spec**: uma conta com vencimento **hoje** aparece como "Atrasado" na ficha do aluno no fim da noite, porque o status "Atrasado" é calculado com a data em UTC (`DateTime.UtcNow`, regra já existente). Vale um card próprio, se incomodar.
 - **Sem commit nem push**: tudo está só no diretório de trabalho, junto com a pasta `specs/078-saida-pacote-acerto/`.
+
+## Revisão de código e correções (2026-11-12)
+
+Depois do commit `c43041c`, o código do card foi relido à procura de lógica frágil, duplicação e código complexo. O que mudou (comportamento mantido, exceto os itens 1 e 2, que corrigem falhas):
+
+| # | Onde | Problema | Correção |
+|---|---|---|---|
+| 1 | `SaidaPacoteService.RegistrarAsync` (lógica frágil) | A confirmação só comparava o consumo e o valor devido. Se uma aula agendada fosse criada ou começasse entre o resumo e a confirmação, o aluno sairia de um número de aulas **diferente do mostrado** (contra o SC-007) | A confirmação passa a ecoar também `aulasQueSairaoEsperadas`; qualquer diferença dá 409 "o resumo mudou", nada é gravado e o resumo é refeito. Comparação isolada em `ExigirResumoConfirmado` |
+| 2 | `SaidaPacoteModal` (corrida) | Durante os 350 ms de espera ao digitar, a resposta de uma consulta antiga ainda valia: podia reaparecer um resumo do valor anterior (por exemplo sem o campo de vencimento) com o botão "Confirmar" ligado | Ao digitar, o pedido em andamento é invalidado na hora (e também ao fechar o modal); só vale a resposta do pedido mais novo |
+| 3 | `SaidaPacoteModal` (duplicação) | Dois caminhos quase iguais de consulta (ao abrir e ao digitar) e o erro era gravado duas vezes depois de um 409 | Um só `consultar`, um só `mensagemDe`, e o erro do 409 é gravado uma vez, depois de refazer o resumo |
+| 4 | `SaidaPacoteModal` | Clicar fora do modal durante o envio fechava a janela com a gravação em andamento | O clique fora é ignorado enquanto envia |
+| 5 | `SaidaPacoteService` | Turma inativa recebia a mensagem "já terminou", que está errada; e o contexto da saída carregava `Hoje` e `Agora` duplicados | Mensagem "não está em andamento (inativa ou já terminou)"; `Hoje` passou a ser derivado de `Agora` |
+| 6 | Docs | A spec, o contrato, o modelo de dados e o quickstart descreviam só dois ecos | Atualizados (FR-007, edge "tela desatualizada", contrato, data-model e caso 18 do quickstart) |
+
+Revalidação: **838 testes** (3 novos: aulas que mudaram, resumo igual ao gravado, mensagem da turma inativa), `tsc`, `eslint` e build limpos; **API real 51 de 51** (o caso novo cria uma aula depois da prévia: 409 e nada muda; o novo resumo mostra 3 aulas); Chrome nos mesmos passos e no escuro, sem erros de console (duas verificações do roteiro estavam com expectativa velha: agora são 3 aulas por causa do caso novo, e uma expressão regular errada; o banco confirma a conta de R$ 47,09 Pendente). Dados de teste removidos; contagens iguais às do início, exceto as mesmas diferenças já registradas acima.
+
+Pontos vistos e **mantidos de propósito**: a contagem de aulas consumidas é a mesma da ficha do aluno (spec 058), mesmo que ela conte presenças de aulas depois excluídas; uma corrida de dois cliques simultâneos com pagamento ≥ devido é inofensiva (a segunda é idempotente), e com conta a unicidade do banco impede a duplicada; depois da saída, numa turma que ainda **não** começou (início hoje), a professora pode cadastrar um pacote **novo** para o mesmo aluno (regra da spec 063: turma ainda aberta), o que é decisão dela.

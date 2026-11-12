@@ -56,11 +56,7 @@ namespace SPI.Application.VinculosCobranca.Services
             var situacao = await CarregarAsync(turmaId, alunoId, cancellationToken);
             var acerto = MontarAcerto(situacao, request.ValorPago);
 
-            // A professora confirmou o resumo que viu: se o consumo mudou desde entao, nada e gravado.
-            if (acerto.AulasConsumidas != request.ConsumidasEsperadas || acerto.ValorDevido != request.ValorDevidoEsperado)
-            {
-                throw new ConflitoException("O consumo do aluno mudou desde que o resumo foi aberto. Confira o novo resumo e confirme de novo.");
-            }
+            ExigirResumoConfirmado(acerto, request);
 
             Pagamento? conta = null;
             if (acerto.Diferenca > 0)
@@ -78,6 +74,18 @@ namespace SPI.Application.VinculosCobranca.Services
             await _vinculoRepository.SalvarAlteracoesAsync(cancellationToken);
 
             return new SaidaPacoteRegistradaResponse { Acerto = acerto, PagamentoId = conta?.Id };
+        }
+
+        // A professora confirmou o resumo que viu: se o consumo, o valor devido ou as aulas de que o aluno sairia mudaram
+        // desde entao, nada e gravado (ela confere o novo resumo e confirma de novo).
+        private static void ExigirResumoConfirmado(AcertoSaidaPacoteResponse acerto, ConfirmarSaidaPacoteRequest confirmado)
+        {
+            if (acerto.AulasConsumidas != confirmado.ConsumidasEsperadas
+                || acerto.ValorDevido != confirmado.ValorDevidoEsperado
+                || acerto.AulasAgendadasQueSairao != confirmado.AulasQueSairaoEsperadas)
+            {
+                throw new ConflitoException("O resumo mudou desde que foi aberto (consumo ou aulas agendadas do aluno). Confira o novo resumo e confirme de novo.");
+            }
         }
 
         // Regras de elegibilidade (as mesmas da previa e da gravacao): turma de pacote em andamento, aluno matriculado,
@@ -100,7 +108,7 @@ namespace SPI.Application.VinculosCobranca.Services
 
             if (!turma.EstaEmAndamento(hoje))
             {
-                throw new ConflitoException("A turma de pacote ja terminou: o pacote dela foi encerrado e nao ha saida a registrar.");
+                throw new ConflitoException("A turma de pacote nao esta em andamento (inativa ou ja terminou): nao ha saida a registrar.");
             }
 
             if (!turma.AlunosTurma.Any(at => at.AlunoId == alunoId))
@@ -126,7 +134,7 @@ namespace SPI.Application.VinculosCobranca.Services
 
             var futuras = await _aulaRepository.ListarParticipacoesAgendadasQueNaoComecaramAsync(turmaId, alunoId, agora, cancellationToken);
 
-            return new SituacaoDaSaida(turma, aluno, pacote, consumidas, progresso.Total.Value, progresso.TotalEstimado, futuras, hoje, agora);
+            return new SituacaoDaSaida(turma, aluno, pacote, consumidas, progresso.Total.Value, progresso.TotalEstimado, futuras, agora);
         }
 
         private static AcertoSaidaPacoteResponse MontarAcerto(SituacaoDaSaida s, decimal valorPago)
@@ -198,7 +206,9 @@ namespace SPI.Application.VinculosCobranca.Services
             int Total,
             bool TotalEstimado,
             List<AulaAluno> ParticipacoesFuturas,
-            DateOnly Hoje,
-            DateTime Agora);
+            DateTime Agora)
+        {
+            public DateOnly Hoje => DateOnly.FromDateTime(Agora);
+        }
     }
 }

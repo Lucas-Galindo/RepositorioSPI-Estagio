@@ -94,6 +94,7 @@ export interface SaidaPacoteRequest {
 export interface ConfirmarSaidaPacoteRequest extends SaidaPacoteRequest {
   consumidasEsperadas: number;
   valorDevidoEsperado: number;
+  aulasQueSairaoEsperadas: number;
 }
 
 /** Espelha SPI.Application.VinculosCobranca.Services.ConsequenciaAcerto (serializado como string). */

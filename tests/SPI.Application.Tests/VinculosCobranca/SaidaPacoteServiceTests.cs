@@ -115,8 +115,9 @@ namespace SPI.Application.Tests.VinculosCobranca
 
         private static SaidaPacoteRequest Pedido(decimal pago, DateOnly? vencimento = null) => new() { ValorPago = pago, Vencimento = vencimento };
 
-        private static ConfirmarSaidaPacoteRequest Confirmacao(decimal pago, DateOnly? vencimento, int consumidas = 7, decimal devido = 70m) =>
-            new() { ValorPago = pago, Vencimento = vencimento, ConsumidasEsperadas = consumidas, ValorDevidoEsperado = devido };
+        // Os ecos do resumo confirmado: consumo, valor devido e aulas agendadas de que o aluno sairia.
+        private static ConfirmarSaidaPacoteRequest Confirmacao(decimal pago, DateOnly? vencimento, int consumidas = 7, decimal devido = 70m, int aulas = 0) =>
+            new() { ValorPago = pago, Vencimento = vencimento, ConsumidasEsperadas = consumidas, ValorDevidoEsperado = devido, AulasQueSairaoEsperadas = aulas };
 
         // ---------- US1: a previa ----------
 
@@ -302,7 +303,7 @@ namespace SPI.Application.Tests.VinculosCobranca
             SemearParticipacaoFutura(aulaId: 501);
             var vencimento = new DateOnly(2026, 11, 20);
 
-            var r = await _servico.RegistrarAsync(TurmaId, AlunoId, Confirmacao(30m, vencimento));
+            var r = await _servico.RegistrarAsync(TurmaId, AlunoId, Confirmacao(30m, vencimento, aulas: 2));
 
             var conta = Assert.Single(_pagamentos.Pagamentos);
             Assert.Equal(conta.Id, r.PagamentoId);
@@ -397,6 +398,40 @@ namespace SPI.Application.Tests.VinculosCobranca
 
             Assert.Contains("mudou", erro.Message);
             NadaMudou();
+        }
+
+        [Fact]
+        public async Task Aulas_agendadas_que_mudaram_desde_a_previa_recusam_a_gravacao_e_nada_muda()
+        {
+            SemearParticipacaoFutura(aulaId: 500);
+            SemearParticipacaoFutura(aulaId: 501);
+
+            // A professora viu "sai de 1 aula", mas hoje sao 2 (uma aula nova foi criada depois do resumo).
+            var erro = await Assert.ThrowsAsync<ConflitoException>(() => _servico.RegistrarAsync(TurmaId, AlunoId, Confirmacao(30m, Hoje, aulas: 1)));
+
+            Assert.Contains("mudou", erro.Message);
+            NadaMudou();
+        }
+
+        [Fact]
+        public async Task A_saida_so_e_aceita_com_o_numero_de_aulas_igual_ao_do_resumo()
+        {
+            SemearParticipacaoFutura(aulaId: 500);
+
+            var previa = await _servico.PreVisualizarAsync(TurmaId, AlunoId, Pedido(30m));
+            await _servico.RegistrarAsync(TurmaId, AlunoId, Confirmacao(30m, Hoje, aulas: previa.AulasAgendadasQueSairao));
+
+            Assert.Equal(previa.AulasAgendadasQueSairao, _aulas.ParticipacoesRemovidas.Count);
+        }
+
+        [Fact]
+        public async Task Turma_inativa_diz_que_nao_esta_em_andamento()
+        {
+            _turma.Ativo = false;
+
+            var erro = await Assert.ThrowsAsync<ConflitoException>(() => _servico.PreVisualizarAsync(TurmaId, AlunoId, Pedido(0m)));
+
+            Assert.Contains("em andamento", erro.Message);
         }
 
         [Fact]

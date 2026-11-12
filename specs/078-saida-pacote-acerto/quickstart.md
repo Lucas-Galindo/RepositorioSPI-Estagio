@@ -32,6 +32,7 @@ Cenário base: turma de pacote em andamento (início ontem, fim daqui a 30 dias)
 | 14 | `DELETE` desvincular em outro aluno | igual ao de antes (pacote, saldo e pagamentos intactos; pode voltar) |
 | 15 | `GET /api/turmas/{id}` | `podeRegistrarSaida = true` só para quem tem pacote ativo na turma em andamento |
 | 16 | conta do acerto em Contas a Receber; marcar como paga | comporta-se como as demais (relatórios) |
+| 18 | prévia (sai de 2 aulas), criar mais uma aula futura da turma e gravar com os ecos antigos | 409 "mudou"; nada muda; o novo resumo mostra 3 aulas |
 | 17 | aluno em 2 aulas agendadas futuras, 1 aula já iniciada ainda agendada, 1 realizada e 1 reposição da turma; prévia e gravação | prévia: `aulasAgendadasQueSairao = 2`; gravação: sai **só** das 2 futuras (conferir em `aula_aluno`); a iniciada, a realizada (presença intacta) e a reposição ficam |
 
 ## 3. Chrome (login real, claro e escuro, capturas)

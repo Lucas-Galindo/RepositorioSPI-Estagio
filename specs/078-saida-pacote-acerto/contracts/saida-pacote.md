@@ -34,7 +34,7 @@ Resposta **200**:
 Corpo (os dois últimos campos são os ecos da prévia que a professora confirmou):
 
 ```json
-{ "valorPago": 30.00, "vencimento": "2026-11-20", "consumidasEsperadas": 7, "valorDevidoEsperado": 70.00 }
+{ "valorPago": 30.00, "vencimento": "2026-11-20", "consumidasEsperadas": 7, "valorDevidoEsperado": 70.00, "aulasQueSairaoEsperadas": 2 }
 ```
 
 Resposta **200**:
@@ -51,7 +51,7 @@ Resposta **200**:
 |---|---|
 | 400 | `valorPago` negativo, com mais de 2 casas ou acima do teto (lista de mensagens, como nos demais cadastros) |
 | 404 | turma ou aluno inexistente |
-| 409 | aluno não matriculado; turma não é de pacote ou já terminou; pacote do aluno nessa turma inativo (inclusive saída já registrada); pacote sem total de aulas; **gravação**: há diferença e o vencimento falta ou é anterior a hoje; o consumo/valor devido mudou desde a prévia ("confira o novo resumo"); categoria "Acerto de pacote" ausente ("aplique a migração 28") |
+| 409 | aluno não matriculado; turma não é de pacote ou já terminou; pacote do aluno nessa turma inativo (inclusive saída já registrada); pacote sem total de aulas; **gravação**: há diferença e o vencimento falta ou é anterior a hoje; o consumo, o valor devido ou o número de aulas de que o aluno sairia mudou desde a prévia ("confira o novo resumo"); categoria "Acerto de pacote" ausente ("aplique a migração 28") |
 | 500 | erro inesperado (nada gravado) |
 
 Todas as ações declaram `[ProducesResponseType]` 200/400/404/409/500 (o `ErrosDeNegocioFilter` só mapeia 404/409 pelo que está declarado).

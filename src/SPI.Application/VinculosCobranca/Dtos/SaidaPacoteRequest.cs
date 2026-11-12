@@ -10,10 +10,12 @@ namespace SPI.Application.VinculosCobranca.Dtos
         public DateOnly? Vencimento { get; set; }
     }
 
-    // specs/078: a gravacao devolve os numeros que a previa mostrou; o servidor recalcula e recusa se o consumo mudou.
+    // specs/078: a gravacao devolve os numeros que a previa mostrou (consumo, devido e aulas de que o aluno sairia); o
+    // servidor recalcula e recusa se qualquer um mudou, para a professora confirmar so o que viu.
     public record ConfirmarSaidaPacoteRequest : SaidaPacoteRequest
     {
         public int ConsumidasEsperadas { get; set; }
         public decimal ValorDevidoEsperado { get; set; }
+        public int AulasQueSairaoEsperadas { get; set; }
     }
 }
